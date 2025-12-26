@@ -1,0 +1,43 @@
+.count-store-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 7px;
+    padding: 15px 10px;
+    border: solid 1px white;
+    border-radius: 30px;
+    transition: filter 500ms;
+    
+
+    
+}
+
+.count-store-wrapper:hover  {
+    filter: drop-shadow(1px 1.5px 5px #fff )
+}
+
+.count-store-component-to-render {
+    background-color: whitesmoke;
+    border: solid black 1px;
+    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: fit-content;
+    padding: 10px;
+    color: black;
+    
+}
+
+.count-store-output-component {
+    background-color: whitesmoke;
+    border: solid black 1px;
+    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: fit-content;
+    padding: 10px;
+    color: black;
+    transition: filter 300ms;
+}
