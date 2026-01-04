@@ -2,58 +2,17 @@ import React from 'react';
 import './useInfiniteVirtualizedScroll.css';
 import { useState, useRef, useCallback } from 'react';
 
-const ListDemoItem = ({ id }: { id: number }) => {
-    return <div className="virtualized_scroll_list-demo-item" key={id}>
-        {`Item ${id}`}
-    </div>
-}
 
-const ListDemoSkeletonItem = ({ id }: { id: number }) => <div className="virtualized_scroll_list-demo-item-skeleton" key={id}>Loading...</div>;
-
-//const useInfiniteScroll
-type InfiniteScrollDemoItemType = {
-    id: number;
-    name: string;
-}
-const integrationAPIconfig = {
-    endpoint: 'more-items',
-    method: 'GET',
-    transformDataResponse: (responseData: any) => {
-        return {
-            id: responseData?.id ?? -1,
-            name: responseData?.title ?? 'No Name'
-        } as InfiniteScrollDemoItemType
-    },
+export type integrationAPIconfigType<T> = {
+    serverBaseURL?: string,
+    endpoint: string,
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+    transformDataResponse: (responseData: any) => T,
     limit: 10
 }
-export const UseInfiniteVirtualizedScrollDemo = () => {
 
-    const { totalItems, items, nextCallback } = useInfiniteFetch<InfiniteScrollDemoItemType>(integrationAPIconfig);
-    return <div className="use_infinite_scroll_demo-holder">
-        UseInfiniteVirtualizedScrollDemo
-
-        <VirtualizedScrollList
-            items={items}
-            nextCallback={nextCallback}
-            itemHeight={50}
-            totalItems={totalItems}
-            renderItemCallBack={ListDemoItem}
-            buffer={2}
-            viewportHeight={100}
-            viewportWidth={200}
-            skeletonItem={ListDemoSkeletonItem}
-        />
-    </div>
-
-}
 const useInfiniteFetch = <T,>(
-    integrationAPIconfig: {
-        serverBaseURL?: string;
-        endpoint: string;
-        method: string;
-        transformDataResponse: (responseData: any) => T;
-        limit?: number;
-    }
+    integrationAPIconfig: integrationAPIconfigType<T>
 ) => {
     const {
         serverBaseURL = 'http://localhost:3000/',
@@ -62,6 +21,9 @@ const useInfiniteFetch = <T,>(
         transformDataResponse,
         limit = 10
     } = integrationAPIconfig;
+
+    const fetchMoreDataRef = React.useRef(null)
+    const fetchMoreDataObserver = React.useRef<IntersectionObserver | null>(null);
 
     const [items, setItems] = useState<T[]>([]);
     const [totalItems, setTotalItems] = useState<number>(0);
@@ -96,41 +58,6 @@ const useInfiniteFetch = <T,>(
         }
     }, [fetchItems, items.length, totalItems]);
 
-
-    React.useEffect(() => {
-        if (items.length === 0) {
-            fetchItems();
-        }
-    }, []);
-
-    return { totalItems, items, nextCallback };
-}
-
-
-const VirtualizedScrollList = <T,>({
-    items,
-    nextCallback,
-    itemHeight,
-    totalItems,
-    renderItemCallBack,
-    buffer,
-    viewportHeight,
-    viewportWidth,
-    skeletonItem,
-}: {
-    items: T[];
-    nextCallback: () => void;
-    itemHeight: number;
-    totalItems: number;
-    renderItemCallBack: (item: T) => React.ReactNode;
-    buffer: number;
-    viewportHeight: number;
-    viewportWidth: number;
-    skeletonItem: (item: T) => React.ReactNode;
-}) => {
-    const fetchMoreDataRef = React.useRef(null)
-    const fetchMoreDataObserver = React.useRef<IntersectionObserver | null>(null);
-
     React.useEffect(() => {
         if (!fetchMoreDataRef.current) {
             return;
@@ -153,29 +80,55 @@ const VirtualizedScrollList = <T,>({
         };
     }, [nextCallback]);
 
+    React.useEffect(() => {
+        if (items.length === 0) {
+            fetchItems();
+        }
+    }, []);
+
+    return { totalItems, items, fetchMoreDataRef };
+}
+
+
+export const InfiniteVirtualizedScroll = <T,>({
+    integrationAPIconfig,
+    itemHeight,
+    renderItemCallBack,
+    buffer,
+    viewportHeight,
+    viewportWidth,
+    skeletonItem,
+}: {
+    integrationAPIconfig: integrationAPIconfigType<T>;
+    itemHeight: number;
+    renderItemCallBack: (item: T) => React.ReactNode;
+    buffer: number;
+    viewportHeight: number;
+    viewportWidth: number;
+    skeletonItem: (item: T) => React.ReactNode;
+}) => {
+    const { totalItems, items, fetchMoreDataRef } = useInfiniteFetch<T>(integrationAPIconfig);
+
     const [scrollTop, setScrollTop] = useState(0);
-
-
     const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
         setScrollTop(e.currentTarget.scrollTop);
     }
+
     const totalHeight = totalItems * itemHeight;
-    
     const startIndex = Math.max(Math.floor(scrollTop / itemHeight) - buffer, 0);
     const endIndex = Math.min(Math.ceil((scrollTop + viewportHeight) / itemHeight) + buffer, totalItems);
     const visibleItemsPosition = startIndex * itemHeight;
     const moreItemsNeededPosition = itemHeight * items.length;
-
     const visibleItems = React.useMemo(() => items.slice(startIndex, endIndex), [items, startIndex, endIndex]);
-    
+
     return <div
         className="virtualized_scroll_list-container"
-        style={{ height: viewportHeight, width: viewportWidth  }}
+        style={{ height: viewportHeight, width: viewportWidth }}
         onScroll={handleScroll}
     >
         <div
             className="virtualized_scroll_list-all_items_container"
-            style={{ height: totalHeight}}
+            style={{ height: totalHeight }}
         >
             <div
                 className="virtualized_scroll_list-visible_items_container"

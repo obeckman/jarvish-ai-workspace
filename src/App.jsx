@@ -5,7 +5,7 @@ import './App.css'
 import { ModalContextProvider, ModalOpener } from './components/ModalProvider/ModalProvider'
 import { CreateLocalStoreTester } from './components/CreateLocalStore/CreateLocalStoreTester'
 import { FileSystemTreeDemo } from './components/FileSystemTree/FileSystemTreeDemo'
-import { UseInfiniteVirtualizedScrollDemo } from './components/useInfiniteScroll/useInfiniteVirtualizedScroll/useInfiniteVirtualizedScroll'
+import { InfiniteVirtualizedScrollDemo } from './components/useInfiniteScroll/InfiniteVirtualizedScroll/InfiniteVirtualizedScrollDemo'
 function App() {
 
   return (
@@ -14,7 +14,7 @@ function App() {
         <FileSystemTreeDemo />
         <CreateLocalStoreTester />
         <ModalOpener />
-        <UseInfiniteVirtualizedScrollDemo />
+        <InfiniteVirtualizedScrollDemo />
       </ModalContextProvider>
     </>
   )
