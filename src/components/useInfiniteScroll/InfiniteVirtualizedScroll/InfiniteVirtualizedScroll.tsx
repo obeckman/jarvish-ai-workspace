@@ -12,7 +12,8 @@ export type integrationAPIconfigType<T> = {
 }
 
 const useInfiniteFetch = <T,>(
-    integrationAPIconfig: integrationAPIconfigType<T>
+    integrationAPIconfig: integrationAPIconfigType<T>,
+    itemHeight: number
 ) => {
     const {
         serverBaseURL = 'http://localhost:3000/',
@@ -21,76 +22,112 @@ const useInfiniteFetch = <T,>(
         transformDataResponse,
         limit = 10
     } = integrationAPIconfig;
-
-    const fetchMoreDataRef = React.useRef(null)
-    const fetchMoreDataObserver = React.useRef<IntersectionObserver | null>(null);
+    const isFetchItemsRef = useRef(false);
+    const sentinelObserver = React.useRef<IntersectionObserver | null>(null);
 
     const [items, setItems] = useState<T[]>([]);
-    const [totalItems, setTotalItems] = useState<number>(0);
-    const [nextPage, setNextPage] = useState<string>('');
-    const loadingRef = useRef(false);
+
+    const [paginationInfo, setPaginationInfo] = useState<{ totalItems: number; nextPage: string }>({
+        totalItems: 0,
+        nextPage: ''
+    });
 
     const fetchItems = useCallback(async () => {
-        if (loadingRef.current) return;
-        loadingRef.current = true;
+        if (isFetchItemsRef.current) return;
+
+        isFetchItemsRef.current = true;
         try {
-            // Simulate API call
+            let currentNextPage = '';
+        setPaginationInfo(prev => {
+            currentNextPage = prev.nextPage;
+            return prev;
+        });
+
             const response = await fetch(
-                `${serverBaseURL}${endpoint}?${nextPage ? `lastId=${nextPage}&` : ''}limit=${limit}`,
+                `${serverBaseURL}${endpoint}?${currentNextPage ? `lastId=${currentNextPage}&` : ''}limit=${limit}`,
                 { method: method }
             );
             const data = await response.json();
 
             const newItems = (data.items || []).map(transformDataResponse);
             setItems(prev => [...prev, ...newItems]);
-            setTotalItems(data.paginationInfo.total || 0);
-            setNextPage(data.paginationInfo.nextPageId || '');
+            setPaginationInfo({
+                totalItems: data.paginationInfo.total || 0,
+                nextPage: data.paginationInfo.nextPageId || ''
+            });
+            
         } catch (e) {
             console.error('Error fetching items:', e);
         } finally {
-            loadingRef.current = false
+            isFetchItemsRef.current = false
         }
-    }, [integrationAPIconfig, nextPage])
-
-    const nextCallback = useCallback(() => {
-        if (items.length < totalItems || totalItems === 0) {
-            fetchItems();
-        }
-    }, [fetchItems, items.length, totalItems]);
-
-    React.useEffect(() => {
-        if (!fetchMoreDataRef.current) {
-            return;
-        }
-        if (fetchMoreDataRef.current && fetchMoreDataObserver.current) {
-            fetchMoreDataObserver.current.disconnect();
-        }
-        fetchMoreDataObserver.current = new IntersectionObserver(
-            (entries) => {
-                entries[0].isIntersecting && nextCallback();
-            }
-        );
-
-        fetchMoreDataObserver.current.observe(fetchMoreDataRef.current);
-
-        return () => {
-            if (fetchMoreDataObserver.current) {
-                fetchMoreDataObserver.current.disconnect();
-            }
-        };
-    }, [nextCallback]);
+    }, [integrationAPIconfig])
 
     React.useEffect(() => {
         if (items.length === 0) {
             fetchItems();
         }
+        return () => {
+            if (sentinelObserver.current) {
+                sentinelObserver.current.disconnect();
+            }
+        }
     }, []);
 
-    return { totalItems, items, fetchMoreDataRef };
+    const setSentinelRef = React.useCallback((node: HTMLElement | null) => {
+
+        if (sentinelObserver.current) {
+            sentinelObserver.current.disconnect();
+        }
+        if (node) {
+
+            sentinelObserver.current = new IntersectionObserver(
+                (entries) => {
+                    if (entries[0].isIntersecting) {
+                        fetchItems();
+                    }
+                }, { rootMargin: `${itemHeight}px` })
+            sentinelObserver.current.observe(node);
+        }
+    }, [fetchItems]);
+
+    const showSentinel = items.length < paginationInfo.totalItems || paginationInfo.totalItems === 0;
+
+    const sentinelStyle: React.CSSProperties = {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '1px',
+        transform: `translateY(${items.length * itemHeight}px)`,
+        pointerEvents: 'none',
+    };
+
+    return { totalItems: paginationInfo.totalItems, items, setSentinelRef, sentinelStyle, showSentinel };
 }
 
+const useVirtualizedScrollBl = <T extends {id:string}>(
+    items: T[],
+    totalItems: number,
+    itemHeight: number,
+    buffer: number,
+    viewportHeight: number
+) => {
 
-export const InfiniteVirtualizedScroll = <T,>({
+    const [scrollTop, setScrollTop] = useState(0);
+    const handleScroll = React.useCallback((e: React.UIEvent<HTMLDivElement>) => {
+        setScrollTop(e.currentTarget.scrollTop);
+    }, []);
+
+    const startIndex = Math.max(Math.floor(scrollTop / itemHeight) - buffer, 0);
+    const endIndex = Math.min(Math.ceil((scrollTop + viewportHeight) / itemHeight) + buffer, totalItems);
+    const visibleItems = items.slice(startIndex, endIndex)
+    const visibleItemsPosition = startIndex * itemHeight;
+    const totalHeight = totalItems * itemHeight;
+    return { handleScroll, visibleItems, visibleItemsPosition, totalHeight };
+};
+
+export const InfiniteVirtualizedScroll = <T extends {id:string}>({
     integrationAPIconfig,
     itemHeight,
     renderItemCallBack,
@@ -107,19 +144,8 @@ export const InfiniteVirtualizedScroll = <T,>({
     viewportWidth: number;
     skeletonItem: (item: T) => React.ReactNode;
 }) => {
-    const { totalItems, items, fetchMoreDataRef } = useInfiniteFetch<T>(integrationAPIconfig);
-
-    const [scrollTop, setScrollTop] = useState(0);
-    const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-        setScrollTop(e.currentTarget.scrollTop);
-    }
-
-    const totalHeight = totalItems * itemHeight;
-    const startIndex = Math.max(Math.floor(scrollTop / itemHeight) - buffer, 0);
-    const endIndex = Math.min(Math.ceil((scrollTop + viewportHeight) / itemHeight) + buffer, totalItems);
-    const visibleItemsPosition = startIndex * itemHeight;
-    const moreItemsNeededPosition = itemHeight * items.length;
-    const visibleItems = React.useMemo(() => items.slice(startIndex, endIndex), [items, startIndex, endIndex]);
+    const { totalItems, items, setSentinelRef, sentinelStyle, showSentinel } = useInfiniteFetch<T>(integrationAPIconfig, itemHeight);
+    const { visibleItemsPosition, totalHeight, handleScroll, visibleItems } = useVirtualizedScrollBl(items, totalItems, itemHeight, buffer, viewportHeight);
 
     return <div
         className="virtualized_scroll_list-container"
@@ -136,8 +162,7 @@ export const InfiniteVirtualizedScroll = <T,>({
                 {visibleItems.map((item, index) => {
                     if (item) {
                         return (
-
-                            <div key={"item" + index} style={{ height: itemHeight }}>
+                            <div key={"item" + item.id} style={{ height: itemHeight }}>
                                 {renderItemCallBack(item)}
 
                             </div>)
@@ -150,14 +175,12 @@ export const InfiniteVirtualizedScroll = <T,>({
                 })}
 
             </div>
-            {
-                visibleItems.length > 0 &&
+            {showSentinel && (
                 <div
-                    ref={fetchMoreDataRef}
-                    className='virtualized_scroll_list-fetch_more_data_element'
-                    style={{ transform: `translateY(${moreItemsNeededPosition}px)` }}
+                    ref={setSentinelRef}
+                    style={sentinelStyle}
                 />
-            }
+            )}
         </div>
     </div>
 }

@@ -14,7 +14,10 @@ const ListDemoItem = ({ id }: { id: number }) => {
     </div>
 }
 
-const ListDemoSkeletonItem = ({ id }: { id: number }) => <div className="virtualized_scroll_list-demo-item-skeleton" key={id}>Loading...</div>;
+const ListDemoSkeletonItem = ({ id }: { id: number }) =>
+    <div className="virtualized_scroll_list-demo-item-skeleton" key={id}>
+        Loading...
+    </div>;
 
 const integrationAPIconfig = {
     endpoint: 'more-items',
