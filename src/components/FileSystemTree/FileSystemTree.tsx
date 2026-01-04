@@ -7,18 +7,7 @@ import React, {
   memo 
 } from 'react';
 
-// --- TYPES ---
-export interface FileNode {
-  id: string;
-  name: string;
-  type: 'file' | 'folder';
-  children?: FileNode[];
-}
-
-interface TreeContextType {
-  expandedIds: Set<string>;
-  toggleNode: (id: string) => void;
-}
+import { FileNode, TreeContextType } from './types';
 
 const TreeStateContext = createContext<TreeContextType | undefined>(undefined);
 
@@ -62,7 +51,7 @@ const useNodeLogic = (node: FileNode) => {
 // --- COMPONENT (Clean & Minimal) ---
 
 const TreeNode = memo(({ node }: { node: FileNode }) => {
-  // The component is now completely unaware that Context even exists.
+  // The component is completely unaware that Context even exists.
   // It just asks for logic for *this* node.
   const { 
     isExpanded, 

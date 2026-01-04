@@ -1,0 +1,48 @@
+.virtualized_scroll_list-container{
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box; 
+    overflow: auto;
+    border: 1px solid #ccc;   
+}
+
+.virtualized_scroll_list-all_items_container{
+        position: relative;
+    width: 100%;
+    box-sizing: border-box;
+    
+}
+
+.virtualized_scroll_list-visible_items_container{
+    position: absolute;
+    width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.virtualized_scroll_list-fetch_more_data_element{
+    width: 100%;
+    box-sizing: border-box;
+    position: absolute;
+}
+
+.virtualized_scroll_list-demo-item{
+     height: fit-content;
+    width: fit-content;
+    box-sizing: border-box;
+    
+    
+    position: relative;
+
+}
+
+.virtualized_scroll_list-fetch_more_data_element{
+    height: 1px;
+    background-color: transparent;
+    border:0px solid transparent;
+    width: 100%;
+    box-sizing: border-box;
+}
