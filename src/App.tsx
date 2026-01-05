@@ -6,6 +6,20 @@ import { ModalContextProvider, ModalOpener } from './components/ModalProvider/Mo
 import { CreateLocalStoreTester } from './components/CreateLocalStore/CreateLocalStoreTester'
 import { FileSystemTreeDemo } from './components/FileSystemTree/FileSystemTreeDemo'
 import { InfiniteVirtualizedScrollDemo } from './components/useInfiniteScroll/InfiniteVirtualizedScroll/InfiniteVirtualizedScrollDemo'
+import { TabsDemo } from './components/Tabs/TabsDemo'
+
+const TabVariant= {
+    NONE: 'none',
+    FileSystemTreeDemo: 'FileSystemTreeDemo',
+    CreateLocalStoreTester: 'CreateLocalStoreTester',
+    ModalOpener: 'ModalOpener',
+    InfiniteVirtualizedScrollDemo: 'InfiniteVirtualizedScrollDemo',
+TabsDemo: 'TabsDemo',
+} as const; 
+
+      
+export type TabVariantValue = typeof TabVariant[keyof typeof TabVariant]; 
+
 function App() {
 
   return (
@@ -15,6 +29,7 @@ function App() {
         <CreateLocalStoreTester />
         <ModalOpener />
         <InfiniteVirtualizedScrollDemo />
+        <TabsDemo/>
       </ModalContextProvider>
     </>
   )

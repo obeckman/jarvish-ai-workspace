@@ -29,7 +29,7 @@ const integrationAPIconfig = {
         }
     },
     limit: 10
-} as integrationAPIconfigType<InfiniteScrollDemoItemType>;
+} as integrationAPIconfigType<s>;
 
 export const InfiniteVirtualizedScrollDemo = () => {
     return <div className="use_infinite_scroll_demo-holder">

@@ -11,6 +11,44 @@ export type integrationAPIconfigType<T> = {
     limit: 10
 }
 
+type UseOnScreenOptions = IntersectionObserverInit & {
+  triggerOnce?: boolean;
+}
+
+export function useOnScreen(
+  ref?: React.RefObject<HTMLDivElement | null>, 
+  { threshold = 0, rootMargin = '0px', triggerOnce = false }: UseOnScreenOptions = {}
+): boolean {
+  const [isIntersecting, setIntersecting] = useState<boolean>(false);
+
+  React.useEffect(() => {
+    const element = ref?.current;
+    if (!element) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIntersecting(entry.isIntersecting);
+
+        if (entry.isIntersecting && triggerOnce) {
+          observer.unobserve(entry.target);
+        }
+      },
+      {
+        threshold,
+        rootMargin,
+      }
+    );
+
+    observer.observe(element);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [ref?.current, rootMargin, threshold, triggerOnce]); // Re-run if options change
+
+  return isIntersecting;
+}
+
 const useInfiniteFetch = <T,>(
     integrationAPIconfig: integrationAPIconfigType<T>,
     itemHeight: number
@@ -23,8 +61,10 @@ const useInfiniteFetch = <T,>(
         limit = 10
     } = integrationAPIconfig;
     const isFetchItemsRef = useRef(false);
-    const sentinelObserver = React.useRef<IntersectionObserver | null>(null);
-
+    
+    const sentinelObserverRef = React.useRef<HTMLDivElement | null>(null);
+    
+    const isSentinelOnScreen = useOnScreen(sentinelObserverRef, { rootMargin: `${itemHeight}px` });
     const [items, setItems] = useState<T[]>([]);
 
     const [paginationInfo, setPaginationInfo] = useState<{ totalItems: number; nextPage: string }>({
@@ -37,11 +77,7 @@ const useInfiniteFetch = <T,>(
 
         isFetchItemsRef.current = true;
         try {
-            let currentNextPage = '';
-        setPaginationInfo(prev => {
-            currentNextPage = prev.nextPage;
-            return prev;
-        });
+            const currentNextPage = paginationInfo.nextPage;
 
             const response = await fetch(
                 `${serverBaseURL}${endpoint}?${currentNextPage ? `lastId=${currentNextPage}&` : ''}limit=${limit}`,
@@ -61,37 +97,22 @@ const useInfiniteFetch = <T,>(
         } finally {
             isFetchItemsRef.current = false
         }
-    }, [integrationAPIconfig])
+    }, [integrationAPIconfig, paginationInfo.nextPage, serverBaseURL, endpoint, method, transformDataResponse, limit]);
 
     React.useEffect(() => {
         if (items.length === 0) {
             fetchItems();
         }
-        return () => {
-            if (sentinelObserver.current) {
-                sentinelObserver.current.disconnect();
-            }
-        }
     }, []);
 
-    const setSentinelRef = React.useCallback((node: HTMLElement | null) => {
-
-        if (sentinelObserver.current) {
-            sentinelObserver.current.disconnect();
+    React.useEffect(() => {
+        if (isSentinelOnScreen) {
+            fetchItems();
         }
-        if (node) {
+    }, [isSentinelOnScreen, fetchItems]);
 
-            sentinelObserver.current = new IntersectionObserver(
-                (entries) => {
-                    if (entries[0].isIntersecting) {
-                        fetchItems();
-                    }
-                }, { rootMargin: `${itemHeight}px` })
-            sentinelObserver.current.observe(node);
-        }
-    }, [fetchItems]);
 
-    const showSentinel = items.length < paginationInfo.totalItems || paginationInfo.totalItems === 0;
+    const showSentinel = items.length < paginationInfo.totalItems;
 
     const sentinelStyle: React.CSSProperties = {
         position: 'absolute',
@@ -103,7 +124,7 @@ const useInfiniteFetch = <T,>(
         pointerEvents: 'none',
     };
 
-    return { totalItems: paginationInfo.totalItems, items, setSentinelRef, sentinelStyle, showSentinel };
+    return { totalItems: paginationInfo.totalItems, items, sentinelObserverRef, sentinelStyle, showSentinel };
 }
 
 const useVirtualizedScrollBl = <T extends {id:string}>(
@@ -122,6 +143,7 @@ const useVirtualizedScrollBl = <T extends {id:string}>(
     const startIndex = Math.max(Math.floor(scrollTop / itemHeight) - buffer, 0);
     const endIndex = Math.min(Math.ceil((scrollTop + viewportHeight) / itemHeight) + buffer, totalItems);
     const visibleItems = items.slice(startIndex, endIndex)
+    console.debug('visibleItems', {visibleItems,startIndex,endIndex,scrollTop,viewportHeight,itemHeight,buffer});
     const visibleItemsPosition = startIndex * itemHeight;
     const totalHeight = totalItems * itemHeight;
     return { handleScroll, visibleItems, visibleItemsPosition, totalHeight };
@@ -144,7 +166,7 @@ export const InfiniteVirtualizedScroll = <T extends {id:string}>({
     viewportWidth: number;
     skeletonItem: (item: T) => React.ReactNode;
 }) => {
-    const { totalItems, items, setSentinelRef, sentinelStyle, showSentinel } = useInfiniteFetch<T>(integrationAPIconfig, itemHeight);
+    const { totalItems, items, sentinelObserverRef, sentinelStyle, showSentinel } = useInfiniteFetch<T>(integrationAPIconfig, itemHeight);
     const { visibleItemsPosition, totalHeight, handleScroll, visibleItems } = useVirtualizedScrollBl(items, totalItems, itemHeight, buffer, viewportHeight);
 
     return <div
@@ -177,7 +199,7 @@ export const InfiniteVirtualizedScroll = <T extends {id:string}>({
             </div>
             {showSentinel && (
                 <div
-                    ref={setSentinelRef}
+                    ref={sentinelObserverRef}
                     style={sentinelStyle}
                 />
             )}
