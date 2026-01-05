@@ -1,13 +1,15 @@
 import React from 'react';
 import {
     TabsProps,TabsContentProps,TabsTriggerProps, 
-    TabVariantValue,SetActiveTabProviderValue,ActiveTabProviderValue
+    SetActiveTabProviderValue,ActiveTabProviderValue
 } from './types';
 import './Tabs.css';
 
 
-const ActiveTabContext = React.createContext<null | ActiveTabProviderValue>(null);
-const SetActiveTabContext = React.createContext<null | SetActiveTabProviderValue>(null);
+const createTabSystem = <T,>() => {
+
+const ActiveTabContext = React.createContext<null | ActiveTabProviderValue<T>>(null);
+const SetActiveTabContext = React.createContext<null | SetActiveTabProviderValue<T>>(null);
 
 const useActiveTabContext = () => {
     const context = React.useContext(ActiveTabContext);
@@ -24,17 +26,23 @@ const useSetActiveTabContext = () => {
     }
     return context;
 };
-export const Tabs = ({defaultValue, onChange, children}: TabsProps) => {
-    const [activeTab, setActiveTab] = React.useState<TabVariantValue>(defaultValue);
-    const SetActiveTabContextValue: SetActiveTabProviderValue = React.useMemo(() => ({
+ const Tabs = ({defaultValue, onChange, children, className}: TabsProps<T>) => {
+    const [activeTab, setActiveTab] = React.useState<T>(defaultValue);
+    const SetActiveTabContextValue: SetActiveTabProviderValue<T> = React.useMemo(() => ({
         setActiveTab
     }), []);
 
-    const activeTabContextValue: ActiveTabProviderValue = React.useMemo(() => ({
+    const activeTabContextValue: ActiveTabProviderValue<T> = React.useMemo(() => ({
         activeTab
     }), [activeTab]);
+
+    React.useEffect(() => {
+        if (onChange) {
+            onChange(activeTab);
+        }
+    }, [activeTab,]);
     
-    return <div className="Tabs-component-wrapper">
+    return <div className={className ?? "Tabs-component-wrapper"}>
         Tabs Component
         <SetActiveTabContext.Provider value={SetActiveTabContextValue}>
             <ActiveTabContext.Provider value={activeTabContextValue}>
@@ -44,26 +52,35 @@ export const Tabs = ({defaultValue, onChange, children}: TabsProps) => {
         
     </div>
 }
-export const TabsTrigger = ({value, children}:TabsTriggerProps) => {
+ const TabsTrigger = ({value, children, className}:TabsTriggerProps<T>) => {
     const {setActiveTab} = useSetActiveTabContext();
 
     const onClick = () => {
         setActiveTab(value);
     }
-    return <div className="Tabs-trigger" onClick={onClick}>
+    return <div 
+        className={className ?? "Tabs-trigger"} 
+        onClick={onClick}
+        key={`TabsTrigger-${value}`} 
+        >
         {children}
     </div>
 }
  
-export const TabsContent = ({value, children}:TabsContentProps) => {
+ const TabsContent = ({value, children, className}:TabsContentProps<T>) => {
     const {activeTab} = useActiveTabContext();
 
-    return <div className="Tabs-trigger" key={`TabsContent-${value}`}>
+    return <div 
+        className={className ?? "Tabs-content"} 
+        key={`TabsContent-${value}`}
+        >
         {activeTab === value ? children : null}
     </div>
 }
 
 Tabs.Trigger = TabsTrigger;
 Tabs.Content = TabsContent;
-export default Tabs;
+return Tabs;
+}
+export default createTabSystem;
 

@@ -11,6 +11,7 @@ export interface TabsProps <T>  {
     defaultValue: T;
     onChange?: (value: T) => void;
     children: React.ReactNode;
+    className?: string;
 }
 
 export interface ActiveTabProviderValue <T> {
@@ -24,9 +25,11 @@ export interface SetActiveTabProviderValue <T> {
 export interface TabsTriggerProps<T> {
     value: T;
     children: React.ReactNode;
+    className?: string;
 }
 
 export interface TabsContentProps<T> {
     value: T;
     children?: React.ReactNode;
+    className?: string;
 }
