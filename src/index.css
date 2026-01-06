@@ -67,38 +67,3 @@ button:focus-visible {
   }
 }
 
-.my-layout-wrapper {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-.tab-list {
- 
-    display: flex;
-    gap: 16px;
-    padding: 16px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    background-color: #e0e0e0;
-    color: blueviolet;
-    justify-content: center;
-    align-items: center;
-    flex-wrap: wrap;
-}
-
-.panel-wrapper {
-  padding: 16px;
-}
-.Tabs-trigger {
-    padding: 8px 16px;
-    cursor: pointer;
-    border-radius: 4px;
-    background-color: #c0c0c0;
-}
-.Tabs-trigger:hover {
-    background-color: #a0a0a0;
-}
-.Tabs-content {
-    padding: 16px;
-    background-color: #f0f0f0;
-    border-radius: 4px;
-}

@@ -1,43 +1,103 @@
 #root {
-  max-width: 1280px;
+
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
+  background-color: beige;
+  height: 100vh;
+  width: 100vw;
+  box-sizing: border-box;
+  /* Ensures padding is included in the 100vh */
+  display: flex;
+  flex-direction: column;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.app-layout-wrapper {
+
+
+  display: grid;
+  grid-template-columns: 215px 1fr;
+  grid-template-rows: auto 1fr auto;
+  grid-template-areas:
+    "header header"
+    "tabList tabContent"
+    "footer footer";
+  width: 100%;
+  height: 100%;
+  column-gap: 1rem;
+  row-gap: 0;
+  overflow: hidden;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+
+.app-tab-list {
+  /*
+    gap: 5px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: #e0e0e0;
+    color: blueviolet;
+    justify-content: space-around;
+    align-items: center;
+
+
+ */
+  grid-area: tabList;
+  display: flex;
+  flex-direction: column;
+  /* Remove justify-content: space-around; it conflicts with flex: 1 on children */
+  height: 100%;
+  overflow-y: auto; 
+    overflow-x: hidden;
+  box-sizing: border-box;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+gap: 5px;
+   
+    background-color: #e0e0e0;
+    color: blueviolet;
+    justify-content: space-around;
+    align-items: center;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+.app-panel-wrapper {
+  /* grid-area: tabContent;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 5px;
+  width: 100%; */
+
+
+  grid-area: tabContent;
+  height: 100%;
+  overflow-y: auto;
+  /* Allows content to scroll without pushing the footer down */
+  display: block;
+  /* Flex center often messes up scrolling content */
 }
 
-.card {
-  padding: 2em;
+.Tabs-trigger {
+  padding: 8px 16px;
+  cursor: pointer;
+  border-radius: 4px;
+  background-color: #c0c0c0;
+
+
 }
 
-.read-the-docs {
-  color: #888;
+.Tabs-trigger:hover {
+  background-color: #a0a0a0;
 }
 
+.Tabs-content {
+  grid-area: tabContent;
+  padding: 16px;
+  background-color: #f0f0f0;
+  border-radius: 4px;
+
+  grid-area: tabContent;
+  height: 100%;
+  overflow-y: auto;
+  /* Allows content to scroll without pushing the footer down */
+  display: block;
+  /* Flex center often messes up scrolling content */
+}

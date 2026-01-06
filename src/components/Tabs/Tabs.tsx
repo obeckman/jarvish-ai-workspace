@@ -42,15 +42,13 @@ const useSetActiveTabContext = () => {
         }
     }, [activeTab,]);
     
-    return <div className={className ?? "Tabs-component-wrapper"}>
-        Tabs Component
+    return( 
         <SetActiveTabContext.Provider value={SetActiveTabContextValue}>
             <ActiveTabContext.Provider value={activeTabContextValue}>
                 {children}
             </ActiveTabContext.Provider>
         </SetActiveTabContext.Provider>
-        
-    </div>
+    )
 }
  const TabsTrigger = ({value, children, className}:TabsTriggerProps<T>) => {
     const {setActiveTab} = useSetActiveTabContext();
@@ -58,8 +56,9 @@ const useSetActiveTabContext = () => {
     const onClick = () => {
         setActiveTab(value);
     }
+    
     return <div 
-        className={className ?? "Tabs-trigger"} 
+        className={`create_tab_system-Tabs-trigger ${className ?? ""}`} 
         onClick={onClick}
         key={`TabsTrigger-${value}`} 
         >
@@ -69,13 +68,20 @@ const useSetActiveTabContext = () => {
  
  const TabsContent = ({value, children, className}:TabsContentProps<T>) => {
     const {activeTab} = useActiveTabContext();
+    const isActive = activeTab === value;
 
-    return <div 
-        className={className ?? "Tabs-content"} 
+    if (!isActive) {
+        return null;
+    }
+
+    return <button 
+        role='tab'
+        aria-selected={isActive}
+        className={`create_tab_system-Tabs-content ${className ?? ""}`} 
         key={`TabsContent-${value}`}
         >
-        {activeTab === value ? children : null}
-    </div>
+        {children}
+    </button>
 }
 
 Tabs.Trigger = TabsTrigger;
