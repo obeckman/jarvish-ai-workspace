@@ -5,7 +5,7 @@ import { CreateLocalStoreTester } from './components/CreateLocalStore/CreateLoca
 import { FileSystemTreeDemo } from './components/FileSystemTree/FileSystemTreeDemo'
 import { InfiniteVirtualizedScrollDemo } from './components/useInfiniteScroll/InfiniteVirtualizedScroll/InfiniteVirtualizedScrollDemo'
 import  { TabsApiRaceConditionDemo } from './components/ApiRaceCondition/ApiRaceCondition'
-
+import {APIAggregator} from './components/APIAggregator/APIAggregator'
 
 import createTabSystem from './components/Tabs'
 
@@ -17,6 +17,7 @@ const TabVariant = {
   InfiniteVirtualizedScrollDemo: 'InfiniteVirtualizedScrollDemo',
   TabsDemo: 'TabsDemo',
   TabsApiRaceConditionDemo: 'TabsApiRaceConditionDemo',
+  APIAggregator: 'APIAggregator',
 } as const;
 
 
@@ -36,6 +37,8 @@ function App() {
             <Tabs.Trigger value={TabVariant.ModalOpener} className="tabs-trigger">ModalOpener</Tabs.Trigger>
             <Tabs.Trigger value={TabVariant.InfiniteVirtualizedScrollDemo} className="tabs-trigger">InfiniteVirtualizedScrollDemo</Tabs.Trigger>
             <Tabs.Trigger value={TabVariant.TabsApiRaceConditionDemo} className="tabs-trigger">TabsApiRaceConditionDemo</Tabs.Trigger>
+            <Tabs.Trigger value={TabVariant.TabsApiRaceConditionDemo} className="tabs-trigger">TabsApiRaceConditionDemo</Tabs.Trigger>
+            <Tabs.Trigger value={TabVariant.APIAggregator} className="tabs-trigger">APIAggregator</Tabs.Trigger>
           </nav>
 
           <div className="app-panel-wrapper">
@@ -45,6 +48,7 @@ function App() {
             <Tabs.Content value={TabVariant.ModalOpener} className="tabs-content"><ModalOpener /></Tabs.Content>
             <Tabs.Content value={TabVariant.InfiniteVirtualizedScrollDemo} className="tabs-content"><InfiniteVirtualizedScrollDemo /></Tabs.Content>
             <Tabs.Content value={TabVariant.TabsApiRaceConditionDemo} className="tabs-content"><TabsApiRaceConditionDemo /></Tabs.Content>
+            <Tabs.Content value={TabVariant.APIAggregator} className="tabs-content"><APIAggregator /></Tabs.Content>
           </div>
         </div>
       </Tabs>
