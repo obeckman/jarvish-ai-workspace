@@ -6,8 +6,12 @@ import { FileSystemTreeDemo } from './components/FileSystemTree/FileSystemTreeDe
 import { InfiniteVirtualizedScrollDemo } from './components/useInfiniteScroll/InfiniteVirtualizedScroll/InfiniteVirtualizedScrollDemo'
 import  { TabsApiRaceConditionDemo } from './components/ApiRaceCondition/ApiRaceCondition'
 import {APIAggregator} from './components/APIAggregator/APIAggregator'
+import {AccessControlWrapperDemo} from './components/AccessControlWrapper/AccessControlWrapper'
+import {TimeSeriesWidgetDemo} from './components/TimeSeriesWidget/TimeSeriesWidget'
 
 import createTabSystem from './components/Tabs'
+import { UseReliableSubmitDemo } from './components/useReliableSubmit/UseReliableSubmitDemo'
+import {ReliableSubmitManger} from './components/useReliableSubmit/useReliableSubmit'
 
 const TabVariant = {
   NONE: 'none',
@@ -18,6 +22,9 @@ const TabVariant = {
   TabsDemo: 'TabsDemo',
   TabsApiRaceConditionDemo: 'TabsApiRaceConditionDemo',
   APIAggregator: 'APIAggregator',
+  AccessControlWrapperDemo: 'AccessControlWrapperDemo',
+  TimeSeriesWidgetDemo: 'TimeSeriesWidgetDemo',
+  UseReliableSubmitDemo: 'UseReliableSubmitDemo',
 } as const;
 
 
@@ -28,6 +35,7 @@ function App() {
   return (
 
     <ModalContextProvider>
+      <ReliableSubmitManger>
       <Tabs defaultValue={TabVariant.NONE} >
         <div className="app-layout-wrapper">
           <nav className="app-tab-list">
@@ -39,6 +47,9 @@ function App() {
             <Tabs.Trigger value={TabVariant.TabsApiRaceConditionDemo} className="tabs-trigger">TabsApiRaceConditionDemo</Tabs.Trigger>
             <Tabs.Trigger value={TabVariant.TabsApiRaceConditionDemo} className="tabs-trigger">TabsApiRaceConditionDemo</Tabs.Trigger>
             <Tabs.Trigger value={TabVariant.APIAggregator} className="tabs-trigger">APIAggregator</Tabs.Trigger>
+            <Tabs.Trigger value={TabVariant.AccessControlWrapperDemo} className="tabs-trigger">AccessControlWrapperDemo</Tabs.Trigger>
+            <Tabs.Trigger value={TabVariant.TimeSeriesWidgetDemo} className="tabs-trigger">TimeSeriesWidgetDemo</Tabs.Trigger>
+            <Tabs.Trigger value={TabVariant.UseReliableSubmitDemo} className="tabs-trigger">UseReliableSubmitDemo</Tabs.Trigger>
           </nav>
 
           <div className="app-panel-wrapper">
@@ -49,10 +60,13 @@ function App() {
             <Tabs.Content value={TabVariant.InfiniteVirtualizedScrollDemo} className="tabs-content"><InfiniteVirtualizedScrollDemo /></Tabs.Content>
             <Tabs.Content value={TabVariant.TabsApiRaceConditionDemo} className="tabs-content"><TabsApiRaceConditionDemo /></Tabs.Content>
             <Tabs.Content value={TabVariant.APIAggregator} className="tabs-content"><APIAggregator /></Tabs.Content>
+            <Tabs.Content value={TabVariant.AccessControlWrapperDemo} className="tabs-content"><AccessControlWrapperDemo /></Tabs.Content>
+            <Tabs.Content value={TabVariant.TimeSeriesWidgetDemo} className="tabs-content"><TimeSeriesWidgetDemo /></Tabs.Content>
+            <Tabs.Content value={TabVariant.UseReliableSubmitDemo} className="tabs-content"><UseReliableSubmitDemo /></Tabs.Content>
           </div>
         </div>
       </Tabs>
-
+      </ReliableSubmitManger>
     </ModalContextProvider>
 
 

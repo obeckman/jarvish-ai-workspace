@@ -1,0 +1,1 @@
+export const RELIABLE_SUBMIT_DATA_KEY = 'reliableSubmitData';

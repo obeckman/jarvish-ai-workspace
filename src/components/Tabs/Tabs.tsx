@@ -74,14 +74,14 @@ const useSetActiveTabContext = () => {
         return null;
     }
 
-    return <button 
+    return <div 
         role='tab'
         aria-selected={isActive}
         className={`create_tab_system-Tabs-content ${className ?? ""}`} 
         key={`TabsContent-${value}`}
         >
         {children}
-    </button>
+    </div>
 }
 
 Tabs.Trigger = TabsTrigger;
