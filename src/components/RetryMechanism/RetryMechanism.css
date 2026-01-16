@@ -1,0 +1,31 @@
+.retry-mechanism-demo {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    width: 100%;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.loading-dots {
+    font-weight: bold;
+    font-size: 1.5em;
+    position: relative;
+}
+
+.loading-dots::after {
+    content: '...';
+    position: absolute;
+    overflow: hidden;
+    animation: dots 1.7s steps(4) infinite;
+}
+
+@keyframes dots {
+    from {
+        width: 0;
+    }
+    to {
+        width: 1em;
+    }
+}
