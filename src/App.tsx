@@ -17,7 +17,8 @@ import {DistanceConverter} from './components/TwoWayBinding/TwoWayBinding'
 import {RetryMechanismDemo} from './components/RetryMechanism/RetryMechanismDemo'
 import {DynamicGridCanvasDemo} from './components/DynamicGridCanvas/DynamicGridCanvas'
 import {IndexDBDemo} from './components/indexDB/indexDBDemo'
-import {DBProvider} from './components/indexDB/indexDB'
+import {DynamicFormDemo} from './components/DynamicForm/DynamicFormDemo'
+
 const TabVariant = {
   NONE: 'none',
   FileSystemTreeDemo: 'FileSystemTreeDemo',
@@ -34,7 +35,8 @@ const TabVariant = {
   TwoWayBinding: 'TwoWayBinding',
   RetryMechanismDemo: 'RetryMechanismDemo',
   DynamicGridCanvasDemo: 'DynamicGridCanvasDemo',
-  IndexDBDemo: 'IndexDBDemo'
+  IndexDBDemo: 'IndexDBDemo',
+  DynamicFormDemo: 'DynamicFormDemo',
 } as const;
 
 
@@ -66,6 +68,7 @@ function App() {
             <Tabs.Trigger value={TabVariant.TimeSeriesWidgetDemo} className="tabs-trigger">TimeSeriesWidgetDemo</Tabs.Trigger>
             <Tabs.Trigger value={TabVariant.UseReliableSubmitDemo} className="tabs-trigger">UseReliableSubmitDemo</Tabs.Trigger>
             <Tabs.Trigger value={TabVariant.IndexDBDemo} className="tabs-trigger">IndexDBDemo</Tabs.Trigger>
+            <Tabs.Trigger value={TabVariant.DynamicFormDemo} className="tabs-trigger">DynamicFormDemo</Tabs.Trigger>
           </nav>
 
           <div className="app-panel-wrapper">
@@ -84,6 +87,7 @@ function App() {
             <Tabs.Content value={TabVariant.UseReliableSubmitDemo} className="tabs-content"><UseReliableSubmitDemo /></Tabs.Content>
             <Tabs.Content value={TabVariant.RetryMechanismDemo} className="tabs-content"><RetryMechanismDemo /></Tabs.Content>
             <Tabs.Content value={TabVariant.IndexDBDemo} className="tabs-content"><IndexDBDemo /></Tabs.Content>  
+            <Tabs.Content value={TabVariant.DynamicFormDemo} className="tabs-content"><DynamicFormDemo /></Tabs.Content>
           </div>
         </div>
       </Tabs>
