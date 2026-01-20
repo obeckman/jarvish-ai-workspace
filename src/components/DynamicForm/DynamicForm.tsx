@@ -34,7 +34,7 @@ export const DynamicForm = ({ children, onSubmit }: DynamicFormProps) => {
     const [submitErrors, setSubmitErrors] = React.useState<any[]>([]);
 
     
-    const registerInput = React.useCallback((name: string, validationInfo: any) => {
+    const registerInput = React.useCallback((name: string, validationInfo: ValidationConfig) => {
         validationMapRef.current[name] = validationInfo;
     }, []);
 
@@ -46,13 +46,13 @@ export const DynamicForm = ({ children, onSubmit }: DynamicFormProps) => {
         console.debug('@@@ DynamicForm validateInputs', formValuesStateRef.current, validationMapRef.current);
         let isAnyErrors = false        
         Object.entries(validationMapRef.current).forEach(([name, validationInfo]) => {
-            const res = isValidInput(name, formValuesStateRef.current[name]);
+            const res = validateInput(name, formValuesStateRef.current[name]);
             if (!res) isAnyErrors = true;
         })
         return !isAnyErrors;
     }, []);
 
-    const isValidInput = React.useCallback((name: string, value: string) => {
+    const validateInput = React.useCallback((name: string, value: string) => {
         console.debug('@@@ DynamicForm validateInput', name, value);
         const validationInfo =  validationMapRef.current[name];
         if (!validationInfo) return true;
@@ -67,40 +67,35 @@ export const DynamicForm = ({ children, onSubmit }: DynamicFormProps) => {
         
         setValidationErrors((prevErrors) => {
                 const otherFieldsErrors =prevErrors.filter(error => error.fieldName !== name)
-                return errors.length > 0 ? [...otherFieldsErrors, ...errors] : prevErrors
+                return [...otherFieldsErrors, ...errors]
         });
        
         return errors.length === 0;
     }, []);
 
-    React.useEffect(() => {
-        Object.entries(validationMapRef.current).forEach(([name, validationInfo]) => {
-            
-        })
-    }, [validationErrors]);
-    const handleSubmit = React.useCallback(() => {
+    const handleSubmit = React.useCallback(async (e?: React.SyntheticEvent) => {
+        if (e && e.preventDefault) {
+            e.preventDefault();
+        }
         console.debug('@@@ DynamicForm handleSubmit', formValuesStateRef.current);
         setIsSubmitting(true);
         setSubmitErrors([]);
 
-        // Simulate form submission
-        try {
-            if (validateInputs()) {
-                setTimeout(() => {
-                    console.debug('@@@ DynamicForm submission simulated');
-                    setSubmitErrors([{ message: 'Submission failed due to server error' }]);
-                    setIsSubmitting(false);
-                }, 2000);
-            }
-            else {
+        if (validateInputs()) {
+            try {
+                if (onSubmit) {
+                    await onSubmit(formValuesStateRef.current);
+                }
+                setIsSubmitting(false);
+            } catch (error: any) {
+                console.error('@@@ DynamicForm submission error', error);
+                setSubmitErrors([{ message: error?.message || 'Submission failed due to an unknown error' } ]);
                 setIsSubmitting(false);
             }
-        } catch (error: any) {
-            console.error('@@@ DynamicForm submission error', error);
-            setSubmitErrors([{ message: error?.message || 'Submission failed due to an unknown error' } ]);
+        } else {
             setIsSubmitting(false);
         }
-    }, [validateInputs]);
+    }, [validateInputs, onSubmit]);
 
     const DynamicFormContextValue = React.useMemo(() => ({
         isSubmitting,
@@ -172,7 +167,7 @@ export const useDynamicFormInputData = (name: string, validationInfo: Validation
 }
 
 export const DynamicFormInput = (props: DynamicFormInputProps) => {
-    const {name, validationInfo,label, ...rest} = props;
+    const {name, validationInfo, label, children, ...rest} = props;
     const { isSubmitting, isValidationError, validationErrorMessage,setValue } = useDynamicFormInputData(name, validationInfo as ValidationConfig)
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -186,9 +181,8 @@ export const DynamicFormInput = (props: DynamicFormInputProps) => {
         <div className={`dynamic-form-input-error ${isValidationError ? 'error' : ''}`}>
             {validationErrorMessage}
         </div>
-        <input name={name} key={`DynamicFormInput` + name} onChange={handleChange} {...rest} >
-            {props.children}
-        </input>
+        <input name={name} key={`DynamicFormInput` + name} onChange={handleChange} {...rest} />
+        {children}
     </div>
 }
 
@@ -209,4 +203,3 @@ const DynamicFormSubmit = (props: React.ButtonHTMLAttributes<HTMLButtonElement>)
 }
 DynamicForm.Input = DynamicFormInput
 DynamicForm.submit = DynamicFormSubmit
-
