@@ -22,22 +22,18 @@ export const useDynamicForm = () => {
 
 export const DynamicForm = ({ children, onSubmit }: DynamicFormProps) => {
     const [isSubmitting, setIsSubmitting] = React.useState(false);
-    //const [formValues, setFormValues] = React.useState<Record<string, string>>({});
     const formValuesStateRef = React.useRef<Record<string, string>>({});
+    
     const setFormValues = React.useCallback((updater: (prevValues: Record<string, string>) => Record<string, string>) => {
         formValuesStateRef.current = updater(formValuesStateRef.current);
     }, []);
+    
     const [validationErrors, setValidationErrors] = React.useState<{ fieldName: string, message: string }[]>([]);
-    //const [validationMap, setValidationMap] = React.useState<Record<string, ValidationConfig>>({});
     const validationMapRef = React.useRef<Record<string, ValidationConfig>>({});
 
     const [submitErrors, setSubmitErrors] = React.useState<any[]>([]);
 
-    //const formValuesRef = React.useRef(formValues);
-    // React.useEffect(() => {
-    //     formValuesStateRef.current = formValuesStateRef.current;
-    // }, [formValuesStateRef]);
-
+    
     const registerInput = React.useCallback((name: string, validationInfo: any) => {
         validationMapRef.current[name] = validationInfo;
     }, []);
@@ -48,45 +44,40 @@ export const DynamicForm = ({ children, onSubmit }: DynamicFormProps) => {
 
     const validateInputs = React.useCallback(() => {
         console.debug('@@@ DynamicForm validateInputs', formValuesStateRef.current, validationMapRef.current);
-        const errors: { fieldName: string, message: string }[] = [];
+        let isAnyErrors = false        
         Object.entries(validationMapRef.current).forEach(([name, validationInfo]) => {
-            if (validationInfo.required && !formValuesStateRef.current[name]) {
-                errors.push({ fieldName: name, message: `${name} is required` });
-            }
-            if (validationInfo.pattern && !validationInfo.pattern.test(formValuesStateRef.current[name] as unknown as string)) {
-                errors.push({ fieldName: name, message: validationInfo.patternMessage || `${name} is invalid` });
-            }
+            const res = isValidInput(name, formValuesStateRef.current[name]);
+            if (!res) isAnyErrors = true;
         })
-        setValidationErrors(errors);
-        return errors.length === 0;
+        return !isAnyErrors;
     }, []);
 
-    const validateInput = React.useCallback((name: string, value: string) => {
+    const isValidInput = React.useCallback((name: string, value: string) => {
         console.debug('@@@ DynamicForm validateInput', name, value);
         const validationInfo =  validationMapRef.current[name];
         if (!validationInfo) return true;
-
+        const errors: { fieldName: string, message: string }[] = [];
         if (validationInfo.required && !value) {
-            setValidationErrors((prevErrors) => [
-                ...prevErrors,
-                { fieldName: name, message: `${name} is required` }
-            ]);
-            return false;
+            errors.push({ fieldName: name, message: `${name} is required` });
         }
 
         if (validationInfo.pattern && !validationInfo.pattern.test(value)) {
-            setValidationErrors((prevErrors) => [
-                ...prevErrors,
-                { fieldName: name, message: validationInfo.patternMessage || `${name} is invalid` }
-            ]);
-            return false;
+            errors.push({ fieldName: name, message: validationInfo.patternMessage || `${name} is invalid` });
         }
-        if(validationErrors.find(error => error.fieldName === name)){
-            setValidationErrors((prevErrors) => prevErrors.filter(error => error.fieldName !== name));
-        }
-        return true;
+        
+        setValidationErrors((prevErrors) => {
+                const otherFieldsErrors =prevErrors.filter(error => error.fieldName !== name)
+                return errors.length > 0 ? [...otherFieldsErrors, ...errors] : prevErrors
+        });
+       
+        return errors.length === 0;
     }, []);
 
+    React.useEffect(() => {
+        Object.entries(validationMapRef.current).forEach(([name, validationInfo]) => {
+            
+        })
+    }, [validationErrors]);
     const handleSubmit = React.useCallback(() => {
         console.debug('@@@ DynamicForm handleSubmit', formValuesStateRef.current);
         setIsSubmitting(true);
