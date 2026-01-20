@@ -115,6 +115,8 @@ export const DynamicForm = ({ children, onSubmit }: DynamicFormProps) => {
 
 export const useDynamicFormInputData = (name: string, validationInfo: ValidationConfig) => {
     const { isSubmitting, validationErrors, registerInput, unregisterInput, setFormValues, validateInput } = useDynamicForm()
+    const [isDirty, setIsDirty] = React.useState(false);
+
     const validationInfoMemoized = React.useMemo(() => validationInfo, [
         validationInfo.fieldName,
         validationInfo.required,
@@ -151,29 +153,45 @@ export const useDynamicFormInputData = (name: string, validationInfo: Validation
     }, [isValidationError]);
 
     const setValue = React.useCallback((value: string) => {
-        validateInput(name, value);
+        if (isDirty) {
+            validateInput(name, value);
+        }
         setFormValues((prevValues) => ({
             ...prevValues,
             [name]: value
         }));
-    }, [name, setFormValues, validateInput]);
+    }, [name, setFormValues, validateInput, isDirty]);
 
+     const onBlur = React.useCallback((value: string) => {
+        setIsDirty(true);
+        validateInput(name, value);
+        }, [name, validateInput]);
+        
     return {
         isSubmitting,
         isValidationError,
         validationErrorMessage,
         setValue,
+        onBlur
     }
 }
 
 export const DynamicFormInput = (props: DynamicFormInputProps) => {
-    const {name, validationInfo, label, children, ...rest} = props;
-    const { isSubmitting, isValidationError, validationErrorMessage,setValue } = useDynamicFormInputData(name, validationInfo as ValidationConfig)
+    const {name, validationInfo, label, children,onBlur: customOnBlur, ...rest} = props;
+    const { isSubmitting, isValidationError, validationErrorMessage,setValue, onBlur  } = useDynamicFormInputData(name, validationInfo as ValidationConfig)
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         setValue(value);
     };
+
+      const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+        onBlur(e.target.value);
+        if (customOnBlur) {
+            customOnBlur(e);
+        }
+    };
+
     console.debug('@@@ DynamicFormInput render', name, isSubmitting, isValidationError, validationErrorMessage);
     return <div className={`dynamic-form-input ${isSubmitting ? 'submitting' : ''}`}>
         <label htmlFor={name}>{label}</label>
@@ -181,7 +199,7 @@ export const DynamicFormInput = (props: DynamicFormInputProps) => {
         <div className={`dynamic-form-input-error ${isValidationError ? 'error' : ''}`}>
             {validationErrorMessage}
         </div>
-        <input name={name} key={`DynamicFormInput` + name} onChange={handleChange} {...rest} />
+        <input name={name} key={`DynamicFormInput` + name} onChange={handleChange} onBlur={handleBlur} {...rest} />
         {children}
     </div>
 }
