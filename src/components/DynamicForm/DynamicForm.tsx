@@ -23,17 +23,17 @@ export const useDynamicForm = () => {
 export const DynamicForm = ({ children, onSubmit }: DynamicFormProps) => {
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     const formValuesStateRef = React.useRef<Record<string, string>>({});
-    
+
     const setFormValues = React.useCallback((updater: (prevValues: Record<string, string>) => Record<string, string>) => {
         formValuesStateRef.current = updater(formValuesStateRef.current);
     }, []);
-    
+
     const [validationErrors, setValidationErrors] = React.useState<{ fieldName: string, message: string }[]>([]);
     const validationMapRef = React.useRef<Record<string, ValidationConfig>>({});
 
     const [submitErrors, setSubmitErrors] = React.useState<any[]>([]);
 
-    
+
     const registerInput = React.useCallback((name: string, validationInfo: ValidationConfig) => {
         validationMapRef.current[name] = validationInfo;
     }, []);
@@ -44,7 +44,7 @@ export const DynamicForm = ({ children, onSubmit }: DynamicFormProps) => {
 
     const validateInputs = React.useCallback(() => {
         console.debug('@@@ DynamicForm validateInputs', formValuesStateRef.current, validationMapRef.current);
-        let isAnyErrors = false        
+        let isAnyErrors = false
         Object.entries(validationMapRef.current).forEach(([name, validationInfo]) => {
             const res = validateInput(name, formValuesStateRef.current[name]);
             if (!res) isAnyErrors = true;
@@ -54,7 +54,7 @@ export const DynamicForm = ({ children, onSubmit }: DynamicFormProps) => {
 
     const validateInput = React.useCallback((name: string, value: string) => {
         console.debug('@@@ DynamicForm validateInput', name, value);
-        const validationInfo =  validationMapRef.current[name];
+        const validationInfo = validationMapRef.current[name];
         if (!validationInfo) return true;
         const errors: { fieldName: string, message: string }[] = [];
         if (validationInfo.required && !value) {
@@ -64,12 +64,19 @@ export const DynamicForm = ({ children, onSubmit }: DynamicFormProps) => {
         if (validationInfo.pattern && !validationInfo.pattern.test(value)) {
             errors.push({ fieldName: name, message: validationInfo.patternMessage || `${name} is invalid` });
         }
-        
+
         setValidationErrors((prevErrors) => {
-                const otherFieldsErrors =prevErrors.filter(error => error.fieldName !== name)
-                return [...otherFieldsErrors, ...errors]
+            //const otherFieldsErrors = prevErrors.filter(error => error.fieldName !== name)
+            //return [...otherFieldsErrors, ...errors]
+            const currentFieldErrors = prevErrors.filter(error => error.fieldName === name);
+            const hasChanged = errors.length !== currentFieldErrors.length ||
+                !errors.every((err, index) => err.message === currentFieldErrors[index].message);
+
+            if (!hasChanged) return prevErrors;
+            const otherFieldsErrors = prevErrors.filter(error => error.fieldName !== name)
+            return [...otherFieldsErrors, ...errors]
         });
-       
+
         return errors.length === 0;
     }, []);
 
@@ -89,7 +96,7 @@ export const DynamicForm = ({ children, onSubmit }: DynamicFormProps) => {
                 setIsSubmitting(false);
             } catch (error: any) {
                 console.error('@@@ DynamicForm submission error', error);
-                setSubmitErrors([{ message: error?.message || 'Submission failed due to an unknown error' } ]);
+                setSubmitErrors([{ message: error?.message || 'Submission failed due to an unknown error' }]);
                 setIsSubmitting(false);
             }
         } else {
@@ -162,11 +169,11 @@ export const useDynamicFormInputData = (name: string, validationInfo: Validation
         }));
     }, [name, setFormValues, validateInput, isDirty]);
 
-     const onBlur = React.useCallback((value: string) => {
+    const onBlur = React.useCallback((value: string) => {
         setIsDirty(true);
         validateInput(name, value);
-        }, [name, validateInput]);
-        
+    }, [name, validateInput]);
+
     return {
         isSubmitting,
         isValidationError,
@@ -177,15 +184,15 @@ export const useDynamicFormInputData = (name: string, validationInfo: Validation
 }
 
 export const DynamicFormInput = (props: DynamicFormInputProps) => {
-    const {name, validationInfo, label, children,onBlur: customOnBlur, ...rest} = props;
-    const { isSubmitting, isValidationError, validationErrorMessage,setValue, onBlur  } = useDynamicFormInputData(name, validationInfo as ValidationConfig)
+    const { name, validationInfo, label, children, onBlur: customOnBlur, ...rest } = props;
+    const { isSubmitting, isValidationError, validationErrorMessage, setValue, onBlur } = useDynamicFormInputData(name, validationInfo as ValidationConfig)
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         setValue(value);
     };
 
-      const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
         onBlur(e.target.value);
         if (customOnBlur) {
             customOnBlur(e);
@@ -206,7 +213,7 @@ export const DynamicFormInput = (props: DynamicFormInputProps) => {
 
 const DynamicFormSubmit = (props: React.ButtonHTMLAttributes<HTMLButtonElement>) => {
     const { isSubmitting, submitErrors, handleSubmit } = useDynamicForm()
-    console.debug('@@@ DynamicFormSubmit render isSubmitting',isSubmitting)
+    console.debug('@@@ DynamicFormSubmit render isSubmitting', isSubmitting)
     return <div className='dynamic-form-demo-submit'>
         <label >{props.name}</label>
         <div className="dynamic-form-demo-submit-error">

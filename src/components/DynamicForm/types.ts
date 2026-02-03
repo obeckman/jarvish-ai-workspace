@@ -1,6 +1,6 @@
 import React, {DetailedHTMLProps} from 'react'
 export interface DynamicFormProps  {
-    onSubmit: ()=> void,
+    onSubmit: (values: Record<string, string>)=> void,
     children : React.ReactNode
 } 
 export interface DynamicFormInputProps extends DetailedHTMLProps<React.InputHTMLAttributes<HTMLInputElement>, HTMLInputElement> {
