@@ -1,5 +1,6 @@
 import React from 'react';
 import { Village } from './types';
+import  './VillageModal.css';
 
 interface VillageModalProps {
   village: Village;
@@ -7,37 +8,31 @@ interface VillageModalProps {
 }
 
 const VillageModal: React.FC<VillageModalProps> = ({ village, onClose }) => {
+  console.debug('Rendering VillageModal for:', village);
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0, left: 0, right: 0, bottom: 0,
-      backgroundColor: 'rgba(0,0,0,0.5)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 1001,
-    }}>
-      <div style={{
-        backgroundColor: 'white',
-        padding: '20px',
-        borderRadius: '8px',
-        width: '400px',
-        maxWidth: '90%',
-      }}>
-        <h2>{village.name}</h2>
+    <div className="overlay">
+      <div className="content">
+        <h2>{village.name} <small>(Pop: {village.population})</small></h2>
+        <div>
+          Population Capacity: {village.buildings.farm * 100}
+        </div>
         <hr />
         
         <h3>Resources</h3>
-        <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+        <div className="resources">
           <span>🪵 Wood: {village.resources.wood}</span>
           <span>🪨 Stone: {village.resources.stone}</span>
+          <span>⛓️ Iron: {village.resources.iron}</span>
           <span>🍞 Food: {village.resources.food}</span>
         </div>
 
         <h3>Buildings (Levels)</h3>
         <ul>
           <li>Town Center: Lv {village.buildings.townCenter}</li>
-          <li>Resource Fields: Lv {village.buildings.resourceField}</li>
+          <li>🪵 Wood Camp: Lv {village.buildings.woodCamp}</li>
+          <li>🪨 Stone Pit: Lv {village.buildings.stonePit}</li>
+          <li>⛓️ Iron Mine: Lv {village.buildings.ironMine}</li>
+          <li>🌾 Farm: Lv {village.buildings.farm}</li>
           <li>Barracks: Lv {village.buildings.barracks}</li>
         </ul>
 
@@ -48,8 +43,8 @@ const VillageModal: React.FC<VillageModalProps> = ({ village, onClose }) => {
           <li>Cavalry: {village.units.cavalry}</li>
         </ul>
 
-        <div style={{ marginTop: '20px', textAlign: 'right' }}>
-          <button onClick={onClose} style={{ padding: '8px 16px', cursor: 'pointer' }}>Close</button>
+        <div className="actions">
+          <button onClick={onClose} className="closeBtn">Close</button>
         </div>
       </div>
     </div>

@@ -66,7 +66,7 @@ const tools = [
 ];
 
 const model = genAI.getGenerativeModel({
-  model: "gemini-3-flash-preview",//"gemini-2.5-pro", 
+  model: "gemini-3-flash-preview",
   tools: tools,
   systemInstruction: "You are a helpful AI Agent focused on full-stack development..."
 });

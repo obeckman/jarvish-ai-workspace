@@ -1,0 +1,12 @@
+.map {
+  position: relative;
+  width: 2000px;
+  height: 2000px;
+  background-color: #4caf50;
+  background-image:
+    radial-gradient(circle, #66bb6a 2px, transparent 2.5px),
+    radial-gradient(circle, #66bb6a 2px, transparent 2.5px);
+  background-size: 20px 20px;
+  background-position: 0 0, 10px 10px;
+  overflow: hidden;
+}

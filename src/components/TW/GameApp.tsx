@@ -4,6 +4,7 @@ import ContextMenu from './ContextMenu';
 import VillageModal from './VillageModal';
 import { initialVillages } from './mockData';
 import { Village, ContextMenuState } from './types';
+import './GameApp.css';
 
 export const GameApp = () => {
   const [villages, setVillages] = useState<Village[]>(initialVillages);
@@ -47,7 +48,7 @@ export const GameApp = () => {
   const selectedVillage = villages.find(v => v.id === selectedVillageId);
 
   return (
-    <div style={{ width: '100vw', height: '100vh', overflow: 'auto' }}>
+    <div className="container">
       <GameMap 
         villages={villages} 
         onVillageContextMenu={handleVillageContextMenu}
@@ -71,4 +72,3 @@ export const GameApp = () => {
     </div>
   );
 };
-

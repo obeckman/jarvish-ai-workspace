@@ -1,5 +1,6 @@
 import React from 'react';
 import { Village } from './types';
+import './VillageMarker.css';
 
 interface VillageMarkerProps {
   village: Village;
@@ -14,38 +15,13 @@ const VillageMarker: React.FC<VillageMarkerProps> = ({ village, onContextMenu })
         e.stopPropagation(); // Prevent map click
         onContextMenu(e, village.id);
       }}
-      style={{
-        position: 'absolute',
-        left: village.x,
-        top: village.y,
-        width: '40px',
-        height: '40px',
-        backgroundColor: '#8d6e63', // Brown for village
-        border: '2px solid #3e2723',
-        borderRadius: '50%',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        cursor: 'pointer',
-        transform: 'translate(-50%, -50%)', // Center on coordinate
-        boxShadow: '0 2px 5px rgba(0,0,0,0.5)',
-      }}
-      title={village.name}
+      className="marker"
+      style={{ left: village.x, top: village.y }}
+      title={`${village.name} (Pop: ${village.population})`}
     >
-      <span style={{ fontSize: '20px' }}>🏠</span>
-      <div
-        style={{
-          position: 'absolute',
-          top: '45px',
-          background: 'rgba(0,0,0,0.7)',
-          color: 'white',
-          padding: '2px 5px',
-          borderRadius: '4px',
-          fontSize: '12px',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        {village.name}
+      <span className="icon">🏠</span>
+      <div className="label">
+        {village.name} ({village.population})
       </div>
     </div>
   );
