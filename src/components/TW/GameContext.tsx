@@ -1,8 +1,10 @@
 import React, { createContext, useContext } from 'react';
-import { User } from './types';
+import { User, TroopMovement } from './types';
 
 interface GameContextType {
   currentUser: User;
+  troopMovements: TroopMovement[];
+  addTroopMovement: (movement: TroopMovement) => void;
 }
 
 export const GameContext = createContext<GameContextType | undefined>(undefined);

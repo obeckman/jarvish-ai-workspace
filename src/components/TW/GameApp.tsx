@@ -4,7 +4,6 @@ import ContextMenu from './ContextMenu';
 import VillageModal from './VillageModal';
 import SendTroopsModal from './SendTroopsModal';
 import { initialVillages, mockUser } from './mockData';
-import { Village, ContextMenuState } from './types';
 import { Village, ContextMenuState, TroopMovement } from './types';
 import { GameContext } from './GameContext';
 import { getVillageView } from './utils';
@@ -87,7 +86,6 @@ export const GameApp = () => {
   };
 
   return (
-    <GameContext.Provider value={{ currentUser }}>
     <GameContext.Provider value={{ currentUser, troopMovements, addTroopMovement }}>
       <div className="container">
         <GameMap 

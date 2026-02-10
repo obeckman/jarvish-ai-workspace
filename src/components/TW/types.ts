@@ -32,6 +32,28 @@ export interface Village {
   units: Units;
 }
 
+export type TroopType = 'infantry' | 'archers' | 'cavalry';
+
+export interface Troop {
+  type: TroopType;
+  count: number;
+  speed: number; // pixels per second
+}
+
+export type MovementType = 'attack' | 'support' | 'scout' | 'stationed' | 'idle';
+
+export interface TroopMovement {
+  id: string;
+  ownerId: string;
+  originVillageId: string;
+  origin: { x: number; y: number };
+  destination: { villageId?: string; x: number; y: number; targetMovementId?: string };
+  type: MovementType;
+  startTime: number;
+  arrivalTime: number;
+  troops: Troop[];
+}
+
 export interface User {
   id: string;
   name: string;
