@@ -18,6 +18,8 @@ import {RetryMechanismDemo} from './components/RetryMechanism/RetryMechanismDemo
 import {DynamicGridCanvasDemo} from './components/DynamicGridCanvas/DynamicGridCanvas'
 import {IndexDBDemo} from './components/indexDB/indexDBDemo'
 import {DynamicFormDemo} from './components/DynamicForm/DynamicFormDemo'
+import {GameApp} from './components/TW/GameApp'
+import {AskAgent} from './components/AskAgent/AskAgent'
 
 const TabVariant = {
   NONE: 'none',
@@ -37,6 +39,8 @@ const TabVariant = {
   DynamicGridCanvasDemo: 'DynamicGridCanvasDemo',
   IndexDBDemo: 'IndexDBDemo',
   DynamicFormDemo: 'DynamicFormDemo',
+  GameApp: 'GameApp',
+  AskAgent: 'AskAgent'
 } as const;
 
 
@@ -52,6 +56,7 @@ function App() {
       <Tabs defaultValue={TabVariant.NONE} >
         <div className="app-layout-wrapper">
           <nav className="app-tab-list">
+            <Tabs.Trigger value={TabVariant.AskAgent} className="tabs-trigger">Ask Agent</Tabs.Trigger>
             <Tabs.Trigger value={TabVariant.NONE} className="tabs-trigger">NONE</Tabs.Trigger>
             <Tabs.Trigger value={TabVariant.TheSilentIntervalDemo} className="tabs-trigger"># 5 - TheSilentIntervalDemo</Tabs.Trigger>
             <Tabs.Trigger value={TabVariant.TwoWayBinding} className="tabs-trigger">#4 -TwoWayBinding</Tabs.Trigger>
@@ -69,9 +74,11 @@ function App() {
             <Tabs.Trigger value={TabVariant.UseReliableSubmitDemo} className="tabs-trigger">UseReliableSubmitDemo</Tabs.Trigger>
             <Tabs.Trigger value={TabVariant.IndexDBDemo} className="tabs-trigger">IndexDBDemo</Tabs.Trigger>
             <Tabs.Trigger value={TabVariant.DynamicFormDemo} className="tabs-trigger">DynamicFormDemo</Tabs.Trigger>
+            <Tabs.Trigger value={TabVariant.GameApp} className="tabs-trigger">GameApp</Tabs.Trigger>
           </nav>
 
           <div className="app-panel-wrapper">
+            <Tabs.Content value={TabVariant.AskAgent} className="tabs-content"><AskAgent /></Tabs.Content>
             <Tabs.Content value={TabVariant.NONE} className="tabs-content"></Tabs.Content>
             <Tabs.Content value={TabVariant.DynamicGridCanvasDemo} className="tabs-content"><DynamicGridCanvasDemo /></Tabs.Content>
             <Tabs.Content value={TabVariant.FileSystemTreeDemo} className="tabs-content"><FileSystemTreeDemo /></Tabs.Content>
@@ -88,6 +95,7 @@ function App() {
             <Tabs.Content value={TabVariant.RetryMechanismDemo} className="tabs-content"><RetryMechanismDemo /></Tabs.Content>
             <Tabs.Content value={TabVariant.IndexDBDemo} className="tabs-content"><IndexDBDemo /></Tabs.Content>  
             <Tabs.Content value={TabVariant.DynamicFormDemo} className="tabs-content"><DynamicFormDemo /></Tabs.Content>
+            <Tabs.Content value={TabVariant.GameApp} className="tabs-content"><GameApp /> </Tabs.Content>
           </div>
         </div>
       </Tabs>
