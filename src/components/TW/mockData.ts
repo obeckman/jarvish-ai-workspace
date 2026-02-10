@@ -1,10 +1,17 @@
 import { Village, User } from './types';
 
-export const mockUser: User = {
-  id: 'u1',
-  name: 'PlayerOne',
-  ownedVillageIds: ['v1'],
-};
+export const mockUsers: User[] = [
+  {
+    id: 'u1',
+    name: 'PlayerOne',
+    ownedVillageIds: ['v1'],
+  },
+  {
+    id: 'u2',
+    name: 'PlayerTwo',
+    ownedVillageIds: ['v2', 'v3'],
+  },
+];
 
 export const initialVillages: Village[] = [
   {

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Village, TroopMovement, TroopType } from './types';
+import { Village, TroopMovement, TroopType, MovementType } from './types';
+import { UNIT_SPEEDS } from './config';
 import './SendTroopsModal.css';
 
 interface SendTroopsModalProps {
@@ -8,20 +9,16 @@ interface SendTroopsModalProps {
   ownerId: string;
   onClose: () => void;
   onSend: (movement: TroopMovement) => void;
+  defaultMissionType?: MovementType;
 }
 
-const UNIT_SPEEDS: Record<TroopType, number> = {
-  infantry: 20, // pixels per second
-  archers: 30,
-  cavalry: 60,
-};
-
-const SendTroopsModal: React.FC<SendTroopsModalProps> = ({ originVillage, target, ownerId, onClose, onSend }) => {
+const SendTroopsModal: React.FC<SendTroopsModalProps> = ({ originVillage, target, ownerId, onClose, onSend, defaultMissionType = 'attack' }) => {
   const [units, setUnits] = useState({
     infantry: 0,
     archers: 0,
     cavalry: 0,
   });
+  const [missionType, setMissionType] = useState<MovementType>(defaultMissionType);
 
   const calculateDistance = () => {
     const dx = target.x - originVillage.x;
@@ -51,7 +48,7 @@ const SendTroopsModal: React.FC<SendTroopsModalProps> = ({ originVillage, target
       originVillageId: originVillage.id,
       origin: { x: originVillage.x, y: originVillage.y },
       destination: target,
-      type: 'attack',
+      type: missionType,
       startTime: now,
       arrivalTime: now + duration,
       troops: [
@@ -86,6 +83,14 @@ const SendTroopsModal: React.FC<SendTroopsModalProps> = ({ originVillage, target
         <div className="input-group">
           <label>Cavalry (Max: {originVillage.units.cavalry})</label>
           <input type="number" min="0" max={originVillage.units.cavalry} value={units.cavalry} onChange={e => setUnits({...units, cavalry: parseInt(e.target.value) || 0})} />
+        </div>
+        
+        <div className="input-group">
+          <label>Mission Type</label>
+          <select value={missionType} onChange={(e) => setMissionType(e.target.value as MovementType)}>
+            <option value="attack">Attack</option>
+            <option value="ambush">Ambush</option>
+          </select>
         </div>
 
         <p>Arrival: {duration > 0 ? arrivalTime : '-'}</p>

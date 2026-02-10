@@ -8,7 +8,7 @@ interface GameMapProps {
   villages: Village[];
   troopMovements: TroopMovement[];
   onVillageContextMenu: (e: React.MouseEvent, villageId: string) => void;
-  onMapContextMenu: (e: React.MouseEvent) => void;
+  onMapContextMenu: (e: React.MouseEvent, x: number, y: number) => void;
   onMapClick: () => void;
 }
 
@@ -18,7 +18,11 @@ const GameMap: React.FC<GameMapProps> = ({ villages, troopMovements, onVillageCo
       onClick={onMapClick}
       onContextMenu={(e) => {
         e.preventDefault();
-        onMapContextMenu(e);
+        const mapDiv = e.currentTarget as HTMLDivElement;
+        const rect = mapDiv.getBoundingClientRect();
+        const x = e.clientX - rect.left + (mapDiv.parentElement?.scrollLeft ?? 0);
+        const y = e.clientY - rect.top + (mapDiv.parentElement?.scrollTop ?? 0);
+        onMapContextMenu(e, x, y);
       }}
       className="map"
     >

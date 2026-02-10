@@ -17,3 +17,7 @@
 .troop-marker.return {
   background-color: green;
 }
+
+.troop-marker.ambush {
+  background-color: orange;
+}

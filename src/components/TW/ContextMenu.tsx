@@ -1,10 +1,11 @@
 import React from 'react';
+import { ContextMenuAction } from './types';
 import './ContextMenu.css';
 
 interface ContextMenuProps {
   x: number;
   y: number;
-  onAction: (action: string) => void;
+  onAction: (action: ContextMenuAction) => void;
 }
 
 const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, onAction }) => {
@@ -12,6 +13,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, onAction }) => {
     <div className="menu" style={{ top: y, left: x }}>
       <div className="item" onClick={() => onAction('info')}>ℹ️ View Info</div>
       <div className="item" onClick={() => onAction('attack')}>⚔️ Attack</div>
+      <div className="item" onClick={() => onAction('ambush')}>🛡️ Ambush</div>
       <div className="item" onClick={() => onAction('trade')}>⚖️ Trade</div>
     </div>
   );

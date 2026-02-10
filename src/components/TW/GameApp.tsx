@@ -1,17 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import GameMap from './GameMap';
 import ContextMenu from './ContextMenu';
 import VillageModal from './VillageModal';
 import SendTroopsModal from './SendTroopsModal';
-import { initialVillages, mockUser } from './mockData';
-import { Village, ContextMenuState, TroopMovement } from './types';
+import { initialVillages, mockUsers } from './mockData';
+import { Village, ContextMenuState, TroopMovement, MovementType, ContextMenuAction } from './types';
 import { GameContext } from './GameContext';
-import { getVillageView } from './utils';
+import { getVillageView, getMovementPosition } from './utils';
 import './GameApp.css';
 
 export const GameApp = () => {
   const [villages, setVillages] = useState<Village[]>(initialVillages);
-  const [currentUser] = useState(mockUser);
+  const [currentUser, setCurrentUser] = useState(mockUsers[0]);
   const [troopMovements, setTroopMovements] = useState<TroopMovement[]>([]);
   
   // State for the right-click menu
@@ -29,6 +29,7 @@ export const GameApp = () => {
   const [sendTroopsModal, setSendTroopsModal] = useState<{
     visible: boolean;
     target: { x: number; y: number; villageId?: string } | null;
+    missionType?: MovementType;
   }>({ visible: false, target: null });
 
   const handleVillageContextMenu = (e: React.MouseEvent, villageId: string) => {
@@ -41,12 +42,12 @@ export const GameApp = () => {
     });
   };
 
-  const handleMapContextMenu = (e: React.MouseEvent) => {
+  const handleMapContextMenu = (e: React.MouseEvent, x: number, y: number) => {
     e.preventDefault();
     setContextMenu({
       visible: true,
-      x: e.clientX,
-      y: e.clientY,
+      x,
+      y,
       villageId: null, // No village clicked, just map
     });
   };
@@ -57,19 +58,24 @@ export const GameApp = () => {
     }
   };
 
-  const handleMenuAction = (action: string) => {
+  const handleMenuAction = (action: ContextMenuAction) => {
     if (action === 'info' && contextMenu.villageId) {
       setSelectedVillageId(contextMenu.villageId);
-    } else if (action === 'attack') {
+    } else if (action === 'attack' || action === 'ambush') {
       // Determine target
-      let target = null;
+      let target: { x: number; y: number; villageId?: string } | null = null;
       if (contextMenu.villageId) {
         const v = villages.find(v => v.id === contextMenu.villageId);
-        if (v) target = { x: v.x, y: v.y, villageId: v.id };
+        if (v) {
+          target = { x: v.x, y: v.y };
+          if (action === 'attack') {
+            target.villageId = v.id;
+          }
+        }
       } else {
         target = { x: contextMenu.x, y: contextMenu.y }; // Map click coordinates (relative to viewport, ideally should be map-relative but simplified here)
       }
-      if (target) setSendTroopsModal({ visible: true, target });
+      if (target) setSendTroopsModal({ visible: true, target, missionType: action as MovementType });
     } else {
       console.log(`Action triggered: ${action} on village ${contextMenu.villageId}`);
     }
@@ -85,9 +91,69 @@ export const GameApp = () => {
     setTroopMovements(prev => [...prev, movement]);
   };
 
+  // Game Loop for Ambush Logic
+  useEffect(() => {
+    const AMBUSH_RANGE = 50;
+    
+    const interval = setInterval(() => {
+      const now = Date.now();
+      
+      setTroopMovements(currentMovements => {
+        let hasChanges = false;
+        const resolvedIds = new Set<string>();
+
+        // Identify active ambushes (arrived at location)
+        const activeAmbushes = currentMovements.filter(m => 
+          m.type === 'ambush' && now >= m.arrivalTime
+        );
+
+        if (activeAmbushes.length === 0) return currentMovements;
+
+        activeAmbushes.forEach(ambusher => {
+          // Check against all other movements
+          currentMovements.forEach(target => {
+            if (ambusher.id === target.id || ambusher.ownerId === target.ownerId) return;
+            if (resolvedIds.has(target.id) || resolvedIds.has(ambusher.id)) return;
+
+            const targetPos = getMovementPosition(target, now);
+            const dist = Math.sqrt(Math.pow(ambusher.destination.x - targetPos.x, 2) + Math.pow(ambusher.destination.y - targetPos.y, 2));
+
+            if (dist <= AMBUSH_RANGE) {
+              console.log(`⚔️ Ambush triggered! ${ambusher.id} engaged ${target.id}`);
+              resolvedIds.add(ambusher.id);
+              resolvedIds.add(target.id);
+              hasChanges = true;
+            }
+          });
+        });
+
+        return hasChanges ? currentMovements.filter(m => !resolvedIds.has(m.id)) : currentMovements;
+      });
+    }, 500);
+
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <GameContext.Provider value={{ currentUser, troopMovements, addTroopMovement }}>
       <div className="container">
+        <div className="user-switcher">
+          <label>
+            Current User: 
+            <select 
+              value={currentUser.id} 
+              onChange={(e) => {
+                const user = mockUsers.find(u => u.id === e.target.value);
+                if (user) setCurrentUser(user);
+              }}
+            >
+              {mockUsers.map(u => (
+                <option key={u.id} value={u.id}>{u.name}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+
         <GameMap 
           villages={villages} 
           troopMovements={troopMovements}
@@ -118,6 +184,7 @@ export const GameApp = () => {
             ownerId={currentUser.id}
             onClose={() => setSendTroopsModal({ visible: false, target: null })}
             onSend={addTroopMovement}
+            defaultMissionType={sendTroopsModal.missionType}
           />
         )}
       </div>

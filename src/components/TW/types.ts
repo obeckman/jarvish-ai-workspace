@@ -40,7 +40,9 @@ export interface Troop {
   speed: number; // pixels per second
 }
 
-export type MovementType = 'attack' | 'support' | 'scout' | 'stationed' | 'idle';
+export type MovementType = 'attack' | 'support' | 'scout' | 'stationed' | 'idle' | 'ambush';
+
+export type ContextMenuAction = MovementType | 'info' | 'trade';
 
 export interface TroopMovement {
   id: string;
