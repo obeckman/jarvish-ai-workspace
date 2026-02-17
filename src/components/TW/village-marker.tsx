@@ -1,6 +1,6 @@
 import React from 'react';
 import { Village } from './types';
-import './VillageMarker.css';
+import styles from './village-marker.module.scss';
 
 interface VillageMarkerProps {
   village: Village;
@@ -15,12 +15,12 @@ const VillageMarker: React.FC<VillageMarkerProps> = ({ village, onContextMenu })
         e.stopPropagation(); // Prevent map click
         onContextMenu(e, village.id);
       }}
-      className="marker"
+      className={styles.marker}
       style={{ left: village.x, top: village.y }}
       title={`${village.name} (Pop: ${village.population})`}
     >
-      <span className="icon">🏠</span>
-      <div className="label">
+      <span className={styles.icon}>🏠</span>
+      <div className={styles.label}>
         {village.name} ({village.population})
       </div>
     </div>

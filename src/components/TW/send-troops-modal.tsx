@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Village, TroopMovement, TroopType, MovementType } from './types';
 import { UNIT_SPEEDS } from './config';
-import './SendTroopsModal.css';
+import styles from './send-troops-modal.module.scss';
 
 interface SendTroopsModalProps {
   originVillage: Village;
@@ -66,26 +66,26 @@ const SendTroopsModal: React.FC<SendTroopsModalProps> = ({ originVillage, target
   const arrivalTime = new Date(Date.now() + duration).toLocaleTimeString();
 
   return (
-    <div className="modal-overlay">
-      <div className="modal-content">
+    <div className={styles.modalOverlay}>
+      <div className={styles.modalContent}>
         <h3>Send Troops</h3>
         <p>From: {originVillage.name}</p>
         <p>To: {target.villageId ? `Village ${target.villageId}` : `(${target.x}, ${target.y})`}</p>
         
-        <div className="input-group">
+        <div className={styles.inputGroup}>
           <label>Infantry (Max: {originVillage.units.infantry})</label>
           <input type="number" min="0" max={originVillage.units.infantry} value={units.infantry} onChange={e => setUnits({...units, infantry: parseInt(e.target.value) || 0})} />
         </div>
-        <div className="input-group">
+        <div className={styles.inputGroup}>
           <label>Archers (Max: {originVillage.units.archers})</label>
           <input type="number" min="0" max={originVillage.units.archers} value={units.archers} onChange={e => setUnits({...units, archers: parseInt(e.target.value) || 0})} />
         </div>
-        <div className="input-group">
+        <div className={styles.inputGroup}>
           <label>Cavalry (Max: {originVillage.units.cavalry})</label>
           <input type="number" min="0" max={originVillage.units.cavalry} value={units.cavalry} onChange={e => setUnits({...units, cavalry: parseInt(e.target.value) || 0})} />
         </div>
         
-        <div className="input-group">
+        <div className={styles.inputGroup}>
           <label>Mission Type</label>
           <select value={missionType} onChange={(e) => setMissionType(e.target.value as MovementType)}>
             <option value="attack">Attack</option>
@@ -95,7 +95,7 @@ const SendTroopsModal: React.FC<SendTroopsModalProps> = ({ originVillage, target
 
         <p>Arrival: {duration > 0 ? arrivalTime : '-'}</p>
 
-        <div className="modal-actions">
+        <div className={styles.modalActions}>
           <button onClick={onClose}>Cancel</button>
           <button onClick={handleSend} disabled={duration === 0}>Send Attack</button>
         </div>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { VillageView, Village } from './types';
-import  './VillageModal.css';
+import styles from './village-modal.module.scss';
 
 interface VillageModalProps {
   village: VillageView;
@@ -8,7 +8,6 @@ interface VillageModalProps {
 }
 
 const VillageModal: React.FC<VillageModalProps> = ({ village, onClose }) => {
-  console.debug('Rendering VillageModal for:', village);
 
   // Type guard to check if we have full village info
   const isOwner = (v: VillageView): v is Village => {
@@ -16,8 +15,8 @@ const VillageModal: React.FC<VillageModalProps> = ({ village, onClose }) => {
   };
 
   return (
-    <div className="overlay">
-      <div className="content">
+    <div className={styles.overlay}>
+      <div className={styles.content}>
         <h2>{village.name} <small>(Pop: {village.population})</small></h2>
         
         {isOwner(village) ? (
@@ -28,7 +27,7 @@ const VillageModal: React.FC<VillageModalProps> = ({ village, onClose }) => {
             <hr />
             
             <h3>Resources</h3>
-            <div className="resources">
+            <div className={styles.resources}>
               <span>🪵 Wood: {village.resources.wood}</span>
               <span>🪨 Stone: {village.resources.stone}</span>
               <span>⛓️ Iron: {village.resources.iron}</span>
@@ -60,8 +59,8 @@ const VillageModal: React.FC<VillageModalProps> = ({ village, onClose }) => {
           </div>
         )}
 
-        <div className="actions">
-          <button onClick={onClose} className="closeBtn">Close</button>
+        <div className={styles.actions}>
+          <button onClick={onClose} className={styles.closeBtn}>Close</button>
         </div>
       </div>
     </div>

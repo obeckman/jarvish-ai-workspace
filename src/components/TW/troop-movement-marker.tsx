@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import classNames from 'classnames';
 import { TroopMovement } from './types';
-import './TroopMovementMarker.css';
+import styles from './troop-movement-marker.module.scss';
 
 interface TroopMovementMarkerProps {
   movement: TroopMovement;
@@ -32,8 +33,10 @@ const TroopMovementMarker: React.FC<TroopMovementMarkerProps> = ({ movement }) =
     return () => cancelAnimationFrame(animationId);
   }, [movement]);
 
+  const markerClasses = classNames(styles.troopMarker, styles[movement.type]);
+
   return (
-    <div className={`troop-marker ${movement.type}`} style={{ left: position.x, top: position.y }} title={`Troops to ${movement.destination.villageId || 'location'}`} />
+    <div className={markerClasses} style={{ left: position.x, top: position.y }} title={`Troops to ${movement.destination.villageId || 'location'}`} />
   );
 };
 

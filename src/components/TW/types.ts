@@ -71,3 +71,29 @@ export interface ContextMenuState {
   y: number;
   villageId: string | null;
 }
+
+// --- New Types for useReducer ---
+
+export interface GameState {
+  villages: Village[];
+  currentUser: User;
+  troopMovements: TroopMovement[];
+  contextMenu: ContextMenuState;
+  selectedVillageId: string | null;
+  sendTroopsModal: {
+    visible: boolean;
+    target: { x: number; y: number; villageId?: string } | null;
+    missionType?: MovementType;
+  };
+}
+
+export type GameAction =
+  | { type: 'SET_CURRENT_USER'; payload: User }
+  | { type: 'ADD_TROOP_MOVEMENT'; payload: TroopMovement }
+  | { type: 'UPDATE_TROOP_MOVEMENTS'; payload: TroopMovement[] }
+  | { type: 'SHOW_CONTEXT_MENU'; payload: { x: number; y: number; villageId?: string | null } }
+  | { type: 'HIDE_CONTEXT_MENU' }
+  | { type: 'SHOW_VILLAGE_MODAL'; payload: string }
+  | { type: 'HIDE_VILLAGE_MODAL' }
+  | { type: 'SHOW_SEND_TROOPS_MODAL'; payload: { target: { x: number; y: number; villageId?: string }; missionType: MovementType } }
+  | { type: 'HIDE_SEND_TROOPS_MODAL' };

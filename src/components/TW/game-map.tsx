@@ -1,8 +1,8 @@
 import React from 'react';
 import { Village, TroopMovement } from './types';
-import VillageMarker from './VillageMarker';
-import TroopMovementMarker from './TroopMovementMarker';
-import './GameMap.css';
+import VillageMarker from './village-marker';
+import TroopMovementMarker from './troop-movement-marker';
+import styles from './game-map.module.scss';
 
 interface GameMapProps {
   villages: Village[];
@@ -24,7 +24,7 @@ const GameMap: React.FC<GameMapProps> = ({ villages, troopMovements, onVillageCo
         const y = e.clientY - rect.top + (mapDiv.parentElement?.scrollTop ?? 0);
         onMapContextMenu(e, x, y);
       }}
-      className="map"
+      className={styles.map}
     >
       {villages.map((village) => (
         <VillageMarker

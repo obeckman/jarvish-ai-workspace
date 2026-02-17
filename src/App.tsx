@@ -18,7 +18,7 @@ import {RetryMechanismDemo} from './components/RetryMechanism/RetryMechanismDemo
 import {DynamicGridCanvasDemo} from './components/DynamicGridCanvas/DynamicGridCanvas'
 import {IndexDBDemo} from './components/indexDB/indexDBDemo'
 import {DynamicFormDemo} from './components/DynamicForm/DynamicFormDemo'
-import {GameApp} from './components/TW/GameApp'
+import {GameApp} from './components/TW/game-app'
 import {AskAgent} from './components/AskAgent/AskAgent'
 
 const TabVariant = {
