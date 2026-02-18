@@ -1,4 +1,4 @@
-.troop-marker {
+.troopMarker {
   position: absolute;
   width: 10px;
   height: 10px;
@@ -10,14 +10,14 @@
   box-shadow: 0 0 4px rgba(0,0,0,0.5);
 }
 
-.troop-marker.support {
+.support {
   background-color: blue;
 }
 
-.troop-marker.return {
+.return {
   background-color: green;
 }
 
-.troop-marker.ambush {
+.ambush {
   background-color: orange;
 }

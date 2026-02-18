@@ -38,12 +38,11 @@ export const useContextMenu = (
       } else {
         target = { x: contextMenu.x, y: contextMenu.y };
       }
-      if (target) {
-        dispatch({
-          type: 'SHOW_SEND_TROOPS_MODAL',
-          payload: { target, missionType: action as MovementType },
-        });
-      }
+                      if (target) {
+                      dispatch({
+                        type: 'SHOW_SEND_TROOPS_MODAL',
+                        payload: { target, missionType: action as MovementType },
+                      });      }
     } else {
       dispatch({ type: 'HIDE_CONTEXT_MENU' });
     }

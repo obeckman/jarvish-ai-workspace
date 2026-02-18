@@ -1,4 +1,4 @@
-.modal-overlay {
+.modalOverlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -11,7 +11,7 @@
   z-index: 2000;
 }
 
-.modal-content {
+.modalContent {
   background-color: white;
   padding: 20px;
   border-radius: 8px;
@@ -19,16 +19,16 @@
   box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
-.input-group {
+.inputGroup {
   margin-bottom: 15px;
 }
 
-.input-group label {
+.inputGroup label {
   display: block;
   margin-bottom: 5px;
 }
 
-.modal-actions {
+.modalActions {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
