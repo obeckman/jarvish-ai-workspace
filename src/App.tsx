@@ -1,25 +1,25 @@
 
 import './App.css'
-import { ModalContextProvider, ModalOpener } from './components/ModalProvider/ModalProvider'
-import { CreateLocalStoreTester } from './components/CreateLocalStore/CreateLocalStoreTester'
-import { FileSystemTreeDemo } from './components/FileSystemTree/FileSystemTreeDemo'
-import { InfiniteVirtualizedScrollDemo } from './components/useInfiniteScroll/InfiniteVirtualizedScroll/InfiniteVirtualizedScrollDemo'
-import  { TabsApiRaceConditionDemo } from './components/ApiRaceCondition/ApiRaceCondition'
-import {APIAggregator} from './components/APIAggregator/APIAggregator'
-import {AccessControlWrapperDemo} from './components/AccessControlWrapper/AccessControlWrapper'
-import {TimeSeriesWidgetDemo} from './components/TimeSeriesWidget/TimeSeriesWidget'
+import { ModalContextProvider, ModalOpener } from './components/shared/ModalProvider/ModalProvider'
+import { CreateLocalStoreTester } from './features/CreateLocalStore/CreateLocalStoreTester'
+import { FileSystemTreeDemo } from './features/FileSystemTree/FileSystemTreeDemo'
+import { InfiniteVirtualizedScrollDemo } from './features/InfiniteScroll/InfiniteVirtualizedScroll/InfiniteVirtualizedScrollDemo'
+import  { TabsApiRaceConditionDemo } from './features/ApiRaceCondition/ApiRaceCondition'
+import {APIAggregator} from './features/APIAggregator/APIAggregator'
+import {AccessControlWrapperDemo} from './features/AccessControlWrapper/AccessControlWrapper'
+import {TimeSeriesWidgetDemo} from './features/TimeSeriesWidget/TimeSeriesWidget'
 
-import createTabSystem from './components/Tabs'
-import { UseReliableSubmitDemo } from './components/useReliableSubmit/UseReliableSubmitDemo'
-import {ReliableSubmitManger} from './components/useReliableSubmit/useReliableSubmit'
-import {TheSilentIntervalDemo} from './components/TheSilentInterval/TheSilentIntervalDemo'
-import {DistanceConverter} from './components/TwoWayBinding/TwoWayBinding'
-import {RetryMechanismDemo} from './components/RetryMechanism/RetryMechanismDemo'
-import {DynamicGridCanvasDemo} from './components/DynamicGridCanvas/DynamicGridCanvas'
-import {IndexDBDemo} from './components/indexDB/indexDBDemo'
-import {DynamicFormDemo} from './components/DynamicForm/DynamicFormDemo'
-import {GameApp} from './components/TW/game-app'
-import {AskAgent} from './components/AskAgent/AskAgent'
+import createTabSystem from './components/shared/Tabs'
+import { UseReliableSubmitDemo } from './features/ReliableSubmit/UseReliableSubmitDemo'
+import {ReliableSubmitManger} from './features/ReliableSubmit/useReliableSubmit'
+import {TheSilentIntervalDemo} from './features/TheSilentInterval/TheSilentIntervalDemo'
+import {DistanceConverter} from './features/TwoWayBinding/TwoWayBinding'
+import {RetryMechanismDemo} from './features/RetryMechanism/RetryMechanismDemo'
+import {DynamicGridCanvasDemo} from './features/DynamicGridCanvas/DynamicGridCanvas'
+import {IndexDBDemo} from './features/indexDB/indexDBDemo'
+import {DynamicFormDemo} from './features/DynamicForm/DynamicFormDemo'
+import {GameApp} from './features/TW/game-app'
+import {AskAgent} from './features/AskAgent/AskAgent'
 
 const TabVariant = {
   NONE: 'none',
@@ -46,8 +46,9 @@ const TabVariant = {
 
 export type TabVariantValue = typeof TabVariant[keyof typeof TabVariant];
 
+const Tabs = createTabSystem<TabVariantValue>()
+
 function App() {
-  const Tabs = createTabSystem<TabVariantValue>()
   return (
 
     <ModalContextProvider>

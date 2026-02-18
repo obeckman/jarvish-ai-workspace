@@ -41,80 +41,79 @@ const useIsOnline = () => {
 
 export const ReliableSubmitManger = ({ children }: { children: React.ReactNode }) => {
     const isOnline = useIsOnline();
-
     const isProcessingRef = React.useRef(false);
 
-    const getItemFromStorage = <T,>(key: string): T | null => {
+    const getItemFromStorage = React.useCallback(<T,>(key: string): T | null => {
         const savedData = localStorage.getItem(key);
         if (savedData) {
-            const parsedData: T = JSON.parse(savedData);
-            return parsedData;
+            try {
+                return JSON.parse(savedData) as T;
+            } catch (e) {
+                console.error('Failed to parse storage item', e);
+                return null;
+            }
         }
         return null;
-    };
+    }, []);
 
-    const submit = async <T,>({ submitFunctionType, data }: SubmitParameterType<T>) => {
+    const processItem = React.useCallback(async (key: string) => {
+        if (!isKeyofSubmitFunction(key)) return;
+        
+        if (!isOnline) {
+            console.error(`Offline: will retry later submitting - ${key}`);
+            return;
+        }
+
+        const data = getItemFromStorage(key);
+        if (data) {
+            if (isProcessingRef.current) return;
+            
+            try {
+                isProcessingRef.current = true;
+                const result = await submitFunctionMap[key](data);
+                if (result.success) {
+                    localStorage.removeItem(key);
+                } else {
+                    setTimeout(() => processItem(key), 1000);
+                }
+            } catch (error) {
+                console.error(`Error processing item with key ${key}:`, error);
+                setTimeout(() => processItem(key), 1000);
+            } finally {
+                isProcessingRef.current = false;
+            }
+        }
+    }, [isOnline, getItemFromStorage]);
+
+    const submit = React.useCallback(async <T,>({ submitFunctionType, data }: SubmitParameterType<T>) => {
         try {
             localStorage.setItem(submitFunctionType, JSON.stringify(data));
-            processItem(submitFunctionType);
+            await processItem(submitFunctionType);
         }
         catch (error) {
             console.error('Submit failed, will retry on next page load or user interaction.', error);
         }
-    }
-
-    const processItem = async <T,>(key: string) => {
-
-        if (isKeyofSubmitFunction(key)) {
-            if (isOnline === false) {
-                console.error(`we are Offline, will retry later submitting - ${key}`);
-                return;
-            }
-
-            const data = getItemFromStorage<T>(key);
-            if (data) {
-                try {
-                    if (isProcessingRef.current) {
-                        return;
-                    }
-                    isProcessingRef.current = true;
-                    const result = await submitFunctionMap[key](data);
-                    if (result.success) {
-                        localStorage.removeItem(key);
-                    }
-                    else {
-                        setTimeout(() => processItem(key), 1000);
-                    }
-                } catch (error) {
-                    console.error(`Error processing item with key ${key}:`, error);
-                    setTimeout(() => processItem(key), 1000);
-                }
-                finally {
-                    isProcessingRef.current = false;
-
-                }
-            }
-        }
-    }
+    }, [processItem]);
 
     React.useEffect(() => {
-        // checking all stored submissions on context mount
         const possessStorage = () => {
             const storedKeys = Object.keys(localStorage);
-            storedKeys.forEach(async (key) => {
+            storedKeys.forEach((key) => {
                 processItem(key);
             })
         }
-        const timeoutId = setInterval(possessStorage, 1000);
+        const intervalId = setInterval(possessStorage, 1000);
 
-        return () => clearInterval(timeoutId);
-    }, []);
+        return () => clearInterval(intervalId);
+    }, [processItem]);
 
-    const contextValue = React.useMemo(() => ({ getItemFromStorage, submit }), []);
+    const contextValue = React.useMemo(() => ({ getItemFromStorage, submit }), [getItemFromStorage, submit]);
 
-    return <ReliableSubmitMangerContext.Provider value={contextValue} >
-        {children}
-    </ReliableSubmitMangerContext.Provider>
+    return (
+        <ReliableSubmitMangerContext.Provider value={contextValue}>
+            {children}
+        </ReliableSubmitMangerContext.Provider>
+    );
 }
 
 export const useReliableSubmit = <T,>({
@@ -122,30 +121,30 @@ export const useReliableSubmit = <T,>({
     initialData
 }: useReliableSubmitProps<T>) => {
     const [storedData, setStoredData] = useState<T | null>(null);
-    const { getItemFromStorage, submit } = React.useContext(ReliableSubmitMangerContext)!;
+    const context = React.useContext(ReliableSubmitMangerContext);
+    
+    if (!context) {
+        throw new Error('useReliableSubmit must be used within a ReliableSubmitManger');
+    }
+    
+    const { getItemFromStorage, submit } = context;
 
-    const submitFunctionTypeRef = React.useRef(submitFunctionType);
     React.useEffect(() => {
-        submitFunctionTypeRef.current = submitFunctionType;
-    }, [submitFunctionType]);
-
-    React.useEffect(() => {
-        const savedData = getItemFromStorage<T>(submitFunctionTypeRef.current);
+        const savedData = getItemFromStorage<T>(submitFunctionType);
         if (savedData) {
             setStoredData(savedData);
-        }
-        else {
+        } else {
             setStoredData(initialData);
         }
-    }, []);
+    }, [getItemFromStorage, submitFunctionType, initialData]);
 
-    const reliableSubmit = React.useMemo(() => (data: T) => {
+    const reliableSubmit = React.useCallback((data: T) => {
         submit({
-            submitFunctionType: submitFunctionTypeRef.current,
+            submitFunctionType,
             data
-        })
-        setStoredData(data)
-    }, []);
+        });
+        setStoredData(data);
+    }, [submit, submitFunctionType]);
 
     return { reliableSubmit, storedData };
 }

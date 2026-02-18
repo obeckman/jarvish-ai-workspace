@@ -50,23 +50,22 @@ const useSetActiveTabContext = () => {
         </SetActiveTabContext.Provider>
     )
 }
- const TabsTrigger = ({value, children, className}:TabsTriggerProps<T>) => {
+const TabsTrigger = React.memo(({value, children, className}:TabsTriggerProps<any>) => {
     const {setActiveTab} = useSetActiveTabContext();
 
-    const onClick = () => {
+    const onClick = React.useCallback(() => {
         setActiveTab(value);
-    }
+    }, [setActiveTab, value]);
     
     return <div 
         className={`create_tab_system-Tabs-trigger ${className ?? ""}`} 
         onClick={onClick}
-        key={`TabsTrigger-${value}`} 
         >
         {children}
     </div>
-}
+});
  
- const TabsContent = ({value, children, className}:TabsContentProps<T>) => {
+const TabsContent = React.memo(({value, children, className}:TabsContentProps<any>) => {
     const {activeTab} = useActiveTabContext();
     const isActive = activeTab === value;
 
@@ -78,11 +77,10 @@ const useSetActiveTabContext = () => {
         role='tab'
         aria-selected={isActive}
         className={`create_tab_system-Tabs-content ${className ?? ""}`} 
-        key={`TabsContent-${value}`}
         >
         {children}
     </div>
-}
+});
 
 Tabs.Trigger = TabsTrigger;
 Tabs.Content = TabsContent;
