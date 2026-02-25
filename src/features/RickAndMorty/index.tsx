@@ -21,9 +21,9 @@ interface ApiResponse {
 }
 
 const usefetchCharacters = (searchTerm: string) => {
-  const [characters, setCharacters] = useState([]);
+  const [characters, setCharacters] = useState<Character[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchCharacters = useCallback(
     async (name: string) => {
@@ -41,41 +41,35 @@ const usefetchCharacters = (searchTerm: string) => {
             name
           )}`
         );
-        console.debug('response', response);
         if (!response.ok) {
-          throw new Error(response.toString());
+          throw new Error('Failed to fetch characters');
         }
         const data = await response.json();
         setCharacters(data.results);
-        console.debug('fetch should not happen');
-        // setFilteredCharacters(data.results);
-      } catch {
-        //setFilteredCharacters([]);
-        setError('Error');
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'An unknown error occurred');
+      } finally {
+        setLoading(false);
       }
-
-      setLoading(false);
     },
-    [searchTerm]
+    []
   );
 
   useEffect(() => {
     fetchCharacters(searchTerm);
-  }, [searchTerm]);
+  }, [searchTerm, fetchCharacters]);
 
   return { characters, error, loading };
 };
-const App = () => {
+
+export const RickAndMorty = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  //
-  //const [filteredCharacters, setFilteredCharacters] = useState([]);
   const [filters, setFilters] = useState({
     status: '',
     species: '',
     gender: '',
   });
-  //const [loading, setLoading] = useState(false);
-  //const [error, setError] = useState(null);
+  
   const { characters, error, loading } = usefetchCharacters(searchTerm);
 
   const filteredCharacters = useMemo(() => {
@@ -92,26 +86,32 @@ const App = () => {
     if (filters.gender) {
       filtered = filtered.filter((char) => char.gender === filters.gender);
     }
-    console.debug('useEffect filltered', filtered);
-    //setFilteredCharacters(filtered);
     return filtered;
   }, [characters, filters]);
 
-  const handleFilterChange = (filterType, value) => {
-    console.debug('@@@ handleFilterChange');
-    setFilters({
-      ...filters,
-      [filterType]: value,
-    });
-  };
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+  }, []);
 
-  const clearFilters = () => {
+  const handleStatusChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    setFilters(prev => ({ ...prev, status: e.target.value }));
+  }, []);
+
+  const handleSpeciesChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    setFilters(prev => ({ ...prev, species: e.target.value }));
+  }, []);
+
+  const handleGenderChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    setFilters(prev => ({ ...prev, gender: e.target.value }));
+  }, []);
+
+  const clearFilters = useCallback(() => {
     setFilters({
       status: '',
       species: '',
       gender: '',
     });
-  };
+  }, []);
 
   return (
     <div className="app-container">
@@ -134,7 +134,7 @@ const App = () => {
               type="text"
               placeholder="Search for a character..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={handleSearchChange}
               className="search-input"
             />
           </div>
@@ -157,7 +157,7 @@ const App = () => {
                 <label className="filter-label">Status</label>
                 <select
                   value={filters.status}
-                  onChange={(e) => handleFilterChange('status', e.target.value)}
+                  onChange={handleStatusChange}
                   className="filter-select"
                 >
                   <option value="">All</option>
@@ -172,9 +172,7 @@ const App = () => {
                 <label className="filter-label">Species</label>
                 <select
                   value={filters.species}
-                  onChange={(e) =>
-                    handleFilterChange('species', e.target.value)
-                  }
+                  onChange={handleSpeciesChange}
                   className="filter-select"
                 >
                   <option value="">All</option>
@@ -192,7 +190,7 @@ const App = () => {
                 <label className="filter-label">Gender</label>
                 <select
                   value={filters.gender}
-                  onChange={(e) => handleFilterChange('gender', e.target.value)}
+                  onChange={handleGenderChange}
                   className="filter-select"
                 >
                   <option value="">All</option>
@@ -315,5 +313,3 @@ const App = () => {
     </div>
   );
 };
-
-export default App;

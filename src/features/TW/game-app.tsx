@@ -72,6 +72,21 @@ export const GameApp = () => {
 
   useGameLoop(dispatch, troopMovements);
 
+  const handleUserChange = React.useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    const user = mockUsers.find(u => u.id === e.target.value);
+    if (user) {
+      dispatch({ type: 'SET_CURRENT_USER', payload: user });
+    }
+  }, [dispatch]);
+
+  const handleCloseVillageModal = React.useCallback(() => {
+    dispatch({ type: 'HIDE_VILLAGE_MODAL' });
+  }, [dispatch]);
+
+  const handleCloseSendTroopsModal = React.useCallback(() => {
+    dispatch({ type: 'HIDE_SEND_TROOPS_MODAL' });
+  }, [dispatch]);
+
   const selectedVillage = villages.find(v => v.id === selectedVillageId);
   const userVillage = villages.find(v => v.ownerId === currentUser.id);
 
@@ -83,10 +98,7 @@ export const GameApp = () => {
             Current User: 
             <select 
               value={currentUser.id} 
-              onChange={(e) => {
-                const user = mockUsers.find(u => u.id === e.target.value);
-                if (user) dispatch({ type: 'SET_CURRENT_USER', payload: user });
-              }}
+              onChange={handleUserChange}
             >
               {mockUsers.map(u => (
                 <option key={u.id} value={u.id}>{u.name}</option>
@@ -114,7 +126,7 @@ export const GameApp = () => {
         {selectedVillage && (
           <VillageModal 
             village={getVillageView(selectedVillage, currentUser.id)} 
-            onClose={() => dispatch({ type: 'HIDE_VILLAGE_MODAL' })} 
+            onClose={handleCloseVillageModal} 
           />
         )}
 
@@ -123,7 +135,7 @@ export const GameApp = () => {
             originVillage={userVillage}
             target={sendTroopsModal.target}
             ownerId={currentUser.id}
-            onClose={() => dispatch({ type: 'HIDE_SEND_TROOPS_MODAL' })}
+            onClose={handleCloseSendTroopsModal}
             onSend={addTroopMovement}
             defaultMissionType={sendTroopsModal.missionType}
           />

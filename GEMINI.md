@@ -48,6 +48,24 @@ Performance is a first-class citizen. Unnecessary re-renders and memory allocati
 *   Avoid inline object literals and arrow functions in JSX.
     *   *Bad:* `<Button onClick={() => doSomething()} style={{ color: 'red' }} />`
     *   *Good:* `<Button onClick={handleClick} style={BUTTON_STYLE} />`
+*   **Event Handler Optimization:** Extract complex logic from event handlers into `useCallback` hooks.
+    *   *Bad:*
+        ```tsx
+        <select onChange={(e) => {
+            const item = list.find(i => i.id === e.target.value);
+            if (item) doSomething(item);
+        }}>
+        ```
+    *   *Good:*
+        ```tsx
+        const handleItemChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+            const item = list.find(i => i.id === e.target.value);
+            if (item) doSomething(item);
+        }, [list, doSomething]);
+        
+        // ...
+        <select onChange={handleItemChange}>
+        ```
 
 ## 3. TypeScript & Data Integrity
 
@@ -57,6 +75,7 @@ Performance is a first-class citizen. Unnecessary re-renders and memory allocati
 
 ## 4. Coding Standards
 
+*   **Separation of Concerns:** Business logic belongs in hooks or services, NOT in the JSX render body. JSX should be a declarative representation of the UI.
 *   **DRY vs. AHA:** Avoid premature abstraction. Prefer "Avoid Hasty Abstractions" (AHA). Duplicate code until the common pattern is clear.
 *   **Named Exports:** Use named exports exclusively. Default exports lead to inconsistent naming and poor IDE refactoring support.
 *   **Logic Separation:** Keep components thin. Move business logic to custom hooks, and data fetching to services/API modules.
