@@ -21,9 +21,12 @@ import {DynamicFormDemo} from './features/DynamicForm/DynamicFormDemo'
 import {GameApp} from './features/TW/game-app'
 import {AskAgent} from './features/AskAgent/AskAgent'
 import {RickAndMorty} from './features/RickAndMorty'
+import { JarvishAgent, ContextAwareAgent } from './features/jarvishAgent'
 
 const TabVariant = {
   NONE: 'none',
+  ContextAwareAgent: 'ContextAwareAgent',
+  JarvishAgent: 'JarvishAgent',
   FileSystemTreeDemo: 'FileSystemTreeDemo',
   CreateLocalStoreTester: 'CreateLocalStoreTester',
   ModalOpener: 'ModalOpener',
@@ -59,6 +62,7 @@ function App() {
       <Tabs defaultValue={TabVariant.NONE} >
         <div className="app-layout-wrapper">
           <nav className="app-tab-list">
+            <Tabs.Trigger value={TabVariant.JarvishAgent} className="tabs-trigger">Jarvish Agent</Tabs.Trigger>
             <Tabs.Trigger value={TabVariant.AskAgent} className="tabs-trigger">Ask Agent</Tabs.Trigger>
             <Tabs.Trigger value={TabVariant.RickAndMorty} className="tabs-trigger">Rick And Morty</Tabs.Trigger>
             <Tabs.Trigger value={TabVariant.NONE} className="tabs-trigger">NONE</Tabs.Trigger>
@@ -82,6 +86,7 @@ function App() {
           </nav>
 
           <div className="app-panel-wrapper">
+            <Tabs.Content value={TabVariant.JarvishAgent} className="tabs-content"><JarvishAgent /></Tabs.Content>
             <Tabs.Content value={TabVariant.AskAgent} className="tabs-content"><AskAgent /></Tabs.Content>
             <Tabs.Content value={TabVariant.RickAndMorty} className="tabs-content"><RickAndMorty /></Tabs.Content>
             <Tabs.Content value={TabVariant.NONE} className="tabs-content"></Tabs.Content>

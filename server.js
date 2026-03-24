@@ -112,6 +112,94 @@ server.post('/chat', async (req, res) => {
   }
 });
 
+
+// --- CONTEXT-AWARE AGENT ---
+import { retrieveMemories } from './server/agent/memory.js';
+import { getOptimizedContext, runAgentTask } from './server/agent/agent.js';
+import { executeInventoryCheck } from './server/agent/tools.js';
+
+server.post('/api/agent', async (req, res) => {
+  const { query } = req.body;
+
+  if (!query) {
+    console.log('[Agent] Rejected empty query');
+    return res.status(400).json({ error: "Query is required" });
+  }
+
+  // Set headers for streaming (NDJSON)
+  res.setHeader('Content-Type', 'application/x-ndjson');
+  res.setHeader('Transfer-Encoding', 'chunked');
+
+  try {
+    console.log(`\n--- [Agent] START NEW REQUEST: "${query}" ---`);
+    
+    // Step 1: Long-term memory retrieval
+    console.log('[Agent] Step 1: Retrieving memories...');
+    const memories = await retrieveMemories(query);
+    console.log(`[Agent] Step 1: Found ${memories.length} memories.`);
+    
+    // Step 2: Context Orchestration
+    console.log('[Agent] Step 2: Orchestrating context...');
+    const context = await getOptimizedContext(query, memories);
+    console.log(`[Agent] Step 2: Context optimized. Sending to client...`);
+    
+    // Immediately stream the "Thought Trace" (Synthesized Context) to the client
+    res.write(JSON.stringify({ type: 'context', content: context }) + '\n');
+
+    // Step 3: Run Execution Agent (ReAct loop)
+    console.log('[Agent] Step 3: Starting execution agent...');
+    const { stream, chat } = await runAgentTask(query, context);
+
+    console.log('[Agent] Streaming response chunks...');
+    for await (const chunk of stream) {
+      const calls = chunk.functionCalls();
+      
+      if (calls?.length) {
+        console.log(`[Agent] Agent requested ${calls.length} tool calls.`);
+        // Execute any tool calls requested by Gemini (Step 2.1)
+        const toolResponses = [];
+        for (const call of calls) {
+          console.log(`[Agent] Tool Request: ${call.name}(${JSON.stringify(call.args)})`);
+          if (call.name === 'check_inventory') {
+            const result = await executeInventoryCheck(call.args as any);
+            console.log(`[Agent] Tool Result: ${result}`);
+            toolResponses.push({
+              functionResponse: {
+                name: call.name,
+                response: { result }
+              }
+            });
+          }
+        }
+        
+        // Feed tool results back to the agent and stream its final thoughts
+        console.log('[Agent] Feeding tool responses back to agent...');
+        const finalStream = await chat.sendMessageStream(toolResponses);
+        for await (const fChunk of finalStream) {
+          const text = fChunk.text();
+          if (text) {
+            console.log(`[Agent] Final Response Chunk: ${text.substring(0, 50)}...`);
+            res.write(JSON.stringify({ type: 'message', content: text }) + '\n');
+          }
+        }
+      } else {
+        const text = chunk.text();
+        if (text) {
+          console.log(`[Agent] Response Chunk: ${text.substring(0, 50)}...`);
+          res.write(JSON.stringify({ type: 'message', content: text }) + '\n');
+        }
+      }
+    }
+
+    console.log('--- [Agent] REQUEST COMPLETE ---\n');
+    res.end();
+  } catch (error) {
+    console.error("[Agent Error]", error);
+    res.write(JSON.stringify({ type: 'error', content: error instanceof Error ? error.message : 'Unknown error' }) + '\n');
+    res.end();
+  }
+});
+
 server.use(router);
 server.listen(3000, () => {
   console.log('JSON Server is running');
