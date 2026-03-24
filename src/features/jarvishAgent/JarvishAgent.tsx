@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Send, Bot, User, Loader2, Trash2 } from 'lucide-react';
+import { Send, Bot, User, Loader2, Trash2, LogIn, LogOut, AlertCircle } from 'lucide-react';
 import cn from 'classnames';
 import styles from './jarvish-agent.module.scss';
 import { Message, AgentStatus } from './types';
@@ -11,10 +11,14 @@ const INITIAL_MESSAGE: Message = {
   timestamp: Date.now(),
 };
 
+const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
+
 export const JarvishAgent: React.FC = () => {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE]);
   const [status, setStatus] = useState<AgentStatus>('idle');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [googleToken, setGoogleToken] = useState<string | null>(localStorage.getItem('google_access_token'));
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = useCallback(() => {
@@ -23,108 +27,145 @@ export const JarvishAgent: React.FC = () => {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, scrollToBottom]);
+  }, [messages, scrollToBottom, errorMessage]);
 
-  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setInput(e.target.value);
+  const loginWithGoogle = useCallback(() => {
+    setErrorMessage(null);
+    if (!(window as any).google) {
+      return setErrorMessage('Google Identity Services SDK not loaded. Check index.html script tag.');
+    }
+    
+    try {
+      const client = (window as any).google.accounts.oauth2.initTokenClient({
+        client_id: GOOGLE_CLIENT_ID,
+        scope: 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/documents.readonly',
+        callback: (tokenResponse: any) => {
+          if (tokenResponse.access_token) {
+            localStorage.setItem('google_access_token', tokenResponse.access_token);
+            setGoogleToken(tokenResponse.access_token);
+          } else if (tokenResponse.error) {
+            setErrorMessage(`Google Auth Error: ${tokenResponse.error_description || tokenResponse.error}`);
+          }
+        },
+      });
+      client.requestAccessToken();
+    } catch (e) {
+      setErrorMessage(`Failed to initialize Google Login: ${e instanceof Error ? e.message : 'Unknown error'}`);
+    }
   }, []);
 
-  const clearMessages = useCallback(() => {
-    setMessages([INITIAL_MESSAGE]);
+  const logout = useCallback(() => {
+    localStorage.removeItem('google_access_token');
+    setGoogleToken(null);
+    setErrorMessage(null);
   }, []);
 
   const sendMessage = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || status !== 'idle') return;
 
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: input,
-      timestamp: Date.now(),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
+    setErrorMessage(null);
+    const userMsg: Message = { id: Date.now().toString(), role: 'user', content: input, timestamp: Date.now() };
+    setMessages(prev => [...prev, userMsg]);
     setInput('');
     setStatus('thinking');
 
     try {
-      // Simulation of API call or real call if available
-      const response = await fetch('http://localhost:3000/chat', {
+      const headers: any = { 'Content-Type': 'application/json' };
+      if (googleToken) headers['x-google-token'] = googleToken;
+
+      const response = await fetch('/api/agent', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: input }),
+        headers,
+        body: JSON.stringify({ query: input }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to connect to agent');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Server responded with ${response.status}`);
       }
 
-      const data = await response.json();
+      if (!response.body) throw new Error('No response body received from server');
       
-      const agentMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'agent',
-        content: data.reply || "I'm sorry, I couldn't process that.",
-        timestamp: Date.now(),
-      };
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let assistantMessageContent = '';
+      
+      const assistantMsgId = (Date.now() + 1).toString();
+      setMessages(prev => [...prev, { id: assistantMsgId, role: 'agent', content: '', timestamp: Date.now() }]);
 
-      setStatus('responding');
-      setTimeout(() => {
-        setMessages((prev) => [...prev, agentMessage]);
-        setStatus('idle');
-      }, 500);
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
 
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n').filter(l => l.trim());
+
+        for (const line of lines) {
+          try {
+            const data = JSON.parse(line);
+            if (data.type === 'message') {
+              assistantMessageContent += data.content;
+              setStatus('responding');
+              setMessages(prev => prev.map(m => 
+                m.id === assistantMsgId ? { ...m, content: assistantMessageContent } : m
+              ));
+            } else if (data.type === 'error') {
+              setErrorMessage(`Agent Error: ${data.content}`);
+            }
+          } catch (e) {
+            console.warn('Failed to parse NDJSON line:', line);
+          }
+        }
+      }
+      setStatus('idle');
     } catch (error) {
       console.error('Agent error:', error);
       setStatus('error');
-      
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'agent',
-        content: "I'm having trouble connecting right now. Please make sure the agent server is running.",
-        timestamp: Date.now(),
-      };
-      
-      setMessages((prev) => [...prev, errorMessage]);
-      setTimeout(() => setStatus('idle'), 2000);
+      setErrorMessage(error instanceof Error ? error.message : 'An unexpected error occurred');
+      // Clean up empty assistant messages on error
+      setMessages(prev => prev.filter(m => m.content !== ''));
     }
-  }, [input, status]);
+  }, [input, status, googleToken]);
 
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <Bot size={24} />
-        <h2>Jarvish Agent</h2>
-        <button 
-          onClick={clearMessages} 
-          className={styles.button} 
-          style={{ marginLeft: 'auto', background: 'transparent', padding: '4px' }}
-          title="Clear Chat"
-        >
-          <Trash2 size={18} />
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Bot size={24} />
+          <h2>Jarvish Agent</h2>
+        </div>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
+          {googleToken ? (
+            <button onClick={logout} className={styles.button} title="Logout Google" style={{ color: '#10b981' }}><LogOut size={16} /></button>
+          ) : (
+            <button onClick={loginWithGoogle} className={styles.button} title="Login Google"><LogIn size={16} /></button>
+          )}
+          <button onClick={() => { setMessages([INITIAL_MESSAGE]); setErrorMessage(null); }} className={styles.button} title="Clear Chat"><Trash2 size={16} /></button>
+        </div>
       </header>
 
       <div className={styles.messages}>
         {messages.map((msg) => (
-          <div 
-            key={msg.id} 
-            className={cn(styles.message, {
-              [styles.user]: msg.role === 'user',
-              [styles.agent]: msg.role === 'agent'
-            })}
-          >
+          <div key={msg.id} className={cn(styles.message, { [styles.user]: msg.role === 'user', [styles.agent]: msg.role === 'agent' })}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-              {msg.role === 'user' ? <User size={14} /> : <Bot size={14} />}
-              <strong style={{ fontSize: '0.75rem' }}>
-                {msg.role === 'user' ? 'You' : 'Jarvish'}
-              </strong>
+              {msg.role === 'user' ? <User size={12} /> : <Bot size={12} />}
+              <strong style={{ fontSize: '0.7rem' }}>{msg.role === 'user' ? 'You' : 'Jarvish'}</strong>
             </div>
-            {msg.content}
+            <div style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</div>
           </div>
         ))}
-        {status === 'thinking' && (
+        
+        {errorMessage && (
+          <div className={cn(styles.message, styles.agent)} style={{ background: '#fef2f2', border: '1px solid #fee2e2', color: '#b91c1c' }}>
+             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold', fontSize: '0.75rem', marginBottom: '4px' }}>
+               <AlertCircle size={14} /> System Error
+             </div>
+             {errorMessage}
+          </div>
+        )}
+        
+        {status === 'thinking' && !errorMessage && (
           <div className={cn(styles.message, styles.agent)}>
             <Loader2 className={styles.loading} size={18} />
           </div>
@@ -137,24 +178,18 @@ export const JarvishAgent: React.FC = () => {
           <input
             type="text"
             className={styles.input}
-            placeholder="Type your message..."
+            placeholder={googleToken ? "Ask about your Gmail/Calendar..." : "Type a message..."}
             value={input}
-            onChange={handleInputChange}
+            onChange={(e) => setInput(e.target.value)}
             disabled={status !== 'idle'}
           />
-          <button 
-            type="submit" 
-            className={styles.button}
-            disabled={!input.trim() || status !== 'idle'}
-          >
+          <button type="submit" className={styles.button} disabled={!input.trim() || status !== 'idle'}>
             {status === 'thinking' ? <Loader2 className={styles.loading} size={18} /> : <Send size={18} />}
           </button>
         </form>
-        {status !== 'idle' && (
-          <div className={styles.status}>
-            {status === 'thinking' && <span>Jarvish is thinking...</span>}
-            {status === 'responding' && <span>Jarvish is typing...</span>}
-            {status === 'error' && <span style={{ color: '#ef4444' }}>Connection Error</span>}
+        {!googleToken && status === 'idle' && !errorMessage && (
+          <div style={{ fontSize: '0.7rem', color: '#6b7280', marginTop: '8px', textAlign: 'center' }}>
+            💡 Tip: Login with Google to enable Gmail and Calendar features.
           </div>
         )}
       </footer>

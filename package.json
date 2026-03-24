@@ -5,19 +5,19 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "server": "npm server.js",
+    "server": "tsx server.ts",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
-    "@pinecone-database/pinecone": "^7.1.0",
     "@types/classnames": "^2.3.0",
     "classnames": "^2.5.1",
     "cors": "^2.8.6",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
+    "googleapis": "^171.4.0",
     "json-server": "^0.17.4",
     "lucide-react": "^0.575.0",
     "react": "^19.2.0",

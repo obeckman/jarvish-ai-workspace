@@ -14,14 +14,19 @@ export function useAgent() {
     status: 'idle',
   });
 
-  const askAgent = useCallback(async (query: string) => {
+  const askAgent = useCallback(async (query: string, googleToken?: string) => {
     setState({ synthesizedContext: '', response: '', status: 'loading_context' });
 
     try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (googleToken) {
+        headers['x-google-token'] = googleToken;
+      }
+
       // Assuming a backend endpoint that streams NDJSON (Newline Delimited JSON)
       const res = await fetch('/api/agent', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ query }),
       });
 
