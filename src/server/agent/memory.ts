@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 
 // Local storage for memories
-const MEMORY_FILE = path.join(process.cwd(), 'server', 'memories.json');
+const MEMORY_FILE = path.join(process.cwd(), 'src', 'server', 'memories.json');
 
 export interface Memory {
   id: string;

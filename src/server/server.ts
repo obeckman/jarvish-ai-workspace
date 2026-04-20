@@ -66,10 +66,10 @@ server.post('/chat', async (req, res) => {
 });
 
 // --- CONTEXT-AWARE AGENT (Advanced) ---
-import { retrieveMemories } from './server/agent/memory.js';
-import { getOptimizedContext, runAgentTask } from './server/agent/agent.js';
-import { executeInventoryCheck } from './server/agent/tools.js';
-import { listCalendarEvents, searchGmailMessages, getGoogleDocContent } from './server/agent/google_tools.js';
+import { retrieveMemories } from './agent/memory.js';
+import { getOptimizedContext, runAgentTask } from './agent/agent.js';
+import { executeInventoryCheck } from './agent/tools.js';
+import { listCalendarEvents, searchGmailMessages, getGoogleDocContent } from './agent/google_tools.js';
 
 server.post('/api/agent', async (req, res) => {
   const { query } = req.body;
