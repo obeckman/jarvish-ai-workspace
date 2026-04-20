@@ -11,14 +11,13 @@ const INITIAL_MESSAGE: Message = {
   timestamp: Date.now(),
 };
 
-const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
-
 export const JarvishAgent: React.FC = () => {
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState('do i have any mettings tomarow ?');
   const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE]);
   const [status, setStatus] = useState<AgentStatus>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [googleToken, setGoogleToken] = useState<string | null>(localStorage.getItem('google_access_token'));
+  const [clientId, setClientId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = useCallback(() => {
@@ -29,15 +28,64 @@ export const JarvishAgent: React.FC = () => {
     scrollToBottom();
   }, [messages, scrollToBottom, errorMessage]);
 
+  // Step 1: Fetch Config from Server
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const res = await fetch('/api/config');
+        const data = await res.json();
+        if (data.googleClientId) {
+          setClientId(data.googleClientId);
+        } else {
+          console.warn('Google Client ID not found in server config.');
+        }
+      } catch (e) {
+        console.error('Failed to fetch server config:', e);
+      }
+    };
+    fetchConfig();
+  }, []);
+
+  // Step 2: Automatic "Regular Identification" (One Tap)
+  useEffect(() => {
+    if (googleToken || !clientId) return;
+
+    const handleOneTapResponse = (response: any) => {
+      console.log('One Tap response received');
+      if (response.credential) {
+        loginWithGoogle();
+      }
+    };
+
+    const initOneTap = () => {
+      if ((window as any).google?.accounts?.id) {
+        (window as any).google.accounts.id.initialize({
+          client_id: clientId,
+          callback: handleOneTapResponse,
+          auto_select: true, // Seamless identification
+        });
+        (window as any).google.accounts.id.prompt();
+      }
+    };
+
+    // Small delay to ensure SDK is fully ready
+    const timer = setTimeout(initOneTap, 1000);
+    return () => clearTimeout(timer);
+  }, [googleToken, clientId]);
+
   const loginWithGoogle = useCallback(() => {
     setErrorMessage(null);
+    if (!clientId) {
+      return setErrorMessage('Google Client ID not loaded from server.');
+    }
+
     if (!(window as any).google) {
-      return setErrorMessage('Google Identity Services SDK not loaded. Check index.html script tag.');
+      return setErrorMessage('Google Identity Services SDK not loaded.');
     }
     
     try {
       const client = (window as any).google.accounts.oauth2.initTokenClient({
-        client_id: GOOGLE_CLIENT_ID,
+        client_id: clientId,
         scope: 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/documents.readonly',
         callback: (tokenResponse: any) => {
           if (tokenResponse.access_token) {
@@ -52,7 +100,7 @@ export const JarvishAgent: React.FC = () => {
     } catch (e) {
       setErrorMessage(`Failed to initialize Google Login: ${e instanceof Error ? e.message : 'Unknown error'}`);
     }
-  }, []);
+  }, [clientId]);
 
   const logout = useCallback(() => {
     localStorage.removeItem('google_access_token');

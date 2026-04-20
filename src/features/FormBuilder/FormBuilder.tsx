@@ -180,7 +180,7 @@ export const FormBuilder = ({ formSchema, onSubmit }: { formSchema: FieldGroup, 
 };
 
 // ParentComponent.tsx
-const Parent = () => {
+export const FormBuilderWrapper = () => {
     const [schema, setSchema] = useState<FormSchema | null>(null);
 
     // When 'schema' changes (e.g. loaded from ID 1 to ID 2), 

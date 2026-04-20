@@ -22,6 +22,7 @@ const DEFAULT_FETCH_OPTIONS = {
     initialRetryDelay: 1000,
     incrementedDelay: 2000,
 } as const;
+
 export const useResilientFetch = <T,>(props: Partial<UseResilientFetchProps<T>>) => {
     const {
         url = undefined,

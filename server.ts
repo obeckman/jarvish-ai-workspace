@@ -13,6 +13,13 @@ const middlewares = jsonServer.defaults();
 server.use(express.json()); 
 server.use(middlewares);
 
+// --- CONFIG ENDPOINT ---
+server.get('/api/config', (req, res) => {
+  res.json({
+    googleClientId: process.env.GOOGLE_CLIENT_ID || ''
+  });
+});
+
 // --- SHARED API ENDPOINTS ---
 
 server.get('/more-items', (req, res) => {
@@ -42,7 +49,7 @@ server.get('/more-items', (req, res) => {
 // --- SIMPLE CHAT AGENT (Legacy) ---
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 const legacyModel = genAI.getGenerativeModel({
-  model: "gemini-3-flash-preview",
+  model: "gemini-2.5-flash",
   systemInstruction: "You are a helpful AI Agent focused on full-stack development..."
 });
 

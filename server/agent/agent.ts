@@ -21,7 +21,7 @@ const MAX_CONTEXT_CHARS = MAX_CONTEXT_TOKENS * 4;
 export async function getOptimizedContext(userQuery: string, rawMemories: Memory[]): Promise<string> {
   console.log(`[Orchestrator] Optimizing context for ${rawMemories.length} local memories...`);
   
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
   const memoriesText = rawMemories.map(m => `- ${m.text}`).join('');
   
@@ -81,7 +81,7 @@ export async function runAgentTask(userQuery: string, synthesizedContext: string
   const tools: Tool[] = [{ functionDeclarations }];
 
   const model = genAI.getGenerativeModel({
-    model: "gemini-1.5-pro",
+    model: "gemini-2.5-flash",
     systemInstruction: `You are Jarvish, an advanced Execution Agent.
     
     Current Capabilities:

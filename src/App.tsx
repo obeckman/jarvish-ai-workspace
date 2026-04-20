@@ -22,7 +22,7 @@ import {GameApp} from './features/TW/game-app'
 import {AskAgent} from './features/AskAgent/AskAgent'
 import {RickAndMorty} from './features/RickAndMorty'
 import { JarvishAgent, ContextAwareAgent } from './features/jarvishAgent'
-
+import {NormalizationOfUsersAndGroups} from './features/NormalizationOfUsersAndGroups/NormalizationOfUsersAndGroups'
 const TabVariant = {
   NONE: 'none',
   ContextAwareAgent: 'ContextAwareAgent',
@@ -45,7 +45,8 @@ const TabVariant = {
   DynamicFormDemo: 'DynamicFormDemo',
   GameApp: 'GameApp',
   AskAgent: 'AskAgent',
-  RickAndMorty: 'RickAndMorty'
+  RickAndMorty: 'RickAndMorty',
+  NormalizationOfUsersAndGroups: 'NormalizationOfUsersAndGroups'
 } as const;
 
 
@@ -62,6 +63,7 @@ function App() {
       <Tabs defaultValue={TabVariant.NONE} >
         <div className="app-layout-wrapper">
           <nav className="app-tab-list">
+            <Tabs.Trigger value={TabVariant.NormalizationOfUsersAndGroups} className="tabs-trigger">Normalization Of Users And Groups</Tabs.Trigger>
             <Tabs.Trigger value={TabVariant.JarvishAgent} className="tabs-trigger">Jarvish Agent</Tabs.Trigger>
             <Tabs.Trigger value={TabVariant.AskAgent} className="tabs-trigger">Ask Agent</Tabs.Trigger>
             <Tabs.Trigger value={TabVariant.RickAndMorty} className="tabs-trigger">Rick And Morty</Tabs.Trigger>
@@ -86,6 +88,7 @@ function App() {
           </nav>
 
           <div className="app-panel-wrapper">
+            <Tabs.Content value={TabVariant.NormalizationOfUsersAndGroups} className="tabs-content"><NormalizationOfUsersAndGroups /></Tabs.Content>
             <Tabs.Content value={TabVariant.JarvishAgent} className="tabs-content"><JarvishAgent /></Tabs.Content>
             <Tabs.Content value={TabVariant.AskAgent} className="tabs-content"><AskAgent /></Tabs.Content>
             <Tabs.Content value={TabVariant.RickAndMorty} className="tabs-content"><RickAndMorty /></Tabs.Content>
