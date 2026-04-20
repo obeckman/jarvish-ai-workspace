@@ -1,36 +1,29 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import fs from 'node:fs/promises';
-import path from 'node:path';
-
-// Local storage for memories
-const MEMORY_FILE = path.join(process.cwd(), 'src', 'server', 'memories.json');
+import { IVectorStore } from './vector_store.interface.js';
 
 export interface Memory {
   id: string;
   text: string;
   score: number;
-  embedding?: number[];
   metadata?: Record<string, any>;
 }
 
+let vectorStore: IVectorStore | null = null;
+
 /**
- * Loads memories from the local JSON file.
+ * Injects the vector store implementation.
  */
-async function loadMemories(): Promise<Memory[]> {
-  try {
-    const data = await fs.readFile(MEMORY_FILE, 'utf-8');
-    return JSON.parse(data);
-  } catch (error) {
-    // If file doesn't exist, return empty array
-    return [];
-  }
+export function setVectorStore(store: IVectorStore) {
+  vectorStore = store;
 }
 
 /**
- * Saves a new memory to the local store.
+ * Saves a new memory to the vector store.
  * Automatically generates an embedding using Gemini.
  */
 export async function addMemory(text: string, metadata: Record<string, any> = {}) {
+  if (!vectorStore) throw new Error('Vector store not initialized');
+
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
   const model = genAI.getGenerativeModel({ model: "gemini-embedding-001" });
   
@@ -38,34 +31,22 @@ export async function addMemory(text: string, metadata: Record<string, any> = {}
   const result = await model.embedContent(text);
   const embedding = result.embedding.values;
 
-  const memories = await loadMemories();
-  const newMemory: Memory = {
-    id: Date.now().toString(),
-    text,
-    embedding,
-    metadata,
-    score: 0
-  };
-
-  memories.push(newMemory);
-  await fs.writeFile(MEMORY_FILE, JSON.stringify(memories, null, 2));
-  console.log(`[Memory] Memory saved to local store.`);
-  return newMemory;
+  await vectorStore.add(text, embedding, metadata);
+  console.log(`[Memory] Memory saved to Weaviate.`);
 }
 
 /**
- * Retrieves the most semantically relevant memories using local vector search.
+ * Retrieves the most semantically relevant memories using Weaviate vector search.
  */
 export async function retrieveMemories(query: string, topK: number = 5): Promise<Memory[]> {
-  console.log(`[Memory] Retrieving memories for: "${query}" using local store...`);
+  if (!vectorStore) {
+    console.warn('[Memory] Vector store not initialized. Returning empty memories.');
+    return [];
+  }
+
+  console.log(`[Memory] Retrieving memories for: "${query}" using Weaviate...`);
   
   try {
-    const memories = await loadMemories();
-    if (memories.length === 0) {
-      console.log(`[Memory] Local store is empty.`);
-      return [];
-    }
-
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
     const model = genAI.getGenerativeModel({ model: "gemini-embedding-001" });
     
@@ -73,25 +54,8 @@ export async function retrieveMemories(query: string, topK: number = 5): Promise
     const result = await model.embedContent(query);
     const queryVector = result.embedding.values;
 
-    // Calculate similarity (Dot Product)
-    const scored = memories.map(mem => {
-      let score = 0;
-      if (mem.embedding) {
-        // Since Gemini embeddings are normalized, dot product = cosine similarity
-        score = queryVector.reduce((acc, val, i) => acc + val * mem.embedding![i], 0);
-      }
-      return { ...mem, score };
-    });
-
-    // Sort by score descending
-    const results = scored
-      .sort((a, b) => b.score - a.score)
-      .slice(0, topK)
-      .map(({ embedding, ...rest }) => {
-        console.log(`[Memory] Match: "${rest.text.substring(0, 40)}..." (Score: ${rest.score.toFixed(4)})`);
-        return rest;
-      });
-
+    // Search in Weaviate
+    const results = await vectorStore.search(queryVector, topK);
     return results;
   } catch (error) {
     console.error(`[Memory Error]`, error);
