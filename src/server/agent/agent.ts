@@ -14,6 +14,21 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
 const MAX_CONTEXT_TOKENS = 4000;
 const MAX_CONTEXT_CHARS = MAX_CONTEXT_TOKENS * 4;
 
+const MODEL_NAME = "gemini-flash-latest";
+
+async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000): Promise<T> {
+  try {
+    return await fn();
+  } catch (error: any) {
+    if (retries > 0 && (error.status === 503 || error.status === 429)) {
+      console.warn(`[Retry] API error ${error.status}. Retrying in ${delay}ms... (${retries} left)`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return withRetry(fn, retries - 1, delay * 2);
+    }
+    throw error;
+  }
+}
+
 /**
  * Step 1: The Context Orchestrator
  * Filters, summarizes, and extracts entities from raw local memories.
@@ -21,7 +36,7 @@ const MAX_CONTEXT_CHARS = MAX_CONTEXT_TOKENS * 4;
 export async function getOptimizedContext(userQuery: string, rawMemories: Memory[]): Promise<string> {
   console.log(`[Orchestrator] Optimizing context for ${rawMemories.length} local memories...`);
   
-  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+  const model = genAI.getGenerativeModel({ model: MODEL_NAME });
 
   const memoriesText = rawMemories.map(m => `- ${m.text}`).join('');
   
@@ -42,7 +57,7 @@ export async function getOptimizedContext(userQuery: string, rawMemories: Memory
   `;
 
   try {
-    const result = await model.generateContent(prompt);
+    const result = await withRetry(() => model.generateContent(prompt));
     let synthesizedContext = result.response.text();
     console.log(`[Orchestrator] Context synthesized. Length: ${synthesizedContext.length} chars.`);
 
@@ -81,7 +96,7 @@ export async function runAgentTask(userQuery: string, synthesizedContext: string
   const tools: Tool[] = [{ functionDeclarations }];
 
   const model = genAI.getGenerativeModel({
-    model: "gemini-2.5-flash",
+    model: MODEL_NAME,
     systemInstruction: `You are Jarvish, an advanced Execution Agent.
     
     Current Capabilities:
@@ -101,6 +116,8 @@ export async function runAgentTask(userQuery: string, synthesizedContext: string
   const chat = model.startChat();
   
   console.log(`[Execution Agent] Chat session started. Sending initial message stream...`);
-  const result = await chat.sendMessageStream(userQuery);
+  // Note: Streaming retries are complex, so we'll wrap the call itself.
+  // If the stream starts successfully, it usually continues unless connection breaks.
+  const result = await withRetry(() => chat.sendMessageStream(userQuery));
   return { stream: result.stream, chat };
 }

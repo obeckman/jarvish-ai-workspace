@@ -11,6 +11,11 @@ node_modules
 dist
 dist-ssr
 *.local
+.env
+*.skill
+
+# Weaviate persistence data
+src/server/weaviate_data/
 
 # Editor directories and files
 .vscode/*

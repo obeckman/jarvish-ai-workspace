@@ -11,33 +11,7 @@ import { WeaviateVectorStore } from './agent/WeaviateVectorStore.js';
 import { setVectorStore } from './agent/memory.js';
 
 const startServer = async () => {
-  console.log("--- Initializing Weaviate Embedded (WSL2) ---");
-  
-  const client = weaviate.client(
-    new EmbeddedOptions({
-      port: 8080,
-      version: '1.23.7',
-      env: {
-        DEFAULT_VECTORIZER_MODULE: 'none',
-        PERSISTENCE_DATA_PATH: path.join(process.cwd(), 'src', 'server', 'weaviate_data'),
-      },
-    })
-  );
-
-  try {
-    await client.embedded.start();
-    console.log("[Weaviate] Embedded instance started.");
-
-    const vectorStore = new WeaviateVectorStore(client);
-    await vectorStore.ensureSchema();
-    setVectorStore(vectorStore);
-    console.log("[Weaviate] Schema verified and store injected.");
-  } catch (error) {
-    console.error("[Weaviate Startup Error]", error);
-    process.exit(1);
-  }
-
-  console.log("Key Loaded:", process.env.GEMINI_API_KEY ? "YES (starts with AIza)" : "NO");
+  const PORT = process.env.PORT || 3000;
   const server = jsonServer.create();
   const router = jsonServer.router('api.json');
   const middlewares = jsonServer.defaults();
@@ -46,11 +20,19 @@ const startServer = async () => {
   server.use(express.json()); 
   server.use(middlewares);
 
+  // Status variable to track if Weaviate is ready
+  let isReady = false;
+
   // --- CONFIG ENDPOINT ---
   server.get('/api/config', (req, res) => {
     res.json({
       googleClientId: process.env.GOOGLE_CLIENT_ID || ''
     });
+  });
+
+  // Health check endpoint
+  server.get('/api/health', (req, res) => {
+    res.json({ status: isReady ? 'ready' : 'initializing' });
   });
 
   // --- SHARED API ENDPOINTS ---
@@ -78,7 +60,7 @@ const startServer = async () => {
   // --- SIMPLE CHAT AGENT (Legacy) ---
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
   const legacyModel = genAI.getGenerativeModel({
-    model: "gemini-2.5-flash",
+    model: "gemini-flash-latest",
     systemInstruction: "You are a helpful AI Agent focused on full-stack development..."
   });
 
@@ -86,6 +68,7 @@ const startServer = async () => {
     const { message } = req.body;
     try {
       const chat = legacyModel.startChat();
+      // Using simple generateContent for legacy non-streaming chat
       let result = await chat.sendMessage(message);
       res.json({ reply: result.response.text() });
     } catch (error) {
@@ -101,6 +84,10 @@ const startServer = async () => {
   const { listCalendarEvents, searchGmailMessages, getGoogleDocContent } = await import('./agent/google_tools.js');
 
   server.post('/api/agent', async (req, res) => {
+    if (!isReady) {
+      return res.status(503).json({ error: "System is still initializing. Please try again in a moment." });
+    }
+
     const { query } = req.body;
     const googleToken = req.headers['x-google-token'] as string | undefined;
 
@@ -160,8 +147,60 @@ const startServer = async () => {
   });
 
   server.use(router);
-  server.listen(3000, () => {
-    console.log('JSON Server + AI Agent + Weaviate running on http://localhost:3000');
+
+  // Start listening FIRST to catch EADDRINUSE quickly
+  const expressServer = server.listen(PORT, async () => {
+    console.log(`[Server] JSON Server running on http://localhost:${PORT}`);
+    
+    // Now perform heavy initialization
+    console.log("--- Initializing Weaviate Embedded (WSL2) ---");
+    
+    const embeddedOptions = new EmbeddedOptions({
+      port: 8080,
+      env: {
+        DEFAULT_VECTORIZER_MODULE: 'none',
+        PERSISTENCE_DATA_PATH: path.join(process.cwd(), 'src', 'server', 'weaviate_data'),
+      },
+    });
+
+    const client = weaviate.client(embeddedOptions, {
+      host: 'localhost:8080',
+      scheme: 'http'
+    });
+
+    const shutdown = async () => {
+      console.log("\n[Server] Shutting down cleanly...");
+      try {
+        await client.embedded.stop();
+        expressServer.close(() => {
+          console.log("[Server] Stopped.");
+          process.exit(0);
+        });
+      } catch (err) {
+        console.error("[Server] Error during shutdown:", err);
+        process.exit(1);
+      }
+    };
+
+    process.on('SIGINT', shutdown);
+    process.on('SIGTERM', shutdown);
+
+    try {
+      await client.embedded.start();
+      console.log("[Weaviate] Embedded instance started.");
+
+      const vectorStore = new WeaviateVectorStore(client);
+      await vectorStore.ensureSchema();
+      setVectorStore(vectorStore);
+      console.log("[Weaviate] Schema verified and store injected.");
+      
+      isReady = true;
+      console.log("[Server] Full system ready.");
+      console.log("Key Loaded:", process.env.GEMINI_API_KEY ? "YES (starts with AIza)" : "NO");
+    } catch (error) {
+      console.error("[Weaviate Startup Error]", error);
+      await shutdown();
+    }
   });
 };
 
