@@ -95,7 +95,7 @@ const startServer = async () => {
       return res.status(503).json({ error: "System is still initializing. Please try again in a moment." });
     }
 
-    const { query } = req.body;
+    const { query, history: incomingHistory = [] } = req.body;
     const googleToken = req.headers['x-google-token'] as string | undefined;
 
     if (!query) {
@@ -106,6 +106,7 @@ const startServer = async () => {
     res.setHeader('Transfer-Encoding', 'chunked');
 
     try {
+      res.write(JSON.stringify({ type: 'status', stage: 1, content: "Retrieving relevant memories..." }) + '\n');
       const memories = await retrieveMemories(query).catch(err => {
         console.warn("[Server] Memory retrieval failed, proceeding without context.", err);
         return [];
@@ -114,12 +115,20 @@ const startServer = async () => {
       const { getAgentConfig } = await import('./agent/agent.js');
       const { model, firstMessageParts } = await getAgentConfig(query, memories, googleToken);
 
+      // Map incomingHistory (from FE) to Gemini parts
+      const processedHistory = incomingHistory.map((m: any) => ({
+        role: m.role === 'user' ? 'user' : 'model',
+        parts: [{ text: m.content }]
+      })).slice(-10); // Last 10 messages for short-term context
+
       const runAgentLoop = async (attemptsLeft = 2): Promise<void> => {
-        const history: any[] = [];
+        const history: any[] = [...processedHistory];
         let currentParts = firstMessageParts;
+        let accumulatedText = "";
 
         try {
           while (true) {
+            res.write(JSON.stringify({ type: 'status', stage: 3, content: "Jarvish is thinking..." }) + '\n');
             const result = await model.generateContentStream({ contents: [...history, { role: 'user', parts: currentParts }] });
             history.push({ role: 'user', parts: currentParts });
 
@@ -129,7 +138,10 @@ const startServer = async () => {
             for await (const chunk of result.stream) {
               try {
                 const text = chunk.text();
-                if (text) res.write(JSON.stringify({ type: 'message', content: text }) + '\n');
+                if (text) {
+                  accumulatedText += text;
+                  res.write(JSON.stringify({ type: 'message', content: text }) + '\n');
+                }
               } catch (e) {}
             }
 
@@ -141,7 +153,10 @@ const startServer = async () => {
             if (calls?.length) {
               hasFunctionCalls = true;
               for (const call of calls) {
+                const statusMsg = `Researching: ${call.name.replace(/_/g, ' ')}...`;
+                res.write(JSON.stringify({ type: 'status', stage: 2, content: statusMsg }) + '\n');
                 console.log(`[Agent] Executing tool: ${call.name}`);
+                
                 let toolResult: any;
                 try {
                   if (call.name === 'check_inventory') toolResult = await executeInventoryCheck(call.args as any);
@@ -167,6 +182,14 @@ const startServer = async () => {
               break;
             }
           }
+
+          // Step 3: Automatic persistence of this turn into Long-Term Memory
+          if (accumulatedText.length > 50) {
+            res.write(JSON.stringify({ type: 'status', stage: 4, content: "Jarvish is remembering this interaction..." }) + '\n');
+            const summary = `Conversation Summary [${new Date().toLocaleTimeString()}]:\nUser: ${query}\nAssistant: ${accumulatedText.substring(0, 500)}...`;
+            await executeAddMemory({ fact: summary, category: 'history' }).catch(err => console.error("[Memory Persistence Error]", err));
+          }
+
         } catch (error: any) {
           if (attemptsLeft > 0 && (error.status === 429 || error.status === 503 || error.message?.includes("429"))) {
             console.warn(`[Server] Quota hit. Waiting before retry (${attemptsLeft} left)...`);

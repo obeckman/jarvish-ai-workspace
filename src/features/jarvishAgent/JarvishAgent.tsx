@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Send, Bot, User, Loader2, Trash2, LogIn, LogOut, AlertCircle } from 'lucide-react';
+import { Send, Bot, User, Loader2, Trash2, LogIn, LogOut, AlertCircle, Pencil, Square, List, ChevronUp, ChevronDown } from 'lucide-react';
 import cn from 'classnames';
 import styles from './jarvish-agent.module.scss';
 import { Message, AgentStatus } from './types';
@@ -15,14 +15,47 @@ export const JarvishAgent: React.FC = () => {
   const [input, setInput] = useState('do i have any mettings tomarow ?');
   const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE]);
   const [status, setStatus] = useState<AgentStatus>('idle');
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [statusLogs, setStatusLogs] = useState<string[]>([]);
+  const [showAllLogs, setShowAllLogs] = useState(false);
+  const [currentStage, setCurrentStage] = useState<number>(0);
+  const [lastSentQuery, setLastSentQuery] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [googleToken, setGoogleToken] = useState<string | null>(localStorage.getItem('google_access_token'));
   const [clientId, setClientId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
+
+  const cancelRequest = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      setStatus('idle');
+      
+      // Recovery logic
+      const recoveryNote = `\n\n[RECOVERY NOTE: Request was interrupted at Stage ${currentStage}. Status: ${statusMessage || 'Unknown'}. Please continue from here.]`;
+      setInput(lastSentQuery + recoveryNote);
+      
+      setStatusMessage('Request cancelled. Progress saved to input.');
+      setCurrentStage(0);
+      setTimeout(() => setStatusMessage(null), 3000);
+    }
+  }, [currentStage, statusMessage, lastSentQuery]);
+
+  const adjustTextareaHeight = useCallback(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
+    }
+  }, []);
+
+  useEffect(() => {
+    adjustTextareaHeight();
+  }, [input, adjustTextareaHeight]);
 
   useEffect(() => {
     scrollToBottom();
@@ -108,15 +141,35 @@ export const JarvishAgent: React.FC = () => {
     setErrorMessage(null);
   }, []);
 
-  const sendMessage = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
+  const reEditMessage = useCallback((id: string) => {
+    const messageIndex = messages.findIndex(m => m.id === id);
+    if (messageIndex === -1) return;
+
+    const message = messages[messageIndex];
+    setInput(message.content);
+    
+    // Remove this message and all subsequent messages
+    setMessages(prev => prev.slice(0, messageIndex));
+    
+    // Focus textarea
+    setTimeout(() => textareaRef.current?.focus(), 0);
+  }, [messages]);
+
+  const sendMessage = useCallback(async (e?: React.FormEvent) => {
+    e?.preventDefault();
     if (!input.trim() || status !== 'idle') return;
 
     setErrorMessage(null);
+    setLastSentQuery(input); // Preserve for recovery
+    setStatusLogs([]); // Reset logs
     const userMsg: Message = { id: Date.now().toString(), role: 'user', content: input, timestamp: Date.now() };
     setMessages(prev => [...prev, userMsg]);
     setInput('');
     setStatus('thinking');
+    setCurrentStage(1);
+
+    // Setup cancellation
+    abortControllerRef.current = new AbortController();
 
     try {
       const headers: any = { 'Content-Type': 'application/json' };
@@ -125,7 +178,11 @@ export const JarvishAgent: React.FC = () => {
       const response = await fetch('/api/agent', {
         method: 'POST',
         headers,
-        body: JSON.stringify({ query: input }),
+        signal: abortControllerRef.current.signal,
+        body: JSON.stringify({ 
+          query: input,
+          history: messages.map(m => ({ role: m.role, content: m.content })) 
+        }),
       });
 
       if (!response.ok) {
@@ -152,7 +209,12 @@ export const JarvishAgent: React.FC = () => {
         for (const line of lines) {
           try {
             const data = JSON.parse(line);
-            if (data.type === 'message') {
+            if (data.type === 'status') {
+              setStatusMessage(data.content);
+              setStatusLogs(prev => [...prev, data.content]);
+              if (data.stage) setCurrentStage(data.stage);
+            } else if (data.type === 'message') {
+              setStatusMessage(null); // Clear status once we get real text
               assistantMessageContent += data.content;
               setStatus('responding');
               setMessages(prev => prev.map(m => 
@@ -167,14 +229,25 @@ export const JarvishAgent: React.FC = () => {
         }
       }
       setStatus('idle');
-    } catch (error) {
+      setStatusMessage(null);
+      setCurrentStage(0);
+    } catch (error: any) {
+      if (error.name === 'AbortError') return;
+
       console.error('Agent error:', error);
       setStatus('error');
+
+      // Recovery on system error
+      const recoveryNote = `\n\n[ERROR RECOVERY: System failed at Stage ${currentStage}. Status: ${statusMessage || 'Unknown'}. Please retry.]`;
+      setInput(lastSentQuery + recoveryNote);
+      
       setErrorMessage(error instanceof Error ? error.message : 'An unexpected error occurred');
       // Clean up empty assistant messages on error
       setMessages(prev => prev.filter(m => m.content !== ''));
+    } finally {
+      abortControllerRef.current = null;
     }
-  }, [input, status, googleToken]);
+  }, [input, status, googleToken, messages, lastSentQuery, currentStage, statusMessage]);
 
   return (
     <div className={styles.container}>
@@ -194,11 +267,40 @@ export const JarvishAgent: React.FC = () => {
       </header>
 
       <div className={styles.messages}>
+        {/* Stage Tracker */}
+        {status !== 'idle' && (
+          <div className={styles.stageTracker}>
+            {[
+              { id: 1, label: 'Prepare' },
+              { id: 2, label: 'Research' },
+              { id: 3, label: 'Synthesize' },
+              { id: 4, label: 'Finalize' }
+            ].map((stage) => (
+              <div key={stage.id} className={cn(styles.stage, { 
+                [styles.active]: currentStage === stage.id,
+                [styles.completed]: currentStage > stage.id 
+              })}>
+                <div className={styles.dot} />
+                <span>{stage.label}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
         {messages.map((msg) => (
           <div key={msg.id} className={cn(styles.message, { [styles.user]: msg.role === 'user', [styles.agent]: msg.role === 'agent' })}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
               {msg.role === 'user' ? <User size={12} /> : <Bot size={12} />}
               <strong style={{ fontSize: '0.7rem' }}>{msg.role === 'user' ? 'You' : 'Jarvish'}</strong>
+              {msg.role === 'user' && status === 'idle' && (
+                <button 
+                  onClick={() => reEditMessage(msg.id)} 
+                  className={styles.editButton}
+                  title="Edit message"
+                >
+                  <Pencil size={10} />
+                </button>
+              )}
             </div>
             <div style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</div>
           </div>
@@ -215,25 +317,82 @@ export const JarvishAgent: React.FC = () => {
         
         {status === 'thinking' && !errorMessage && (
           <div className={cn(styles.message, styles.agent)}>
-            <Loader2 className={styles.loading} size={18} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Loader2 className={styles.loading} size={18} />
+              <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+                {statusMessage || 'Jarvish is processing...'}
+              </span>
+            </div>
           </div>
         )}
         <div ref={messagesEndRef} />
       </div>
 
+      {statusLogs.length > 0 && (
+        <div className={cn(styles.logViewer, { [styles.expanded]: showAllLogs })}>
+          <div className={styles.logHeader}>
+            <span className={styles.latestLog}>
+              {statusLogs[statusLogs.length - 1]}
+            </span>
+            <button 
+              type="button" 
+              onClick={() => setShowAllLogs(!showAllLogs)}
+              className={styles.logToggleButton}
+            >
+              {showAllLogs ? <ChevronDown size={14} /> : <List size={14} />}
+            </button>
+          </div>
+          {showAllLogs && (
+            <div className={styles.logList}>
+              {statusLogs.map((log, i) => (
+                <div key={i} className={styles.logItem}>
+                  <span className={styles.logTime}>Step {i+1}</span>
+                  {log}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       <footer className={styles.footer}>
         <form onSubmit={sendMessage} className={styles.inputGroup}>
-          <input
-            type="text"
-            className={styles.input}
+          <textarea
+            ref={textareaRef}
+            rows={1}
+            className={styles.textarea}
             placeholder={googleToken ? "Ask about your Gmail/Calendar..." : "Type a message..."}
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            disabled={status !== 'idle'}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey && !e.metaKey && !e.ctrlKey) {
+                e.preventDefault();
+                sendMessage();
+              } else if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                // Add new line for Cmd+Enter or Ctrl+Enter
+                const start = e.currentTarget.selectionStart;
+                const end = e.currentTarget.selectionEnd;
+                const value = e.currentTarget.value;
+                setInput(value.substring(0, start) + "\n" + value.substring(end));
+                // Set cursor position after new line
+                setTimeout(() => {
+                  if (textareaRef.current) {
+                    textareaRef.current.selectionStart = textareaRef.current.selectionEnd = start + 1;
+                  }
+                }, 0);
+              }
+            }}
+            disabled={status === 'thinking'}
           />
-          <button type="submit" className={styles.button} disabled={!input.trim() || status !== 'idle'}>
-            {status === 'thinking' ? <Loader2 className={styles.loading} size={18} /> : <Send size={18} />}
-          </button>
+          {status !== 'idle' ? (
+            <button type="button" onClick={cancelRequest} className={cn(styles.button, styles.stopButton)} title="Stop generation">
+              <Square size={18} fill="currentColor" />
+            </button>
+          ) : (
+            <button type="submit" className={styles.button} disabled={!input.trim()}>
+              <Send size={18} />
+            </button>
+          )}
         </form>
         {!googleToken && status === 'idle' && !errorMessage && (
           <div style={{ fontSize: '0.7rem', color: '#6b7280', marginTop: '8px', textAlign: 'center' }}>
