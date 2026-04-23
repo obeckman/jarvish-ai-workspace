@@ -6,16 +6,17 @@ import {
   gmailSearchDeclaration, 
   googleDocsDeclaration 
 } from './google_tools';
-import { isGoogleAuthenticated } from '../auth/google';
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
 
 // Context Window Guard (Approximate tokens to characters: 1 token ~= 4 chars)
 const MAX_CONTEXT_TOKENS = 4000;
 const MAX_CONTEXT_CHARS = MAX_CONTEXT_TOKENS * 4;
 
-const MODEL_NAME = "gemini-flash-latest";
+const MODEL_NAME = "gemini-2.0-flash";
 
+/**
+ * Utility for retrying stateless API calls (like context optimization).
+ * Do NOT use for stateful chat sessions.
+ */
 async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000): Promise<T> {
   try {
     return await fn();
@@ -31,11 +32,11 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000): Pr
 
 /**
  * Step 1: The Context Orchestrator
- * Filters, summarizes, and extracts entities from raw local memories.
  */
 export async function getOptimizedContext(userQuery: string, rawMemories: Memory[]): Promise<string> {
-  console.log(`[Orchestrator] Optimizing context for ${rawMemories.length} local memories...`);
+  console.log(`[Orchestrator] Optimizing context...`);
   
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
   const model = genAI.getGenerativeModel({ model: MODEL_NAME });
 
   const memoriesText = rawMemories.map(m => `- ${m.text}`).join('');
@@ -44,48 +45,37 @@ export async function getOptimizedContext(userQuery: string, rawMemories: Memory
     You are a Context Orchestrator.
     User Query: "${userQuery}"
     
-    Raw Memories from database:
+    Raw Memories:
     ${memoriesText}
     
-    Task:
-    1. Filter out irrelevant memories that don't relate to the user query.
-    2. Summarize older but relevant interactions.
-    3. Extract specific entities (SKUs, preferences, names).
-    
-    Output strictly a "Synthesized Context" string that can be used by an execution agent.
-    Do not include conversational filler.
+    Output strictly a "Synthesized Context" string.
   `;
 
   try {
     const result = await withRetry(() => model.generateContent(prompt));
     let synthesizedContext = result.response.text();
-    console.log(`[Orchestrator] Context synthesized. Length: ${synthesizedContext.length} chars.`);
-
-    // Context Window Guard Implementation
+    
     if (synthesizedContext.length > MAX_CONTEXT_CHARS) {
-      console.warn(`[Guard] Truncating synthesized context from ${synthesizedContext.length} to ${MAX_CONTEXT_CHARS} chars.`);
       synthesizedContext = synthesizedContext.substring(0, MAX_CONTEXT_CHARS);
     }
 
     return synthesizedContext;
   } catch (error) {
     console.error(`[Orchestrator Error]`, error);
-    return "Failed to synthesize context. Proceeding with raw data if possible.";
+    return "Failed to synthesize context.";
   }
 }
 
 /**
  * Step 2: The Execution Agent
- * Uses synthesized context as system instructions and binds tools for ReAct execution.
  */
 export async function runAgentTask(userQuery: string, synthesizedContext: string, googleToken?: string) {
-  console.log(`[Execution Agent] Starting task with synthesized context...`);
+  console.log(`[Execution Agent] Initializing chat session with ${MODEL_NAME}...`);
   
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
   const functionDeclarations = [inventoryToolDeclaration];
   
-  // Only add Google tools if token is passed from the client
   if (googleToken) {
-    console.log('[Execution Agent] User is authenticated with Google (token provided). Adding tools.');
     functionDeclarations.push(
       googleCalendarDeclaration,
       gmailSearchDeclaration,
@@ -93,31 +83,23 @@ export async function runAgentTask(userQuery: string, synthesizedContext: string
     );
   }
 
-  const tools: Tool[] = [{ functionDeclarations }];
-
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
     systemInstruction: `You are Jarvish, an advanced Execution Agent.
     
     Current Capabilities:
-    1. Inventory Management: You can check stock for products using SKUs.
-    ${googleToken ? '2. Google Workspace (READ-ONLY): You can search Gmail, list Calendar events, and read Google Docs.' : '2. Google Workspace: Currently disabled. Ask the user to login if they want you to access their Google Apps.'}
-
-    Guidelines:
-    - Be concise and professional.
-    - If you use a tool, explain what you found.
-    - If you need a Google tool but are not authenticated, politely ask the user to login.
+    1. Inventory Management: Check stock for products using SKUs.
+    ${googleToken ? '2. Google Workspace: Search Gmail, list Calendar events, read Google Docs.' : '2. Google Workspace: DISABLED. Ask user to login if needed.'}
 
     Context & Memories:
     ${synthesizedContext}`,
-    tools,
+    tools: [{ functionDeclarations }],
   });
 
   const chat = model.startChat();
   
-  console.log(`[Execution Agent] Chat session started. Sending initial message stream...`);
-  // Note: Streaming retries are complex, so we'll wrap the call itself.
-  // If the stream starts successfully, it usually continues unless connection breaks.
-  const result = await withRetry(() => chat.sendMessageStream(userQuery));
+  // NOTE: No withRetry here. Stateful chat stream handles its own lifecycle.
+  const result = await chat.sendMessageStream(userQuery);
   return { stream: result.stream, chat };
 }
+

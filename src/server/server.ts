@@ -105,39 +105,80 @@ const startServer = async () => {
 
       const { stream, chat } = await runAgentTask(query, context, googleToken);
 
-      for await (const chunk of stream) {
-        const calls = chunk.functionCalls();
-        if (calls?.length) {
-          const toolResponses = [];
-          for (const call of calls) {
-            let result: any;
-            if (call.name === 'check_inventory') {
-              result = await executeInventoryCheck(call.args as any);
-            } else if (googleToken) {
-              if (call.name === 'list_calendar_events') {
-                result = await listCalendarEvents(googleToken, call.args as any);
-              } else if (call.name === 'search_gmail_messages') {
-                result = await searchGmailMessages(googleToken, call.args as any);
-              } else if (call.name === 'get_google_doc_content') {
-                result = await getGoogleDocContent(googleToken, call.args as any);
+      // --- STABLE STREAMING ReAct LOOP ---
+      let currentStream = stream;
+
+      while (true) {
+        let hasFunctionCalls = false;
+        const toolResponses: any[] = [];
+        const seenCallIds = new Set<string>();
+
+        for await (const chunk of currentStream) {
+          // Safely extract text from chunk without throwing
+          try {
+            const text = chunk.text();
+            if (text) {
+              res.write(JSON.stringify({ type: 'message', content: text }) + '\n');
+            }
+          } catch (e) {
+            // Chunks with only function calls will throw on .text(), which is expected
+          }
+
+          const calls = chunk.functionCalls();
+          if (calls?.length) {
+            hasFunctionCalls = true;
+            for (const call of calls) {
+              // Deduplicate calls in the same turn (some SDK versions repeat them in chunks)
+              const callKey = `${call.name}-${JSON.stringify(call.args)}`;
+              if (seenCallIds.has(callKey)) continue;
+              seenCallIds.add(callKey);
+
+              console.log(`[Agent] Executing tool: ${call.name}`);
+              let result: any;
+              
+              try {
+                if (call.name === 'check_inventory') {
+                  result = await executeInventoryCheck(call.args as any);
+                } else if (googleToken) {
+                  if (call.name === 'list_calendar_events') {
+                    result = await listCalendarEvents(googleToken, call.args as any);
+                  } else if (call.name === 'search_gmail_messages') {
+                    result = await searchGmailMessages(googleToken, call.args as any);
+                  } else if (call.name === 'get_google_doc_content') {
+                    result = await getGoogleDocContent(googleToken, call.args as any);
+                  } else {
+                    result = `Error: Tool ${call.name} is not implemented on the server.`;
+                  }
+                } else {
+                  result = "Error: User is not authenticated with Google. Please ask the user to login to use this tool.";
+                }
+              } catch (toolError: any) {
+                console.error(`[Tool Execution Error: ${call.name}]`, toolError);
+                result = `System Error executing ${call.name}: ${toolError.message || 'Unknown error'}`;
               }
-            }
-            if (result !== undefined) {
-              toolResponses.push({ functionResponse: { name: call.name, response: { result } } });
-            }
-          }
-          if (toolResponses.length > 0) {
-            const finalStream = await chat.sendMessageStream(toolResponses);
-            for await (const fChunk of finalStream) {
-              const text = fChunk.text();
-              if (text) res.write(JSON.stringify({ type: 'message', content: text }) + '\n');
+
+              // CRITICAL: Always push a response for every call to maintain turn order
+              toolResponses.push({ 
+                functionResponse: { 
+                  name: call.name, 
+                  response: { result: result ?? "Success (No data returned)" } 
+                } 
+              });
             }
           }
+        }
+
+        // Finalize the current turn's stream state
+        await currentStream.response;
+
+        if (hasFunctionCalls && toolResponses.length > 0) {
+          console.log(`[Agent] Sending ${toolResponses.length} function responses to Gemini...`);
+          currentStream = await chat.sendMessageStream(toolResponses);
         } else {
-          const text = chunk.text();
-          if (text) res.write(JSON.stringify({ type: 'message', content: text }) + '\n');
+          break; // Turn complete
         }
       }
+
       res.end();
     } catch (error) {
       console.error("[Agent Error]", error);
