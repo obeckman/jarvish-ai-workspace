@@ -87,6 +87,78 @@ export const addMemoryDeclaration: FunctionDeclaration = {
   },
 };
 
+// --- Search Provider Abstraction ---
+
+interface SearchResult {
+  title: string;
+  link: string;
+  snippet: string;
+}
+
+interface SearchProvider {
+  search(query: string): Promise<string>;
+}
+
+/**
+ * Google Custom Search Implementation
+ * Best for: Searching specific domains/sites.
+ */
+class GoogleCSEProvider implements SearchProvider {
+  async search(query: string): Promise<string> {
+    const apiKey = process.env.GOOGLE_SEARCH_API_KEY;
+    const cx = process.env.GOOGLE_SEARCH_CX;
+    if (!apiKey || !cx) return "Error: Google Search config missing.";
+
+    const customsearch = google.customsearch('v1');
+    const res = await customsearch.cse.list({ cx, q: query, auth: apiKey });
+    const items = res.data.items || [];
+    if (items.length === 0) return "No results found (Google).";
+    
+    return items.map((item, i) => `[${i+1}] ${item.title}\nURL: ${item.link}\nSnippet: ${item.snippet}\n`).join('\n');
+  }
+}
+
+/**
+ * Serper.dev Implementation
+ * Best for: Unrestricted, open web research.
+ */
+class SerperProvider implements SearchProvider {
+  async search(query: string): Promise<string> {
+    const apiKey = process.env.SERPER_API_KEY;
+    if (!apiKey) return "Error: Serper API Key missing.";
+
+    const response = await fetch("https://google.serper.dev/search", {
+      method: "POST",
+      headers: {
+        "X-API-KEY": apiKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ q: query }),
+    });
+
+    const data = await response.json();
+    const items = data.organic || [];
+    if (items.length === 0) return "No results found (Serper).";
+
+    return items.map((item: any, i: number) => `[${i+1}] ${item.title}\nURL: ${item.link}\nSnippet: ${item.snippet}\n`).join('\n');
+  }
+}
+
+/**
+ * Factory to pick the best search provider based on available keys.
+ */
+function getSearchProvider(): SearchProvider {
+  if (process.env.SERPER_API_KEY) {
+    console.log("[Search] Using Serper.dev (Open Web)");
+    return new SerperProvider();
+  }
+  if (process.env.GOOGLE_SEARCH_API_KEY && process.env.GOOGLE_SEARCH_CX) {
+    console.log("[Search] Using Google CSE (Site-specific)");
+    return new GoogleCSEProvider();
+  }
+  throw new Error("No search provider configured. Add SERPER_API_KEY or GOOGLE_SEARCH keys to .env.");
+}
+
 // --- Tool Execution Logic ---
 
 export async function executeInventoryCheck(args: InventoryCheckArgs): Promise<string> {
@@ -97,22 +169,11 @@ export async function executeInventoryCheck(args: InventoryCheckArgs): Promise<s
 }
 
 export async function executeWebSearch(args: { query: string }): Promise<string> {
-  const apiKey = process.env.GOOGLE_SEARCH_API_KEY;
-  const cx = process.env.GOOGLE_SEARCH_CX;
-
-  if (!apiKey || !cx) {
-    return "Error: Google Search API Key or CX ID is missing in .env. Please provide GOOGLE_SEARCH_API_KEY and GOOGLE_SEARCH_CX.";
-  }
-
-  const customsearch = google.customsearch('v1');
   try {
-    const res = await customsearch.cse.list({ cx, q: args.query, auth: apiKey });
-    const items = res.data.items || [];
-    if (items.length === 0) return "No results found.";
-    
-    return items.map((item, i) => `[${i+1}] ${item.title}\nURL: ${item.link}\nSnippet: ${item.snippet}\n`).join('\n');
+    const provider = getSearchProvider();
+    return await provider.search(args.query);
   } catch (error: any) {
-    return `Search failed: ${error.message}`;
+    return `Search failed: ${error.message}. Please provide SERPER_API_KEY or Google Search keys in .env.`;
   }
 }
 

@@ -18,7 +18,7 @@ import {
 const MAX_CONTEXT_TOKENS = 12000;
 const MAX_CONTEXT_CHARS = MAX_CONTEXT_TOKENS * 4;
 
-const MODEL_NAME = "gemini-flash-latest";
+const MODEL_NAME = "gemini-2.5-flash";
 
 /**
  * Utility for retrying stateless API calls (like context optimization).
@@ -91,7 +91,7 @@ export async function getOptimizedContext(userQuery: string, rawMemories: Memory
 /**
  * Step 2: Agent Configuration
  */
-export async function getAgentConfig(userQuery: string, synthesizedContext: string, googleToken?: string) {
+export async function getAgentConfig(userQuery: string, rawMemories: Memory[], googleToken?: string) {
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
   const functionDeclarations = [
     inventoryToolDeclaration,
@@ -110,23 +110,27 @@ export async function getAgentConfig(userQuery: string, synthesizedContext: stri
     );
   }
 
+  const memoriesText = rawMemories.length > 0 
+    ? rawMemories.map(m => `- ${m.text}`).join('\n')
+    : "No relevant verified memories.";
+
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
     systemInstruction: `You are Jarvish, a HIGH-ACCURACY RESEARCH AGENT. Your primary mandate is to eliminate hallucinations and provide absolute truth.
 
     CORE PROTOCOLS:
     1. ZERO HALLUCINATION: If you are unsure or lack data, NEVER guess. Use 'web_search' or ask the user for clarification.
-    2. VERIFY-THEN-SPEAK: Before making a factual claim, research it. If you find conflicting info, report the conflict.
-    3. CITATION MANDATE: Always cite your sources (URLs or "Memory ID") when providing research data.
-    4. PROACTIVE CLARIFICATION: If a user's problem is vague, you MUST ask for clarifying details before starting research.
+    2. VERIFY-THEN-SPEAK: Before making a factual claim, research it.
+    3. CITATION MANDATE: Always cite your sources (URLs or "Memory ID").
+    4. PROACTIVE CLARIFICATION: If a user's problem is vague, ask for details before starting research.
 
     CAPABILITIES:
     1. Research: 'web_search', 'fetch_web_page', 'read_pdf'.
     2. Context: 'read_file', 'add_to_memory'.
     3. Google Workspace: ${googleToken ? 'ENABLED.' : 'DISABLED.'}
 
-    VERIFIED CONTEXT:
-    ${synthesizedContext}`,
+    VERIFIED CONTEXT (from Long-Term Memory):
+    ${memoriesText}`,
     tools: [{ functionDeclarations }],
   });
 

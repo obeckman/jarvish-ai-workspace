@@ -60,7 +60,7 @@ const startServer = async () => {
   // --- SIMPLE CHAT AGENT (Legacy) ---
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
   const legacyModel = genAI.getGenerativeModel({
-    model: "gemini-flash-latest",
+    model: "gemini-2.5-flash",
     systemInstruction: "You are a helpful AI Agent focused on full-stack development..."
   });
 
@@ -105,102 +105,86 @@ const startServer = async () => {
     res.setHeader('Content-Type', 'application/x-ndjson');
     res.setHeader('Transfer-Encoding', 'chunked');
 
-    const runWithFreshStart = async (attemptsLeft = 3): Promise<void> => {
-      try {
-        const memories = await retrieveMemories(query);
-        let context = "";
-        
-        try {
-          context = await getOptimizedContext(query, memories);
-          res.write(JSON.stringify({ type: 'context', content: context }) + '\n');
-        } catch (ctxError) {
-          console.warn("[Server] Context optimization failed, falling back to raw memories.");
-          context = memories.map(m => `- ${m.text}`).join('\n');
-          res.write(JSON.stringify({ type: 'context', content: "Synthesizer throttled. Using raw memories instead." }) + '\n');
-        }
+    try {
+      const memories = await retrieveMemories(query).catch(err => {
+        console.warn("[Server] Memory retrieval failed, proceeding without context.", err);
+        return [];
+      });
 
-        // RE-IMPORT the model config logic from agent.ts but handle the loop here
-        const { getAgentConfig } = await import('./agent/agent.js');
-        const { model: configuredModel, firstMessageParts } = await getAgentConfig(query, context, googleToken);
-        
+      const { getAgentConfig } = await import('./agent/agent.js');
+      const { model, firstMessageParts } = await getAgentConfig(query, memories, googleToken);
+
+      const runAgentLoop = async (attemptsLeft = 2): Promise<void> => {
         const history: any[] = [];
         let currentParts = firstMessageParts;
 
-        while (true) {
-          const result = await configuredModel.generateContentStream({ contents: [...history, { role: 'user', parts: currentParts }] });
-          
-          // Append the user turn to history
-          history.push({ role: 'user', parts: currentParts });
+        try {
+          while (true) {
+            const result = await model.generateContentStream({ contents: [...history, { role: 'user', parts: currentParts }] });
+            history.push({ role: 'user', parts: currentParts });
 
-          let hasFunctionCalls = false;
-          const toolResponses: any[] = [];
-          let accumulatedText = "";
-          let modelParts: any[] = [];
+            let hasFunctionCalls = false;
+            const toolResponses: any[] = [];
 
-          for await (const chunk of result.stream) {
-            try {
-              const text = chunk.text();
-              if (text) {
-                accumulatedText += text;
-                res.write(JSON.stringify({ type: 'message', content: text }) + '\n');
-              }
-            } catch (e) {}
-          }
-
-          const finalResponse = await result.response;
-          const calls = finalResponse.functionCalls();
-          modelParts = finalResponse.candidates?.[0].content.parts || [];
-
-          // Append the model's response to history
-          history.push({ role: 'model', parts: modelParts });
-
-          if (calls?.length) {
-            hasFunctionCalls = true;
-            for (const call of calls) {
-              console.log(`[Agent] Executing tool: ${call.name}`);
-              let toolResult: any;
+            for await (const chunk of result.stream) {
               try {
-                if (call.name === 'check_inventory') toolResult = await executeInventoryCheck(call.args as any);
-                else if (call.name === 'web_search') toolResult = await executeWebSearch(call.args as any);
-                else if (call.name === 'fetch_web_page') toolResult = await executeFetchWebPage(call.args as any);
-                else if (call.name === 'read_pdf') toolResult = await executeReadPdf(call.args as any);
-                else if (call.name === 'read_file') toolResult = await executeReadFile(call.args as any);
-                else if (call.name === 'add_to_memory') toolResult = await executeAddMemory(call.args as any);
-                else if (googleToken) {
-                  if (call.name === 'list_calendar_events') toolResult = await listCalendarEvents(googleToken, call.args as any);
-                  else if (call.name === 'search_gmail_messages') toolResult = await searchGmailMessages(googleToken, call.args as any);
-                  else if (call.name === 'get_google_doc_content') toolResult = await getGoogleDocContent(googleToken, call.args as any);
-                  else toolResult = `Error: Tool ${call.name} not implemented.`;
-                } else toolResult = "Error: User not authenticated.";
-              } catch (e: any) { toolResult = `Error: ${e.message}`; }
+                const text = chunk.text();
+                if (text) res.write(JSON.stringify({ type: 'message', content: text }) + '\n');
+              } catch (e) {}
+            }
 
-              toolResponses.push({ functionResponse: { name: call.name, response: { result: toolResult } } });
+            const finalResponse = await result.response;
+            const calls = finalResponse.functionCalls();
+            const modelParts = finalResponse.candidates?.[0].content.parts || [];
+            history.push({ role: 'model', parts: modelParts });
+
+            if (calls?.length) {
+              hasFunctionCalls = true;
+              for (const call of calls) {
+                console.log(`[Agent] Executing tool: ${call.name}`);
+                let toolResult: any;
+                try {
+                  if (call.name === 'check_inventory') toolResult = await executeInventoryCheck(call.args as any);
+                  else if (call.name === 'web_search') toolResult = await executeWebSearch(call.args as any);
+                  else if (call.name === 'fetch_web_page') toolResult = await executeFetchWebPage(call.args as any);
+                  else if (call.name === 'read_pdf') toolResult = await executeReadPdf(call.args as any);
+                  else if (call.name === 'read_file') toolResult = await executeReadFile(call.args as any);
+                  else if (call.name === 'add_to_memory') toolResult = await executeAddMemory(call.args as any);
+                  else if (googleToken) {
+                    if (call.name === 'list_calendar_events') toolResult = await listCalendarEvents(googleToken, call.args as any);
+                    else if (call.name === 'search_gmail_messages') toolResult = await searchGmailMessages(googleToken, call.args as any);
+                    else if (call.name === 'get_google_doc_content') toolResult = await getGoogleDocContent(googleToken, call.args as any);
+                    else toolResult = `Error: Tool ${call.name} not implemented.`;
+                  } else toolResult = "Error: User not authenticated.";
+                } catch (e: any) { toolResult = `Error: ${e.message}`; }
+                toolResponses.push({ functionResponse: { name: call.name, response: { result: toolResult } } });
+              }
+            }
+
+            if (hasFunctionCalls && toolResponses.length > 0) {
+              currentParts = toolResponses;
+            } else {
+              break;
             }
           }
-
-          if (hasFunctionCalls && toolResponses.length > 0) {
-            currentParts = toolResponses; // Next turn is the function responses
-          } else {
-            break; // Done
+        } catch (error: any) {
+          if (attemptsLeft > 0 && (error.status === 429 || error.status === 503 || error.message?.includes("429"))) {
+            console.warn(`[Server] Quota hit. Waiting before retry (${attemptsLeft} left)...`);
+            const waitTime = error.message?.match(/retry in ([\d.]+)s/i)?.[1] 
+              ? Math.ceil(parseFloat(error.message.match(/retry in ([\d.]+)s/i)![1]) * 1000) + 1000 
+              : 5000;
+            await new Promise(r => setTimeout(r, waitTime));
+            return runAgentLoop(attemptsLeft - 1);
           }
+          throw error;
         }
-      } catch (error: any) {
-        if (attemptsLeft > 0 && (error.status === 429 || error.status === 503 || error.message?.includes("stream"))) {
-          console.warn(`[Server] Agent session failed. Starting fresh attempt (${attemptsLeft} left)...`);
-          const waitTime = error.message?.includes("57s") ? 60000 : 3000;
-          await new Promise(r => setTimeout(r, waitTime));
-          return runWithFreshStart(attemptsLeft - 1);
-        }
-        throw error;
-      }
-    }
+      };
 
-    try {
-      await runWithFreshStart();
+      await runAgentLoop();
       res.end();
     } catch (error) {
-      console.error("[Agent Error]", error);
-      res.write(JSON.stringify({ type: 'error', content: error instanceof Error ? error.message : 'Unknown error' }) + '\n');
+      console.error("[Agent Final Error]", error);
+      res.write(JSON.stringify({ type: 'error', content: "System reached its capacity. Please try again in a few minutes." }) + '\n');
       res.end();
     }
   });
