@@ -20,6 +20,7 @@
     "googleapis": "^171.4.0",
     "json-server": "^0.17.4",
     "lucide-react": "^0.575.0",
+    "pdf-parse": "^2.4.5",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "weaviate-client": "^3.12.1",

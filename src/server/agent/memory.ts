@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { IVectorStore } from './vector_store.interface.js';
+import { withRetry } from './agent.js';
 
 export interface Memory {
   id: string;
@@ -28,7 +29,7 @@ export async function addMemory(text: string, metadata: Record<string, any> = {}
   const model = genAI.getGenerativeModel({ model: "gemini-embedding-001" });
   
   console.log(`[Memory] Generating embedding for new memory: "${text.substring(0, 30)}..."`);
-  const result = await model.embedContent(text);
+  const result = await withRetry(() => model.embedContent(text));
   const embedding = result.embedding.values;
 
   await vectorStore.add(text, embedding, metadata);
@@ -51,7 +52,7 @@ export async function retrieveMemories(query: string, topK: number = 5): Promise
     const model = genAI.getGenerativeModel({ model: "gemini-embedding-001" });
     
     // Generate embedding for the search query
-    const result = await model.embedContent(query);
+    const result = await withRetry(() => model.embedContent(query));
     const queryVector = result.embedding.values;
 
     // Search in Weaviate

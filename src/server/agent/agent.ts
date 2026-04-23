@@ -1,30 +1,47 @@
 import { GoogleGenerativeAI, Tool } from '@google/generative-ai';
-import { retrieveMemories, Memory } from './memory';
-import { inventoryToolDeclaration } from './tools';
+import { retrieveMemories, Memory } from './memory.js';
+import { 
+  inventoryToolDeclaration, 
+  webSearchDeclaration, 
+  fetchWebPageDeclaration, 
+  readPdfDeclaration, 
+  readFileDeclaration, 
+  addMemoryDeclaration 
+} from './tools.js';
 import { 
   googleCalendarDeclaration, 
   gmailSearchDeclaration, 
   googleDocsDeclaration 
-} from './google_tools';
+} from './google_tools.js';
 
 // Context Window Guard (Approximate tokens to characters: 1 token ~= 4 chars)
-const MAX_CONTEXT_TOKENS = 4000;
+const MAX_CONTEXT_TOKENS = 12000;
 const MAX_CONTEXT_CHARS = MAX_CONTEXT_TOKENS * 4;
 
-const MODEL_NAME = "gemini-2.0-flash";
+const MODEL_NAME = "gemini-flash-latest";
 
 /**
  * Utility for retrying stateless API calls (like context optimization).
- * Do NOT use for stateful chat sessions.
+ * Do NOT use for stateful chat sessions directly, but can be used for the initial call.
  */
-async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000): Promise<T> {
+export async function withRetry<T>(fn: () => Promise<T>, retries = 5, delay = 2000): Promise<T> {
   try {
     return await fn();
   } catch (error: any) {
-    if (retries > 0 && (error.status === 503 || error.status === 429)) {
-      console.warn(`[Retry] API error ${error.status}. Retrying in ${delay}ms... (${retries} left)`);
-      await new Promise(resolve => setTimeout(resolve, delay));
-      return withRetry(fn, retries - 1, delay * 2);
+    const errorMessage = error.message || "";
+    let waitTime = delay;
+
+    // Try to extract "retry in X seconds" from error message
+    const retryMatch = errorMessage.match(/retry in ([\d.]+)s/i);
+    if (retryMatch && retryMatch[1]) {
+      waitTime = Math.ceil(parseFloat(retryMatch[1]) * 1000) + 500; // Add 500ms buffer
+    }
+
+    if (retries > 0 && (error.status === 503 || error.status === 429 || errorMessage.includes("429") || errorMessage.includes("503"))) {
+      console.warn(`[Retry] API error ${error.status || '429/503'}. Retrying in ${waitTime}ms... (${retries} left)`);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+      // Exponential backoff for the default case, or use the suggested wait time
+      return withRetry(fn, retries - 1, retryMatch ? waitTime : delay * 2);
     }
     throw error;
   }
@@ -34,22 +51,27 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000): Pr
  * Step 1: The Context Orchestrator
  */
 export async function getOptimizedContext(userQuery: string, rawMemories: Memory[]): Promise<string> {
-  console.log(`[Orchestrator] Optimizing context...`);
+  if (!rawMemories || rawMemories.length === 0) {
+    return "No relevant memories found.";
+  }
+
+  console.log(`[Orchestrator] Optimizing context for ${rawMemories.length} memories...`);
   
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
   const model = genAI.getGenerativeModel({ model: MODEL_NAME });
 
-  const memoriesText = rawMemories.map(m => `- ${m.text}`).join('');
+  const memoriesText = rawMemories.map(m => `- ${m.text}`).join('\n');
   
-  const prompt = `
-    You are a Context Orchestrator.
-    User Query: "${userQuery}"
-    
-    Raw Memories:
-    ${memoriesText}
-    
-    Output strictly a "Synthesized Context" string.
-  `;
+  const prompt = `You are a High-Accuracy Grounding Orchestrator. 
+  Your goal is to extract only VERIFIABLE FACTS from the following memories that are directly relevant to the query: "${userQuery}".
+  
+  Memories:
+  ${memoriesText}
+  
+  Rules:
+  1. If a memory contains uncertain or conflicting info, note the uncertainty.
+  2. If no memories are relevant, state "No relevant verified memories."
+  3. Output only the synthesized factual context. Avoid conversational filler.`;
 
   try {
     const result = await withRetry(() => model.generateContent(prompt));
@@ -62,18 +84,23 @@ export async function getOptimizedContext(userQuery: string, rawMemories: Memory
     return synthesizedContext;
   } catch (error) {
     console.error(`[Orchestrator Error]`, error);
-    return "Failed to synthesize context.";
+    throw error;
   }
 }
 
 /**
- * Step 2: The Execution Agent
+ * Step 2: Agent Configuration
  */
-export async function runAgentTask(userQuery: string, synthesizedContext: string, googleToken?: string) {
-  console.log(`[Execution Agent] Initializing chat session with ${MODEL_NAME}...`);
-  
+export async function getAgentConfig(userQuery: string, synthesizedContext: string, googleToken?: string) {
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
-  const functionDeclarations = [inventoryToolDeclaration];
+  const functionDeclarations = [
+    inventoryToolDeclaration,
+    webSearchDeclaration,
+    fetchWebPageDeclaration,
+    readPdfDeclaration,
+    readFileDeclaration,
+    addMemoryDeclaration
+  ];
   
   if (googleToken) {
     functionDeclarations.push(
@@ -85,20 +112,33 @@ export async function runAgentTask(userQuery: string, synthesizedContext: string
 
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
-    systemInstruction: `You are Jarvish, an advanced Execution Agent.
-    
-    Current Capabilities:
-    1. Inventory Management: Check stock for products using SKUs.
-    ${googleToken ? '2. Google Workspace: Search Gmail, list Calendar events, read Google Docs.' : '2. Google Workspace: DISABLED. Ask user to login if needed.'}
+    systemInstruction: `You are Jarvish, a HIGH-ACCURACY RESEARCH AGENT. Your primary mandate is to eliminate hallucinations and provide absolute truth.
 
-    Context & Memories:
+    CORE PROTOCOLS:
+    1. ZERO HALLUCINATION: If you are unsure or lack data, NEVER guess. Use 'web_search' or ask the user for clarification.
+    2. VERIFY-THEN-SPEAK: Before making a factual claim, research it. If you find conflicting info, report the conflict.
+    3. CITATION MANDATE: Always cite your sources (URLs or "Memory ID") when providing research data.
+    4. PROACTIVE CLARIFICATION: If a user's problem is vague, you MUST ask for clarifying details before starting research.
+
+    CAPABILITIES:
+    1. Research: 'web_search', 'fetch_web_page', 'read_pdf'.
+    2. Context: 'read_file', 'add_to_memory'.
+    3. Google Workspace: ${googleToken ? 'ENABLED.' : 'DISABLED.'}
+
+    VERIFIED CONTEXT:
     ${synthesizedContext}`,
     tools: [{ functionDeclarations }],
   });
 
+  return { model, firstMessageParts: [{ text: userQuery }] };
+}
+
+/**
+ * Step 3: The Execution Agent (Legacy/Helper)
+ */
+export async function runAgentTask(userQuery: string, synthesizedContext: string, googleToken?: string) {
+  const { model } = await getAgentConfig(userQuery, synthesizedContext, googleToken);
   const chat = model.startChat();
-  
-  // NOTE: No withRetry here. Stateful chat stream handles its own lifecycle.
   const result = await chat.sendMessageStream(userQuery);
   return { stream: result.stream, chat };
 }
