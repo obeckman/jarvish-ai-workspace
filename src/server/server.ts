@@ -129,20 +129,30 @@ const startServer = async () => {
         try {
           while (true) {
             res.write(JSON.stringify({ type: 'status', stage: 3, content: "Jarvish is thinking..." }) + '\n');
-            const result = await model.generateContentStream({ contents: [...history, { role: 'user', parts: currentParts }] });
+            
+            let result;
+            try {
+              result = await model.generateContentStream({ contents: [...history, { role: 'user', parts: currentParts }] });
+            } catch (streamInitError: any) {
+              throw streamInitError; 
+            }
+
             history.push({ role: 'user', parts: currentParts });
 
             let hasFunctionCalls = false;
             const toolResponses: any[] = [];
 
-            for await (const chunk of result.stream) {
-              try {
+            try {
+              for await (const chunk of result.stream) {
                 const text = chunk.text();
                 if (text) {
                   accumulatedText += text;
                   res.write(JSON.stringify({ type: 'message', content: text }) + '\n');
                 }
-              } catch (e) {}
+              }
+            } catch (streamIterError: any) {
+              console.error("[Stream Iteration Error]", streamIterError);
+              throw streamIterError;
             }
 
             const finalResponse = await result.response;
@@ -191,11 +201,29 @@ const startServer = async () => {
           }
 
         } catch (error: any) {
-          if (attemptsLeft > 0 && (error.status === 429 || error.status === 503 || error.message?.includes("429"))) {
-            console.warn(`[Server] Quota hit. Waiting before retry (${attemptsLeft} left)...`);
-            const waitTime = error.message?.match(/retry in ([\d.]+)s/i)?.[1] 
-              ? Math.ceil(parseFloat(error.message.match(/retry in ([\d.]+)s/i)![1]) * 1000) + 1000 
-              : 5000;
+          const errorMessage = error.message || "";
+          const isQuotaError = error.status === 429 || errorMessage.includes("429") || errorMessage.includes("quota");
+          
+          if (attemptsLeft > 0 && (isQuotaError || error.status === 503 || errorMessage.includes("stream") || errorMessage.includes("parse"))) {
+            let waitTime = 5000;
+            const retryMatch = errorMessage.match(/retry in ([\d.]+)s/i);
+            
+            if (retryMatch && retryMatch[1]) {
+              waitTime = Math.ceil(parseFloat(retryMatch[1]) * 1000) + 2000;
+            } else if (errorMessage.includes("57s")) {
+              waitTime = 60000;
+            }
+
+            console.warn(`[Server] Quota hit/Stream error. Retrying in ${waitTime}ms... (${attemptsLeft} left)`);
+            
+            // Stream the retry info to the frontend
+            res.write(JSON.stringify({ 
+              type: 'status', 
+              stage: 0, 
+              content: `Capacity reached. Auto-resuming in ${Math.round(waitTime/1000)}s...`,
+              retryIn: waitTime
+            }) + '\n');
+
             await new Promise(r => setTimeout(r, waitTime));
             return runAgentLoop(attemptsLeft - 1);
           }

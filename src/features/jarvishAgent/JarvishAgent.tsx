@@ -12,11 +12,12 @@ const INITIAL_MESSAGE: Message = {
 };
 
 export const JarvishAgent: React.FC = () => {
-  const [input, setInput] = useState('do i have any mettings tomarow ?');
+  const [input, setInput] = useState('תמשיך את המחקר על זכיות הבניה של המבנים הטמפלרים בנחלה שלי');
   const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE]);
   const [status, setStatus] = useState<AgentStatus>('idle');
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [statusLogs, setStatusLogs] = useState<string[]>([]);
+  const [retryCountdown, setRetryCountdown] = useState<number | null>(null);
   const [showAllLogs, setShowAllLogs] = useState(false);
   const [currentStage, setCurrentStage] = useState<number>(0);
   const [lastSentQuery, setLastSentQuery] = useState<string>('');
@@ -36,15 +37,17 @@ export const JarvishAgent: React.FC = () => {
       abortControllerRef.current.abort();
       setStatus('idle');
       
-      // Recovery logic
-      const recoveryNote = `\n\n[RECOVERY NOTE: Request was interrupted at Stage ${currentStage}. Status: ${statusMessage || 'Unknown'}. Please continue from here.]`;
+      // Deep Recovery logic
+      const completedSteps = statusLogs.filter(log => !log.includes('thinking')).join('\n');
+      const recoveryNote = `\n\n[RECOVERY: Interrupted at Stage ${currentStage}. \nProgress made:\n${completedSteps}\n\nPlease resume from the next step.]`;
       setInput(lastSentQuery + recoveryNote);
       
-      setStatusMessage('Request cancelled. Progress saved to input.');
+      setStatusMessage('Request stopped. Progress saved to editor.');
       setCurrentStage(0);
+      setRetryCountdown(null);
       setTimeout(() => setStatusMessage(null), 3000);
     }
-  }, [currentStage, statusMessage, lastSentQuery]);
+  }, [currentStage, statusMessage, lastSentQuery, statusLogs]);
 
   const adjustTextareaHeight = useCallback(() => {
     if (textareaRef.current) {
@@ -212,7 +215,13 @@ export const JarvishAgent: React.FC = () => {
             if (data.type === 'status') {
               setStatusMessage(data.content);
               setStatusLogs(prev => [...prev, data.content]);
-              if (data.stage) setCurrentStage(data.stage);
+              if (data.stage !== undefined) setCurrentStage(data.stage);
+              
+              if (data.retryIn) {
+                setRetryCountdown(Math.round(data.retryIn / 1000));
+              } else {
+                setRetryCountdown(null);
+              }
             } else if (data.type === 'message') {
               setStatusMessage(null); // Clear status once we get real text
               assistantMessageContent += data.content;
@@ -231,19 +240,22 @@ export const JarvishAgent: React.FC = () => {
       setStatus('idle');
       setStatusMessage(null);
       setCurrentStage(0);
+      setRetryCountdown(null);
     } catch (error: any) {
       if (error.name === 'AbortError') return;
 
       console.error('Agent error:', error);
       setStatus('error');
-
-      // Recovery on system error
-      const recoveryNote = `\n\n[ERROR RECOVERY: System failed at Stage ${currentStage}. Status: ${statusMessage || 'Unknown'}. Please retry.]`;
+      
+      // Deep Recovery logic for system errors
+      const completedSteps = statusLogs.filter(log => !log.includes('thinking')).join('\n');
+      const recoveryNote = `\n\n[ERROR RECOVERY: System failed at Stage ${currentStage}. \nSteps completed:\n${completedSteps}\n\nPlease retry to continue.]`;
       setInput(lastSentQuery + recoveryNote);
       
       setErrorMessage(error instanceof Error ? error.message : 'An unexpected error occurred');
       // Clean up empty assistant messages on error
       setMessages(prev => prev.filter(m => m.content !== ''));
+      setRetryCountdown(null);
     } finally {
       abortControllerRef.current = null;
     }
@@ -319,8 +331,8 @@ export const JarvishAgent: React.FC = () => {
           <div className={cn(styles.message, styles.agent)}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Loader2 className={styles.loading} size={18} />
-              <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>
-                {statusMessage || 'Jarvish is processing...'}
+              <span style={{ fontSize: '0.75rem', color: retryCountdown ? '#ef4444' : '#6b7280', fontWeight: retryCountdown ? 'bold' : 'normal' }}>
+                {retryCountdown ? `Capacity reached. Resuming in ${retryCountdown}s...` : (statusMessage || 'Jarvish is processing...')}
               </span>
             </div>
           </div>
