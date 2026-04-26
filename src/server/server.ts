@@ -121,7 +121,7 @@ const startServer = async () => {
         parts: [{ text: m.content }]
       })).slice(-10); // Last 10 messages for short-term context
 
-      const runAgentLoop = async (attemptsLeft = 2): Promise<void> => {
+      const runAgentLoop = async (attemptsLeft = 2, useStreaming = true): Promise<void> => {
         const history: any[] = [...processedHistory];
         let currentParts = firstMessageParts;
         let accumulatedText = "";
@@ -130,34 +130,45 @@ const startServer = async () => {
           while (true) {
             res.write(JSON.stringify({ type: 'status', stage: 3, content: "Jarvish is thinking..." }) + '\n');
             
-            let result;
-            try {
-              result = await model.generateContentStream({ contents: [...history, { role: 'user', parts: currentParts }] });
-            } catch (streamInitError: any) {
-              throw streamInitError; 
-            }
-
-            history.push({ role: 'user', parts: currentParts });
-
+            let finalResponse;
+            let modelParts: any[] = [];
             let hasFunctionCalls = false;
             const toolResponses: any[] = [];
 
-            try {
-              for await (const chunk of result.stream) {
-                const text = chunk.text();
-                if (text) {
-                  accumulatedText += text;
-                  res.write(JSON.stringify({ type: 'message', content: text }) + '\n');
+            if (useStreaming) {
+              let result;
+              try {
+                result = await model.generateContentStream({ contents: [...history, { role: 'user', parts: currentParts }] });
+                history.push({ role: 'user', parts: currentParts });
+
+                for await (const chunk of result.stream) {
+                  const text = chunk.text();
+                  if (text) {
+                    accumulatedText += text;
+                    res.write(JSON.stringify({ type: 'message', content: text }) + '\n');
+                  }
                 }
+                finalResponse = await result.response;
+              } catch (streamError: any) {
+                console.error("[Stream Error - Switching to Stable Mode]", streamError);
+                if (result) result.response.catch(() => {});
+                throw streamError;
               }
-            } catch (streamIterError: any) {
-              console.error("[Stream Iteration Error]", streamIterError);
-              throw streamIterError;
+            } else {
+              // STABLE MODE (Non-streaming)
+              console.log("[Server] Using Stable Mode (Non-streaming) for this turn.");
+              const result = await model.generateContent({ contents: [...history, { role: 'user', parts: currentParts }] });
+              history.push({ role: 'user', parts: currentParts });
+              finalResponse = result.response;
+              const text = finalResponse.text();
+              if (text) {
+                accumulatedText += text;
+                res.write(JSON.stringify({ type: 'message', content: text }) + '\n');
+              }
             }
 
-            const finalResponse = await result.response;
             const calls = finalResponse.functionCalls();
-            const modelParts = finalResponse.candidates?.[0].content.parts || [];
+            modelParts = finalResponse.candidates?.[0].content.parts || [];
             history.push({ role: 'model', parts: modelParts });
 
             if (calls?.length) {
@@ -214,24 +225,25 @@ const startServer = async () => {
               waitTime = 60000;
             }
 
-            console.warn(`[Server] Quota hit/Stream error. Retrying in ${waitTime}ms... (${attemptsLeft} left)`);
+            console.warn(`[Server] Quota hit/Stream error. Retrying in stable mode in ${waitTime}ms... (${attemptsLeft} left)`);
             
             // Stream the retry info to the frontend
             res.write(JSON.stringify({ 
               type: 'status', 
               stage: 0, 
-              content: `Capacity reached. Auto-resuming in ${Math.round(waitTime/1000)}s...`,
+              content: `Capacity reached. Auto-resuming in stable mode in ${Math.round(waitTime/1000)}s...`,
               retryIn: waitTime
             }) + '\n');
 
             await new Promise(r => setTimeout(r, waitTime));
-            return runAgentLoop(attemptsLeft - 1);
+            // CRITICAL: Disable streaming for the next attempt
+            return runAgentLoop(attemptsLeft - 1, false);
           }
           throw error;
         }
       };
 
-      await runAgentLoop();
+      await runAgentLoop(2, true);
       res.end();
     } catch (error) {
       console.error("[Agent Final Error]", error);
@@ -278,6 +290,18 @@ const startServer = async () => {
 
     process.on('SIGINT', shutdown);
     process.on('SIGTERM', shutdown);
+
+    // Global Safety Net: Prevent unhandled promise rejections from crashing the server
+    process.on('unhandledRejection', (reason, promise) => {
+      console.error('[FATAL] Unhandled Rejection at:', promise, 'reason:', reason);
+    });
+
+    process.on('uncaughtException', async (err) => {
+      console.error('[FATAL] Uncaught Exception:', err);
+      // Try to shutdown cleanly but exit eventually
+      setTimeout(() => process.exit(1), 5000);
+      await shutdown().catch(() => process.exit(1));
+    });
 
     try {
       await client.embedded.start();
