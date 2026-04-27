@@ -91,7 +91,7 @@ export async function getOptimizedContext(userQuery: string, rawMemories: Memory
 /**
  * Step 2: Agent Configuration
  */
-export async function getAgentConfig(userQuery: string, rawMemories: Memory[], googleToken?: string) {
+export async function getAgentConfig(userQuery: string, rawMemories: Memory[], googleToken?: string, attachments: any[] = []) {
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
   const functionDeclarations = [
     inventoryToolDeclaration,
@@ -127,14 +127,29 @@ export async function getAgentConfig(userQuery: string, rawMemories: Memory[], g
     CAPABILITIES:
     1. Research: 'web_search', 'fetch_web_page', 'read_pdf'.
     2. Context: 'read_file', 'add_to_memory'.
-    3. Google Workspace: ${googleToken ? 'ENABLED.' : 'DISABLED.'}
+    3. Multimodal: You can see and read files (PDFs, images, docs) attached to the user's message.
+    4. Google Workspace: ${googleToken ? 'ENABLED.' : 'DISABLED.'}
 
     VERIFIED CONTEXT (from Long-Term Memory):
     ${memoriesText}`,
     tools: [{ functionDeclarations }],
   });
 
-  return { model, firstMessageParts: [{ text: userQuery }] };
+  const messageParts: any[] = [{ text: userQuery }];
+  
+  // Add attachments if present
+  if (attachments && attachments.length > 0) {
+    attachments.forEach(file => {
+      messageParts.push({
+        inlineData: {
+          data: file.data,
+          mimeType: file.mimeType
+        }
+      });
+    });
+  }
+
+  return { model, firstMessageParts: messageParts };
 }
 
 /**

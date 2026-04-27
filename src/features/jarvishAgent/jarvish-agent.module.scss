@@ -188,6 +188,53 @@
   border-top: 1px solid #e2e8f0;
 }
 
+.attachmentPreview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.attachmentTag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #e2e8f0;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  color: #475569;
+}
+
+.attachmentName {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.removeBtn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 0;
+  &:hover {
+    color: #ef4444;
+  }
+}
+
+.attachButton {
+  background-color: transparent !important;
+  color: #64748b !important;
+  padding: 0.75rem 0.5rem !important;
+  &:hover {
+    color: #3b82f6 !important;
+  }
+}
+
 .inputGroup {
   display: flex;
   gap: 0.5rem;

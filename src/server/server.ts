@@ -16,8 +16,8 @@ const startServer = async () => {
   const router = jsonServer.router('api.json');
   const middlewares = jsonServer.defaults();
 
-  // We use express.json() to parse incoming chat prompts
-  server.use(express.json()); 
+  // We use express.json() to parse incoming chat prompts with a higher limit for file uploads
+  server.use(express.json({ limit: '20mb' })); 
   server.use(middlewares);
 
   // Status variable to track if Weaviate is ready
@@ -95,11 +95,11 @@ const startServer = async () => {
       return res.status(503).json({ error: "System is still initializing. Please try again in a moment." });
     }
 
-    const { query, history: incomingHistory = [] } = req.body;
+    const { query, history: incomingHistory = [], attachments = [] } = req.body;
     const googleToken = req.headers['x-google-token'] as string | undefined;
 
-    if (!query) {
-      return res.status(400).json({ error: "Query is required" });
+    if (!query && attachments.length === 0) {
+      return res.status(400).json({ error: "Query or attachment is required" });
     }
 
     res.setHeader('Content-Type', 'application/x-ndjson');
@@ -107,13 +107,13 @@ const startServer = async () => {
 
     try {
       res.write(JSON.stringify({ type: 'status', stage: 1, content: "Retrieving relevant memories..." }) + '\n');
-      const memories = await retrieveMemories(query).catch(err => {
+      const memories = await retrieveMemories(query || "file analysis").catch(err => {
         console.warn("[Server] Memory retrieval failed, proceeding without context.", err);
         return [];
       });
 
       const { getAgentConfig } = await import('./agent/agent.js');
-      const { model, firstMessageParts } = await getAgentConfig(query, memories, googleToken);
+      const { model, firstMessageParts } = await getAgentConfig(query || "Analyzing attached file.", memories, googleToken, attachments);
 
       // Map incomingHistory (from FE) to Gemini parts
       const processedHistory = incomingHistory.map((m: any) => ({

@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Send, Bot, User, Loader2, Trash2, LogIn, LogOut, AlertCircle, Pencil, Square, List, ChevronUp, ChevronDown } from 'lucide-react';
+import { Send, Bot, User, Loader2, Trash2, LogIn, LogOut, AlertCircle, Pencil, Square, List, ChevronUp, ChevronDown, Paperclip, X } from 'lucide-react';
 import cn from 'classnames';
 import styles from './jarvish-agent.module.scss';
 import { Message, AgentStatus } from './types';
@@ -21,18 +21,25 @@ export const JarvishAgent: React.FC = () => {
   const [showAllLogs, setShowAllLogs] = useState(false);
   const [currentStage, setCurrentStage] = useState<number>(0);
   const [lastSentQuery, setLastSentQuery] = useState<string>('');
+  const [attachments, setAttachments] = useState<{name: string, data: string, mimeType: string}[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [googleToken, setGoogleToken] = useState<string | null>(localStorage.getItem('google_access_token'));
   const [clientId, setClientId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const readerRef = useRef<ReadableStreamDefaultReader | null>(null);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
   const cancelRequest = useCallback(() => {
+    if (readerRef.current) {
+      readerRef.current.cancel();
+      readerRef.current = null;
+    }
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
       setStatus('idle');
@@ -45,6 +52,7 @@ export const JarvishAgent: React.FC = () => {
       setStatusMessage('Request stopped. Progress saved to editor.');
       setCurrentStage(0);
       setRetryCountdown(null);
+      setAttachments([]); // Clear on cancel
       setTimeout(() => setStatusMessage(null), 3000);
     }
   }, [currentStage, statusMessage, lastSentQuery, statusLogs]);
@@ -55,6 +63,34 @@ export const JarvishAgent: React.FC = () => {
       textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
     }
   }, []);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    Array.from(files).forEach(file => {
+      if (file.size > 10 * 1024 * 1024) {
+        setErrorMessage("File too large. Max 10MB per file.");
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64 = (event.target?.result as string).split(',')[1];
+        setAttachments(prev => [...prev, {
+          name: file.name,
+          data: base64,
+          mimeType: file.type
+        }]);
+      };
+      reader.readAsDataURL(file);
+    });
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+  };
 
   useEffect(() => {
     adjustTextareaHeight();
@@ -184,7 +220,8 @@ export const JarvishAgent: React.FC = () => {
         signal: abortControllerRef.current.signal,
         body: JSON.stringify({ 
           query: input,
-          history: messages.map(m => ({ role: m.role, content: m.content })) 
+          history: messages.map(m => ({ role: m.role, content: m.content })),
+          attachments
         }),
       });
 
@@ -196,6 +233,7 @@ export const JarvishAgent: React.FC = () => {
       if (!response.body) throw new Error('No response body received from server');
       
       const reader = response.body.getReader();
+      readerRef.current = reader; // Store for manual cancellation
       const decoder = new TextDecoder();
       let assistantMessageContent = '';
       
@@ -241,6 +279,8 @@ export const JarvishAgent: React.FC = () => {
       setStatusMessage(null);
       setCurrentStage(0);
       setRetryCountdown(null);
+      setAttachments([]); // Clear attachments after success
+      readerRef.current = null;
     } catch (error: any) {
       if (error.name === 'AbortError') return;
 
@@ -368,7 +408,34 @@ export const JarvishAgent: React.FC = () => {
       )}
 
       <footer className={styles.footer}>
+        {attachments.length > 0 && (
+          <div className={styles.attachmentPreview}>
+            {attachments.map((file, i) => (
+              <div key={i} className={styles.attachmentTag}>
+                <span className={styles.attachmentName}>{file.name}</span>
+                <button type="button" onClick={() => removeAttachment(i)} className={styles.removeBtn}><X size={10} /></button>
+              </div>
+            ))}
+          </div>
+        )}
         <form onSubmit={sendMessage} className={styles.inputGroup}>
+          <button 
+            type="button" 
+            onClick={() => fileInputRef.current?.click()} 
+            className={cn(styles.button, styles.attachButton)}
+            disabled={status !== 'idle'}
+            title="Attach file"
+          >
+            <Paperclip size={18} />
+          </button>
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleFileUpload} 
+            multiple 
+            style={{ display: 'none' }}
+            accept=".pdf,.jpg,.jpeg,.png,.docx,.txt"
+          />
           <textarea
             ref={textareaRef}
             rows={1}
