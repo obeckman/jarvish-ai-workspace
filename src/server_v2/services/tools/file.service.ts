@@ -1,0 +1,25 @@
+import fs from 'fs/promises';
+import path from 'path';
+
+/**
+ * Reads a local file from the project directory.
+ * Includes security checks to prevent directory traversal.
+ * 
+ * @param args Contains the relative path to the file.
+ * @returns The file content as a string.
+ */
+export async function readFile(args: { path: string }): Promise<string> {
+  try {
+    // SECURITY: Absolute path resolution and containment check
+    const fullPath = path.resolve(process.cwd(), args.path);
+    
+    if (!fullPath.startsWith(process.cwd())) {
+      return "Error: Access denied. You can only read files within the project directory.";
+    }
+
+    const content = await fs.readFile(fullPath, 'utf-8');
+    return content.substring(0, 10000);
+  } catch (error: any) {
+    return `Failed to read file: ${error.message}`;
+  }
+}
