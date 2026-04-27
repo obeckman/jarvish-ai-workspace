@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { AgentStateType } from "../state.js";
+import { PROCESSING_MODEL } from "../models.js";
 
 /**
  * Node: Attachment Processing
@@ -22,7 +23,7 @@ export async function processingNode(state: AgentStateType) {
   console.log(`[Agent Graph] Node: Processing | Extracting clean text from ${newAttachments.length} new files.`);
   
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+  const model = genAI.getGenerativeModel({ model: PROCESSING_MODEL });
   
   const results: any[] = [];
 

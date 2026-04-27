@@ -60,7 +60,7 @@ const startServer = async () => {
   // --- SIMPLE CHAT AGENT (Legacy) ---
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
   const legacyModel = genAI.getGenerativeModel({
-    model: "gemini-2.5-flash",
+    model: "gemini-1.5-pro-latest",
     systemInstruction: "You are a helpful AI Agent focused on full-stack development..."
   });
 

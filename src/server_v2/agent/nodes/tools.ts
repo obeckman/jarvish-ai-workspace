@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { AgentStateType } from "../state.js";
+import { TOOL_EXECUTION_MODEL } from "../models.js";
 import { searchWeb } from "../../services/tools/search.service.js";
 import { fetchWebPage } from "../../services/tools/web.service.js";
 import { readPdf } from "../../services/tools/pdf.service.js";
@@ -68,7 +69,7 @@ async function handleQueryAttachments(query: string, state: AgentStateType) {
   }
 
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+  const model = genAI.getGenerativeModel({ model: TOOL_EXECUTION_MODEL });
 
   const context = state.processedAttachments.map(a => 
     `--- DOCUMENT: ${a.name} ---\n${a.extractedText}\n`

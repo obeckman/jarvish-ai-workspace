@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { AgentStateType } from "../state.js";
+import { REASONING_MODEL } from "../models.js";
 import { 
   inventoryToolDeclaration, 
   webSearchDeclaration, 
@@ -51,9 +52,8 @@ export async function reasoningNode(state: AgentStateType) {
   - If you need info from the web, call 'web_search'.
   - If you have enough info, provide a detailed final answer.`;
 
-  // Use gemini-1.5-flash-latest for stable performance and high availability
   const model = genAI.getGenerativeModel({
-    model: "gemini-2.5-pro",//"gemini-2.5-flash",
+    model: REASONING_MODEL,
     systemInstruction,
     tools: [{
       functionDeclarations: [

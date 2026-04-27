@@ -1,6 +1,7 @@
 import { AgentStateType } from "../state.js";
 import { addMemory } from "../../services/memory/memory.service.js";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { ARCHIVE_MODEL } from "../models.js";
 import { PDFParse } from 'pdf-parse';
 
 /**
@@ -47,7 +48,7 @@ export async function archiveNode(state: AgentStateType) {
         } else if (att.mimeType.startsWith('image/')) {
           // Use Gemini to describe the image for indexing
           const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-          const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+          const model = genAI.getGenerativeModel({ model: ARCHIVE_MODEL });
           const prompt = "Describe this image in detail for a searchable research database. Focus on identifying objects, text, and context.";
           
           const result = await model.generateContent([
