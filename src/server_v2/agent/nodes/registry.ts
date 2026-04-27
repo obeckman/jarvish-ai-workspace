@@ -4,6 +4,18 @@
  * We follow the Gemini Function Declaration schema.
  */
 
+export const queryAttachmentsDeclaration = {
+  name: 'query_attachments',
+  description: 'Searches through the AI-extracted text versions of the currently uploaded attachments.',
+  parameters: {
+    type: 'object',
+    properties: {
+      query: { type: 'string', description: 'What to look for in the uploaded documents.' },
+    },
+    required: ['query'],
+  },
+};
+
 export const inventoryToolDeclaration = {
   name: 'check_inventory',
   description: 'Checks the live inventory status for a specific product SKU.',

@@ -1,3 +1,4 @@
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { AgentStateType } from "../state.js";
 import { searchWeb } from "../../services/tools/search.service.js";
 import { fetchWebPage } from "../../services/tools/web.service.js";
@@ -34,6 +35,8 @@ export async function toolsNode(state: AgentStateType) {
         output = await readFile(call.args);
       } else if (call.name === 'add_to_memory') {
         output = await addMemory(call.args.fact, { category: call.args.category });
+      } else if (call.name === 'query_attachments') {
+        output = await handleQueryAttachments(call.args.query, state);
       } else {
         output = `Error: Tool '${call.name}' not recognized.`;
       }
@@ -46,7 +49,7 @@ export async function toolsNode(state: AgentStateType) {
       content: output,
       tool_call_id: call.id,
     });
-    notes.push(`[Source: ${call.name}] ${output.substring(0, 500)}...`);
+    notes.push(`[Source: ${call.name}] ${typeof output === 'string' ? output.substring(0, 500) : JSON.stringify(output).substring(0, 500)}...`);
   }
 
   return {
@@ -54,4 +57,31 @@ export async function toolsNode(state: AgentStateType) {
     researchNotes: notes,
     metadata: { stage: 2, status: `Completed ${toolCalls.length} research steps.` }
   };
+}
+
+/**
+ * Searches through processed attachments using an LLM.
+ */
+async function handleQueryAttachments(query: string, state: AgentStateType) {
+  if (!state.processedAttachments || state.processedAttachments.length === 0) {
+    return "No processed attachments found to query.";
+  }
+
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+
+  const context = state.processedAttachments.map(a => 
+    `--- DOCUMENT: ${a.name} ---\n${a.extractedText}\n`
+  ).join("\n\n");
+
+  const prompt = `You are a document search assistant. Using the provided document context, answer the following query. 
+  If the information is not in the documents, say so.
+  
+  CONTEXT:
+  ${context}
+  
+  QUERY: ${query}`;
+
+  const result = await model.generateContent(prompt);
+  return result.response.text();
 }

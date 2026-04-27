@@ -45,6 +45,14 @@ export const AgentState = Annotation.Root({
     reducer: (x, y) => y,
     default: () => [],
   }),
+
+  /**
+   * AI-processed/extracted versions of attachments.
+   */
+  processedAttachments: Annotation<any[]>({
+    reducer: (x, y) => x.concat(y),
+    default: () => [],
+  }),
 });
 
 /**

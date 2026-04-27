@@ -6,7 +6,8 @@ import {
   fetchWebPageDeclaration, 
   readPdfDeclaration, 
   readFileDeclaration, 
-  addMemoryDeclaration 
+  addMemoryDeclaration,
+  queryAttachmentsDeclaration
 } from "./registry.js";
 
 /**
@@ -24,6 +25,11 @@ export async function reasoningNode(state: AgentStateType) {
     ? state.memories.map(m => `- ${m.text}`).join('\n')
     : "No relevant verified memories found.";
 
+  // Format processed attachments for context
+  const attachmentsContext = state.processedAttachments?.length > 0
+    ? state.processedAttachments.map(a => `[Document: ${a.name}]\n${a.extractedText?.substring(0, 1000)}...`).join('\n\n')
+    : "No processed documents available.";
+
   const systemInstruction = `You are Jarvish, a HIGH-ACCURACY RESEARCH AGENT.
   
   CORE PROTOCOLS:
@@ -34,16 +40,20 @@ export async function reasoningNode(state: AgentStateType) {
   VERIFIED CONTEXT FROM MEMORY:
   ${memoriesText}
 
+  PROCESSED DOCUMENTS (EXTRACTED TEXT):
+  ${attachmentsContext}
+
   CURRENT RESEARCH NOTES:
   ${state.researchNotes.join('\n')}
 
   Directives:
-  - If you need more info, call a tool.
+  - If you need more info from uploaded files, call 'query_attachments'.
+  - If you need info from the web, call 'web_search'.
   - If you have enough info, provide a detailed final answer.`;
 
-  // Use gemini-2.5-flash as specified by the user
+  // Use gemini-1.5-flash-latest for stable performance and high availability
   const model = genAI.getGenerativeModel({
-    model: "gemini-2.5-flash",
+    model: "gemini-2.5-pro",//"gemini-2.5-flash",
     systemInstruction,
     tools: [{
       functionDeclarations: [
@@ -52,7 +62,8 @@ export async function reasoningNode(state: AgentStateType) {
         fetchWebPageDeclaration as any,
         readPdfDeclaration as any,
         readFileDeclaration as any,
-        addMemoryDeclaration as any
+        addMemoryDeclaration as any,
+        queryAttachmentsDeclaration as any
       ]
     }]
   });
@@ -76,6 +87,20 @@ export async function reasoningNode(state: AgentStateType) {
   
   if (!lastMsg) {
     throw new Error("No messages found in history to send to Gemini.");
+  }
+
+  // Add raw attachments to the last message parts if they exist (multimodal support)
+  if (state.attachments && Array.isArray(state.attachments)) {
+    state.attachments.forEach(att => {
+      if (att.data && att.mimeType) {
+        lastMsg.parts.push({
+          inlineData: {
+            data: att.data,
+            mimeType: att.mimeType
+          }
+        } as any);
+      }
+    });
   }
 
   const chat = model.startChat({ history });

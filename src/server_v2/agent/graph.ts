@@ -1,6 +1,7 @@
 import { StateGraph, START, END } from "@langchain/langgraph";
 import { AgentState, AgentStateType } from "./state.js";
 import { contextNode } from "./nodes/context.js";
+import { processingNode } from "./nodes/processing.js";
 import { reasoningNode } from "./nodes/reasoning.js";
 import { toolsNode } from "./nodes/tools.js";
 import { archiveNode } from "./nodes/archive.js";
@@ -28,13 +29,15 @@ export function createAgentGraph() {
   const workflow = new StateGraph(AgentState)
     // 1. Add all nodes
     .addNode("context", contextNode)
+    .addNode("processing", processingNode)
     .addNode("reasoning", reasoningNode)
     .addNode("tools", toolsNode)
     .addNode("archive", archiveNode)
 
     // 2. Define the edges (The Flow)
     .addEdge(START, "context")
-    .addEdge("context", "reasoning")
+    .addEdge("context", "processing")
+    .addEdge("processing", "reasoning")
     
     // The conditional loop back for research
     .addConditionalEdges("reasoning", shouldContinue, {

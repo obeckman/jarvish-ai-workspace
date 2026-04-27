@@ -55,7 +55,7 @@ export const JarvishAgent: React.FC = () => {
       setAttachments([]); // Clear on cancel
       setTimeout(() => setStatusMessage(null), 3000);
     }
-  }, [currentStage, statusMessage, lastSentQuery, statusLogs]);
+  }, [currentStage, lastSentQuery, statusLogs]);
 
   const adjustTextareaHeight = useCallback(() => {
     if (textareaRef.current) {
@@ -326,7 +326,7 @@ export const JarvishAgent: React.FC = () => {
     } finally {
       abortControllerRef.current = null;
     }
-  }, [input, status, googleToken, messages, lastSentQuery, currentStage, statusMessage]);
+  }, [input, status, googleToken, messages, lastSentQuery, currentStage, attachments, statusLogs]);
 
   return (
     <div className={styles.container}>
