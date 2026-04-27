@@ -10,6 +10,14 @@ export const schema = createSchema({
   typeDefs: /* GraphQL */ `
     type Query {
       status: String!
+      """
+      Retrieves all persistent research sessions.
+      """
+      getSessions: [Session!]!
+      """
+      Retrieves the message history for a specific session.
+      """
+      getSessionHistory(sessionId: String!): [Message!]!
     }
 
     type Mutation {
@@ -17,13 +25,33 @@ export const schema = createSchema({
       Starts a new research task.
       """
       startResearch(query: String!, history: [MessageInput!]!): String!
+      """
+      Creates a new session record.
+      """
+      createSession(id: String!, title: String!): Session!
+      """
+      Deletes a session and its associated state.
+      """
+      deleteSession(id: String!): Boolean!
     }
 
     type Subscription {
       """
       Streams events from the Jarvish Agent (logs, tokens, stage updates).
       """
-      agentEvents(query: String!, history: [MessageInput!], attachments: [AttachmentInput!]): AgentEvent!
+      agentEvents(query: String!, history: [MessageInput!], attachments: [AttachmentInput!], sessionId: String): AgentEvent!
+    }
+
+    type Session {
+      id: String!
+      title: String!
+      createdAt: String!
+      updatedAt: String!
+    }
+
+    type Message {
+      role: String!
+      content: String!
     }
 
     input MessageInput {

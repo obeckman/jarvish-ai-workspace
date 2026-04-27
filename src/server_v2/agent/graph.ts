@@ -25,7 +25,7 @@ function shouldContinue(state: AgentStateType) {
  * Assembler for the Agent Graph.
  * Defines the logical sequence of operations.
  */
-export function createAgentGraph() {
+export function createAgentGraph(checkpointer?: BaseCheckpointSaver) {
   const workflow = new StateGraph(AgentState)
     // 1. Add all nodes
     .addNode("context", contextNode)

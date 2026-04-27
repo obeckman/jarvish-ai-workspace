@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Send, Bot, User, Loader2, Trash2, LogIn, LogOut, AlertCircle, Pencil, Square, List, ChevronUp, ChevronDown, Paperclip, X } from 'lucide-react';
+import { Send, Bot, User, Loader2, Trash2, LogIn, LogOut, AlertCircle, Pencil, Square, List, ChevronUp, ChevronDown, Paperclip, X, Plus, History } from 'lucide-react';
 import cn from 'classnames';
 import styles from './jarvish-agent.module.scss';
 import { Message, AgentStatus } from './types';
@@ -10,6 +10,13 @@ const INITIAL_MESSAGE: Message = {
   content: 'Hello! I am Jarvish, your personal agent. How can I help you today?',
   timestamp: Date.now(),
 };
+
+interface Session {
+  id: string;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export const JarvishAgent: React.FC = () => {
   const [input, setInput] = useState('תמשיך את המחקר על זכיות הבניה של המבנים הטמפלרים בנחלה שלי');
@@ -25,6 +32,11 @@ export const JarvishAgent: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [googleToken, setGoogleToken] = useState<string | null>(localStorage.getItem('google_access_token'));
   const [clientId, setClientId] = useState<string | null>(null);
+  
+  // Session State
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(localStorage.getItem('jarvish_session_id'));
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -44,7 +56,6 @@ export const JarvishAgent: React.FC = () => {
       abortControllerRef.current.abort();
       setStatus('idle');
       
-      // Deep Recovery logic
       const completedSteps = statusLogs.filter(log => !log.includes('thinking')).join('\n');
       const recoveryNote = `\n\n[RECOVERY: Interrupted at Stage ${currentStage}. \nProgress made:\n${completedSteps}\n\nPlease resume from the next step.]`;
       setInput(lastSentQuery + recoveryNote);
@@ -52,7 +63,7 @@ export const JarvishAgent: React.FC = () => {
       setStatusMessage('Request stopped. Progress saved to editor.');
       setCurrentStage(0);
       setRetryCountdown(null);
-      setAttachments([]); // Clear on cancel
+      setAttachments([]); 
       setTimeout(() => setStatusMessage(null), 3000);
     }
   }, [currentStage, lastSentQuery, statusLogs]);
@@ -63,6 +74,120 @@ export const JarvishAgent: React.FC = () => {
       textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
     }
   }, []);
+
+  // --- Session Management ---
+
+  const fetchSessions = useCallback(async () => {
+    try {
+      const res = await fetch('/graphql', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: `query { getSessions { id title createdAt updatedAt } }`
+        })
+      });
+      const result = await res.json();
+      if (result.data?.getSessions) {
+        setSessions(result.data.getSessions);
+      }
+    } catch (e) {
+      console.error('Failed to fetch sessions:', e);
+    }
+  }, []);
+
+  const loadSessionHistory = useCallback(async (sessionId: string) => {
+    try {
+      setStatus('thinking');
+      const res = await fetch('/graphql', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: `query($sessionId: String!) { getSessionHistory(sessionId: $sessionId) { role content } }`,
+          variables: { sessionId }
+        })
+      });
+      const result = await res.json();
+      if (result.data?.getSessionHistory) {
+        const history = result.data.getSessionHistory.map((m: any, i: number) => ({
+          id: `hist-${i}`,
+          role: m.role,
+          content: m.content,
+          timestamp: Date.now()
+        }));
+        setMessages(history.length > 0 ? history : [INITIAL_MESSAGE]);
+      }
+    } catch (e) {
+      console.error('Failed to load history:', e);
+      setErrorMessage("Failed to load conversation history.");
+    } finally {
+      setStatus('idle');
+    }
+  }, []);
+
+  const createNewSession = useCallback(async () => {
+    const id = `session-${Date.now()}`;
+    const title = `New Research ${new Date().toLocaleDateString()}`;
+    try {
+      const res = await fetch('/graphql', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: `mutation($id: String!, $title: String!) { createSession(id: $id, title: $title) { id title } }`,
+          variables: { id, title }
+        })
+      });
+      const result = await res.json();
+      if (result.data?.createSession) {
+        const newSession = result.data.createSession;
+        setSessions(prev => [newSession, ...prev]);
+        selectSession(newSession.id);
+      }
+    } catch (e) {
+      console.error('Failed to create session:', e);
+    }
+  }, []);
+
+  const selectSession = useCallback((id: string) => {
+    setCurrentSessionId(id);
+    localStorage.setItem('jarvish_session_id', id);
+    setMessages([INITIAL_MESSAGE]);
+    loadSessionHistory(id);
+    setErrorMessage(null);
+    setStatusLogs([]);
+  }, [loadSessionHistory]);
+
+  const deleteSession = useCallback(async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm("Are you sure you want to delete this session?")) return;
+    try {
+      await fetch('/graphql', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: `mutation($id: String!) { deleteSession(id: $id) }`,
+          variables: { id }
+        })
+      });
+      setSessions(prev => prev.filter(s => s.id !== id));
+      if (currentSessionId === id) {
+        setCurrentSessionId(null);
+        localStorage.removeItem('jarvish_session_id');
+        setMessages([INITIAL_MESSAGE]);
+      }
+    } catch (e) {
+      console.error('Failed to delete session:', e);
+    }
+  }, [currentSessionId]);
+
+  // --- Initial Data Fetch ---
+  useEffect(() => {
+    fetchSessions();
+    if (currentSessionId) {
+      loadSessionHistory(currentSessionId);
+    }
+  }, []); // Run once on mount
+
+  // --- Standard Logic ---
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -100,7 +225,6 @@ export const JarvishAgent: React.FC = () => {
     scrollToBottom();
   }, [messages, scrollToBottom, errorMessage]);
 
-  // Step 1: Fetch Config from Server
   useEffect(() => {
     const fetchConfig = async () => {
       try {
@@ -108,8 +232,6 @@ export const JarvishAgent: React.FC = () => {
         const data = await res.json();
         if (data.googleClientId) {
           setClientId(data.googleClientId);
-        } else {
-          console.warn('Google Client ID not found in server config.');
         }
       } catch (e) {
         console.error('Failed to fetch server config:', e);
@@ -180,34 +302,45 @@ export const JarvishAgent: React.FC = () => {
     setErrorMessage(null);
   }, []);
 
-  const reEditMessage = useCallback((id: string) => {
-    const messageIndex = messages.findIndex(m => m.id === id);
-    if (messageIndex === -1) return;
-
-    const message = messages[messageIndex];
-    setInput(message.content);
-    
-    // Remove this message and all subsequent messages
-    setMessages(prev => prev.slice(0, messageIndex));
-    
-    // Focus textarea
-    setTimeout(() => textareaRef.current?.focus(), 0);
-  }, [messages]);
-
   const sendMessage = useCallback(async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!input.trim() || status !== 'idle') return;
 
+    // Auto-create session if none active
+    let sessionId = currentSessionId;
+    if (!sessionId) {
+      const id = `session-${Date.now()}`;
+      const title = input.substring(0, 30) + (input.length > 30 ? '...' : '');
+      try {
+        const res = await fetch('/graphql', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query: `mutation($id: String!, $title: String!) { createSession(id: $id, title: $title) { id title } }`,
+            variables: { id, title }
+          })
+        });
+        const result = await res.json();
+        if (result.data?.createSession) {
+          sessionId = result.data.createSession.id;
+          setCurrentSessionId(sessionId);
+          localStorage.setItem('jarvish_session_id', sessionId!);
+          setSessions(prev => [result.data.createSession, ...prev]);
+        }
+      } catch (e) {
+        console.error("Session auto-creation failed", e);
+      }
+    }
+
     setErrorMessage(null);
-    setLastSentQuery(input); // Preserve for recovery
-    setStatusLogs([]); // Reset logs
+    setLastSentQuery(input);
+    setStatusLogs([]);
     const userMsg: Message = { id: Date.now().toString(), role: 'user', content: input, timestamp: Date.now() };
     setMessages(prev => [...prev, userMsg]);
     setInput('');
     setStatus('thinking');
     setCurrentStage(1);
 
-    // Setup cancellation
     abortControllerRef.current = new AbortController();
 
     try {
@@ -218,8 +351,8 @@ export const JarvishAgent: React.FC = () => {
       if (googleToken) headers['x-google-token'] = googleToken;
 
       const subscriptionQuery = `
-        subscription AgentChat($query: String!, $history: [MessageInput!]!, $attachments: [AttachmentInput!]) {
-          agentEvents(query: $query, history: $history, attachments: $attachments) {
+        subscription AgentChat($query: String!, $history: [MessageInput!]!, $attachments: [AttachmentInput!], $sessionId: String) {
+          agentEvents(query: $query, history: $history, attachments: $attachments, sessionId: $sessionId) {
             type
             content
             stage
@@ -243,16 +376,13 @@ export const JarvishAgent: React.FC = () => {
               name: a.name,
               data: a.data,
               mimeType: a.mimeType
-            }))
+            })),
+            sessionId
           }
         }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Server responded with ${response.status}`);
-      }
-
+      if (!response.ok) throw new Error(`Server responded with ${response.status}`);
       if (!response.body) throw new Error('No response body received from server');
       
       const reader = response.body.getReader();
@@ -270,11 +400,10 @@ export const JarvishAgent: React.FC = () => {
 
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split('\n');
-        buffer = lines.pop() || ''; // Keep the last incomplete line in the buffer
+        buffer = lines.pop() || '';
 
         for (const line of lines) {
           if (!line.startsWith('data: ')) continue;
-          
           const jsonStr = line.replace('data: ', '').trim();
           if (!jsonStr) continue;
 
@@ -306,206 +435,183 @@ export const JarvishAgent: React.FC = () => {
       setStatusMessage(null);
       setCurrentStage(0);
       setRetryCountdown(null);
-      setAttachments([]); // Clear attachments after success
+      setAttachments([]); 
       readerRef.current = null;
     } catch (error: any) {
       if (error.name === 'AbortError') return;
-
-      console.error('Agent error:', error);
       setStatus('error');
-      
-      // Deep Recovery logic for system errors
-      const completedSteps = statusLogs.filter(log => !log.includes('thinking')).join('\n');
-      const recoveryNote = `\n\n[ERROR RECOVERY: System failed at Stage ${currentStage}. \nSteps completed:\n${completedSteps}\n\nPlease retry to continue.]`;
-      setInput(lastSentQuery + recoveryNote);
-      
       setErrorMessage(error instanceof Error ? error.message : 'An unexpected error occurred');
-      // Clean up empty assistant messages on error
       setMessages(prev => prev.filter(m => m.content !== ''));
-      setRetryCountdown(null);
     } finally {
       abortControllerRef.current = null;
     }
-  }, [input, status, googleToken, messages, lastSentQuery, currentStage, attachments, statusLogs]);
+  }, [input, status, googleToken, messages, currentSessionId, attachments]);
 
   return (
-    <div className={styles.container}>
-      <header className={styles.header}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Bot size={24} />
-          <h2>Jarvish Agent</h2>
+    <div className={styles.layout}>
+      {/* SIDEBAR */}
+      <aside className={styles.sidebar}>
+        <div className={styles.sidebarHeader}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <History size={18} color="#64748b" />
+            <h3>Past Research</h3>
+          </div>
+          <button onClick={createNewSession} className={styles.newChatBtn}>
+            <Plus size={16} /> New Chat
+          </button>
         </div>
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
-          {googleToken ? (
-            <button onClick={logout} className={styles.button} title="Logout Google" style={{ color: '#10b981' }}><LogOut size={16} /></button>
-          ) : (
-            <button onClick={loginWithGoogle} className={styles.button} title="Login Google"><LogIn size={16} /></button>
-          )}
-          <button onClick={() => { setMessages([INITIAL_MESSAGE]); setErrorMessage(null); }} className={styles.button} title="Clear Chat"><Trash2 size={16} /></button>
-        </div>
-      </header>
-
-      <div className={styles.messages}>
-        {/* Stage Tracker */}
-        {status !== 'idle' && (
-          <div className={styles.stageTracker}>
-            {[
-              { id: 1, label: 'Prepare' },
-              { id: 2, label: 'Research' },
-              { id: 3, label: 'Synthesize' },
-              { id: 4, label: 'Finalize' }
-            ].map((stage) => (
-              <div key={stage.id} className={cn(styles.stage, { 
-                [styles.active]: currentStage === stage.id,
-                [styles.completed]: currentStage > stage.id 
-              })}>
-                <div className={styles.dot} />
-                <span>{stage.label}</span>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {messages.map((msg) => (
-          <div key={msg.id} className={cn(styles.message, { [styles.user]: msg.role === 'user', [styles.agent]: msg.role === 'agent' })}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-              {msg.role === 'user' ? <User size={12} /> : <Bot size={12} />}
-              <strong style={{ fontSize: '0.7rem' }}>{msg.role === 'user' ? 'You' : 'Jarvish'}</strong>
-              {msg.role === 'user' && status === 'idle' && (
-                <button 
-                  onClick={() => reEditMessage(msg.id)} 
-                  className={styles.editButton}
-                  title="Edit message"
-                >
-                  <Pencil size={10} />
-                </button>
-              )}
-            </div>
-            <div style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</div>
-          </div>
-        ))}
         
-        {errorMessage && (
-          <div className={cn(styles.message, styles.agent)} style={{ background: '#fef2f2', border: '1px solid #fee2e2', color: '#b91c1c' }}>
-             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold', fontSize: '0.75rem', marginBottom: '4px' }}>
-               <AlertCircle size={14} /> System Error
-             </div>
-             {errorMessage}
-          </div>
-        )}
-        
-        {status === 'thinking' && !errorMessage && (
-          <div className={cn(styles.message, styles.agent)}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Loader2 className={styles.loading} size={18} />
-              <span style={{ fontSize: '0.75rem', color: retryCountdown ? '#ef4444' : '#6b7280', fontWeight: retryCountdown ? 'bold' : 'normal' }}>
-                {retryCountdown ? `Capacity reached. Resuming in ${retryCountdown}s...` : (statusMessage || 'Jarvish is processing...')}
-              </span>
-            </div>
-          </div>
-        )}
-        <div ref={messagesEndRef} />
-      </div>
-
-      {statusLogs.length > 0 && (
-        <div className={cn(styles.logViewer, { [styles.expanded]: showAllLogs })}>
-          <div className={styles.logHeader}>
-            <span className={styles.latestLog}>
-              {statusLogs[statusLogs.length - 1]}
-            </span>
+        <div className={styles.sessionList}>
+          {sessions.map(s => (
             <button 
-              type="button" 
-              onClick={() => setShowAllLogs(!showAllLogs)}
-              className={styles.logToggleButton}
+              key={s.id} 
+              onClick={() => selectSession(s.id)}
+              className={cn(styles.sessionItem, { [styles.active]: currentSessionId === s.id })}
             >
-              {showAllLogs ? <ChevronDown size={14} /> : <List size={14} />}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <span className={styles.sessionTitle}>{s.title}</span>
+                <Trash2 size={12} className={styles.deleteIcon} onClick={(e) => deleteSession(s.id, e)} />
+              </div>
+              <span className={styles.sessionDate}>{new Date(s.updatedAt).toLocaleDateString()}</span>
             </button>
+          ))}
+          {sessions.length === 0 && (
+            <div style={{ textAlign: 'center', fontSize: '0.75rem', color: '#94a3b8', marginTop: '2rem' }}>
+              No history found.
+            </div>
+          )}
+        </div>
+      </aside>
+
+      {/* MAIN CHAT */}
+      <div className={styles.container}>
+        <header className={styles.header}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Bot size={24} />
+            <h2>Jarvish Agent</h2>
           </div>
-          {showAllLogs && (
-            <div className={styles.logList}>
-              {statusLogs.map((log, i) => (
-                <div key={i} className={styles.logItem}>
-                  <span className={styles.logTime}>Step {i+1}</span>
-                  {log}
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
+            {googleToken ? (
+              <button onClick={logout} className={styles.button} title="Logout Google" style={{ color: '#10b981' }}><LogOut size={16} /></button>
+            ) : (
+              <button onClick={loginWithGoogle} className={styles.button} title="Login Google"><LogIn size={16} /></button>
+            )}
+            <button onClick={() => { setMessages([INITIAL_MESSAGE]); setErrorMessage(null); setStatusLogs([]); }} className={styles.button} title="Reset Chat UI"><Trash2 size={16} /></button>
+          </div>
+        </header>
+
+        <div className={styles.messages}>
+          {status !== 'idle' && (
+            <div className={styles.stageTracker}>
+              {[
+                { id: 1, label: 'Prepare' },
+                { id: 2, label: 'Research' },
+                { id: 3, label: 'Synthesize' },
+                { id: 4, label: 'Finalize' }
+              ].map((stage) => (
+                <div key={stage.id} className={cn(styles.stage, { 
+                  [styles.active]: currentStage === stage.id,
+                  [styles.completed]: currentStage > stage.id 
+                })}>
+                  <div className={styles.dot} />
+                  <span>{stage.label}</span>
                 </div>
               ))}
             </div>
           )}
-        </div>
-      )}
 
-      <footer className={styles.footer}>
-        {attachments.length > 0 && (
-          <div className={styles.attachmentPreview}>
-            {attachments.map((file, i) => (
-              <div key={i} className={styles.attachmentTag}>
-                <span className={styles.attachmentName}>{file.name}</span>
-                <button type="button" onClick={() => removeAttachment(i)} className={styles.removeBtn}><X size={10} /></button>
+          {messages.map((msg) => (
+            <div key={msg.id} className={cn(styles.message, { [styles.user]: msg.role === 'user', [styles.agent]: msg.role === 'agent' })}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                {msg.role === 'user' ? <User size={12} /> : <Bot size={12} />}
+                <strong style={{ fontSize: '0.7rem' }}>{msg.role === 'user' ? 'You' : 'Jarvish'}</strong>
               </div>
-            ))}
-          </div>
-        )}
-        <form onSubmit={sendMessage} className={styles.inputGroup}>
-          <button 
-            type="button" 
-            onClick={() => fileInputRef.current?.click()} 
-            className={cn(styles.button, styles.attachButton)}
-            disabled={status !== 'idle'}
-            title="Attach file"
-          >
-            <Paperclip size={18} />
-          </button>
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            onChange={handleFileUpload} 
-            multiple 
-            style={{ display: 'none' }}
-            accept=".pdf,.jpg,.jpeg,.png,.docx,.txt"
-          />
-          <textarea
-            ref={textareaRef}
-            rows={1}
-            className={styles.textarea}
-            placeholder={googleToken ? "Ask about your Gmail/Calendar..." : "Type a message..."}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey && !e.metaKey && !e.ctrlKey) {
-                e.preventDefault();
-                sendMessage();
-              } else if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                // Add new line for Cmd+Enter or Ctrl+Enter
-                const start = e.currentTarget.selectionStart;
-                const end = e.currentTarget.selectionEnd;
-                const value = e.currentTarget.value;
-                setInput(value.substring(0, start) + "\n" + value.substring(end));
-                // Set cursor position after new line
-                setTimeout(() => {
-                  if (textareaRef.current) {
-                    textareaRef.current.selectionStart = textareaRef.current.selectionEnd = start + 1;
-                  }
-                }, 0);
-              }
-            }}
-            disabled={status === 'thinking'}
-          />
-          {status !== 'idle' ? (
-            <button type="button" onClick={cancelRequest} className={cn(styles.button, styles.stopButton)} title="Stop generation">
-              <Square size={18} fill="currentColor" />
-            </button>
-          ) : (
-            <button type="submit" className={styles.button} disabled={!input.trim()}>
-              <Send size={18} />
-            </button>
+              <div style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</div>
+            </div>
+          ))}
+          
+          {errorMessage && (
+            <div className={cn(styles.message, styles.agent)} style={{ background: '#fef2f2', border: '1px solid #fee2e2', color: '#b91c1c' }}>
+               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold', fontSize: '0.75rem', marginBottom: '4px' }}>
+                 <AlertCircle size={14} /> System Error
+               </div>
+               {errorMessage}
+            </div>
           )}
-        </form>
-        {!googleToken && status === 'idle' && !errorMessage && (
-          <div style={{ fontSize: '0.7rem', color: '#6b7280', marginTop: '8px', textAlign: 'center' }}>
-            💡 Tip: Login with Google to enable Gmail and Calendar features.
+          
+          {status === 'thinking' && !errorMessage && (
+            <div className={cn(styles.message, styles.agent)}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Loader2 className={styles.loading} size={18} />
+                <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+                  {statusMessage || 'Jarvish is processing...'}
+                </span>
+              </div>
+            </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+
+        {statusLogs.length > 0 && (
+          <div className={cn(styles.logViewer, { [styles.expanded]: showAllLogs })}>
+            <div className={styles.logHeader}>
+              <span className={styles.latestLog}>
+                {statusLogs[statusLogs.length - 1]}
+              </span>
+              <button type="button" onClick={() => setShowAllLogs(!showAllLogs)} className={styles.logToggleButton}>
+                {showAllLogs ? <ChevronDown size={14} /> : <List size={14} />}
+              </button>
+            </div>
+            {showAllLogs && (
+              <div className={styles.logList}>
+                {statusLogs.map((log, i) => (
+                  <div key={i} className={styles.logItem}>
+                    <span className={styles.logTime}>Step {i+1}</span>
+                    {log}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
-      </footer>
+
+        <footer className={styles.footer}>
+          {attachments.length > 0 && (
+            <div className={styles.attachmentPreview}>
+              {attachments.map((file, i) => (
+                <div key={i} className={styles.attachmentTag}>
+                  <span className={styles.attachmentName}>{file.name}</span>
+                  <button type="button" onClick={() => removeAttachment(i)} className={styles.removeBtn}><X size={10} /></button>
+                </div>
+              ))}
+            </div>
+          )}
+          <form onSubmit={sendMessage} className={styles.inputGroup}>
+            <button type="button" onClick={() => fileInputRef.current?.click()} className={cn(styles.button, styles.attachButton)} disabled={status !== 'idle'}>
+              <Paperclip size={18} />
+            </button>
+            <input type="file" ref={fileInputRef} onChange={handleFileUpload} multiple style={{ display: 'none' }} accept=".pdf,.jpg,.jpeg,.png,.docx,.txt" />
+            <textarea
+              ref={textareaRef}
+              rows={1}
+              className={styles.textarea}
+              placeholder="Type a message..."
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              disabled={status === 'thinking'}
+            />
+            {status !== 'idle' ? (
+              <button type="button" onClick={cancelRequest} className={cn(styles.button, styles.stopButton)} title="Stop generation">
+                <Square size={18} fill="currentColor" />
+              </button>
+            ) : (
+              <button type="submit" className={styles.button} disabled={!input.trim()}>
+                <Send size={18} />
+              </button>
+            )}
+          </form>
+        </footer>
+      </div>
     </div>
   );
 };
