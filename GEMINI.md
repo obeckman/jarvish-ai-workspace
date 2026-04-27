@@ -84,3 +84,26 @@ Performance is a first-class citizen. Unnecessary re-renders and memory allocati
 
 *   **CSS Modules:** Use `*.module.scss` for component scoping.
 *   **Variables:** Always use CSS variables or SCSS variables for colors, spacing, and typography. No hardcoded hex codes.
+*   **No Inline Styles:** Inline `style={{ ... }}` attributes in JSX are strictly prohibited. All styles must be defined in the corresponding SCSS module file.
+
+## 6. Constant Management & Zero Magic Strings
+
+Enforce strict constant management throughout the codebase to ensure maintainability and type safety.
+
+### 6.1 The Rule
+Every string, configuration value, or hardcoded literal must be extracted into a constant or enum. Use `as const` for all object or array-based constants to ensure literal type safety.
+
+### 6.2 Placement Logic (Locality of Concern)
+*   **Feature-Specific:** If a constant is used only within a specific feature, place a `constants.ts` file directly inside that feature folder.
+*   **Shared/Domain:** If a constant is shared across multiple related components or features, place it in the nearest parent directory common to all consumers (e.g., `src/features/shared/constants.ts`).
+*   **Global:** Only truly global app-wide values (API base URLs, app names) should reside in a root-level `src/constants/` or `src/config/` directory.
+
+### 6.3 Implementation Pattern
+Always favor named exports for constants:
+```tsx
+export const API_ENDPOINTS = {
+  GRAPHQL: '/graphql',
+  STORAGE: '/api/storage',
+} as const;
+```
+Avoid inline literals in JSX, hooks, or service calls.

@@ -24,26 +24,35 @@ export class WeaviateVectorStore implements IVectorStore {
 
       if (!classExists) {
         console.log(`[Weaviate] Creating class: ${this.className}`);
-        await this.client.schema
-          .classCreator()
-          .withClass({
-            class: this.className,
-            description: 'Agent memories and interactions',
-            vectorizer: 'none', // We provide vectors manually via Gemini Embeddings
-            properties: [
-              {
-                name: 'text',
-                dataType: ['text'],
-                description: 'The content of the memory',
-              },
-              {
-                name: 'metadata',
-                dataType: ['text'], // Metadata is stored as a JSON string for flexibility
-                description: 'JSON stringified metadata',
-              },
-            ],
-          })
-          .do();
+        try {
+          await this.client.schema
+            .classCreator()
+            .withClass({
+              class: this.className,
+              description: 'Agent memories and interactions',
+              vectorizer: 'none', // We provide vectors manually via Gemini Embeddings
+              properties: [
+                {
+                  name: 'text',
+                  dataType: ['text'],
+                  description: 'The content of the memory',
+                },
+                {
+                  name: 'metadata',
+                  dataType: ['text'], // Metadata is stored as a JSON string for flexibility
+                  description: 'JSON stringified metadata',
+                },
+              ],
+            })
+            .do();
+        } catch (innerError: any) {
+          // If another process created it in the meantime, ignore
+          if (innerError.message?.includes('already exists')) {
+            console.log(`[Weaviate] Class ${this.className} was created by another process.`);
+            return;
+          }
+          throw innerError;
+        }
       }
     } catch (error) {
       console.error('[Weaviate Schema Error]', error);

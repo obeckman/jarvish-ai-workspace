@@ -1,27 +1,45 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Send, Bot, User, Loader2, Trash2, LogIn, LogOut, AlertCircle, Pencil, Square, List, ChevronUp, ChevronDown, Paperclip, X, Plus, History } from 'lucide-react';
+import { Send, Bot, User, Loader2, Trash2, LogIn, LogOut, AlertCircle, Pencil, Square, List, ChevronUp, ChevronDown, Paperclip, X, Plus, History, BrainCircuit } from 'lucide-react';
 import cn from 'classnames';
 import styles from './jarvish-agent.module.scss';
 import { Message, AgentStatus } from './types';
+import { 
+  STORAGE_KEYS, 
+  API_ENDPOINTS, 
+  MESSAGE_ROLES, 
+  AGENT_STATUS, 
+  EVENT_TYPES, 
+  UI_STRINGS, 
+  GQL_QUERIES, 
+  GQL_MUTATIONS, 
+  GQL_SUBSCRIPTIONS 
+} from './constants';
 
 const INITIAL_MESSAGE: Message = {
   id: '1',
-  role: 'agent',
-  content: 'Hello! I am Jarvish, your personal agent. How can I help you today?',
+  role: MESSAGE_ROLES.AGENT,
+  content: UI_STRINGS.INITIAL_GREETING,
   timestamp: Date.now(),
 };
+
+interface SessionSummary {
+  summaryTitle: string;
+  userMessage: string;
+  aiAnswer: string;
+}
 
 interface Session {
   id: string;
   title: string;
   createdAt: string;
   updatedAt: string;
+  summary?: SessionSummary;
 }
 
 export const JarvishAgent: React.FC = () => {
-  const [input, setInput] = useState('תמשיך את המחקר על זכיות הבניה של המבנים הטמפלרים בנחלה שלי');
+  const [input, setInput] = useState(UI_STRINGS.DEFAULT_INPUT);
   const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE]);
-  const [status, setStatus] = useState<AgentStatus>('idle');
+  const [status, setStatus] = useState<AgentStatus>(AGENT_STATUS.IDLE);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [statusLogs, setStatusLogs] = useState<string[]>([]);
   const [retryCountdown, setRetryCountdown] = useState<number | null>(null);
@@ -30,12 +48,18 @@ export const JarvishAgent: React.FC = () => {
   const [lastSentQuery, setLastSentQuery] = useState<string>('');
   const [attachments, setAttachments] = useState<{name: string, data: string, mimeType: string}[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [googleToken, setGoogleToken] = useState<string | null>(localStorage.getItem('google_access_token'));
+  const [googleToken, setGoogleToken] = useState<string | null>(localStorage.getItem(STORAGE_KEYS.GOOGLE_TOKEN));
   const [clientId, setClientId] = useState<string | null>(null);
   
   // Session State
   const [sessions, setSessions] = useState<Session[]>([]);
-  const [currentSessionId, setCurrentSessionId] = useState<string | null>(localStorage.getItem('jarvish_session_id'));
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const [showFullConversation, setShowFullConversation] = useState(true);
+  const [isReasoningVisible, setIsReasoningVisible] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [isFetchingSessions, setIsFetchingSessions] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -77,32 +101,56 @@ export const JarvishAgent: React.FC = () => {
 
   // --- Session Management ---
 
-  const fetchSessions = useCallback(async () => {
+  const fetchSessions = useCallback(async (reset = false) => {
+    if (isFetchingSessions) return;
+    setIsFetchingSessions(true);
+    
+    const newOffset = reset ? 0 : offset;
+    const limit = 10;
+    
     try {
       const res = await fetch('/graphql', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          query: `query { getSessions { id title createdAt updatedAt } }`
+          query: `query($limit: Int, $offset: Int, $search: String) { 
+            getSessions(limit: $limit, offset: $offset, search: $search) { 
+              id title createdAt updatedAt summary { summaryTitle userMessage aiAnswer } 
+            } 
+          }`,
+          variables: { limit, offset: newOffset, search: searchTerm || null }
         })
       });
       const result = await res.json();
       if (result.data?.getSessions) {
-        setSessions(result.data.getSessions);
+        const fetched = result.data.getSessions;
+        setSessions(prev => reset ? fetched : [...prev, ...fetched]);
+        setOffset(newOffset + fetched.length);
+        setHasMore(fetched.length === limit);
       }
     } catch (e) {
       console.error('Failed to fetch sessions:', e);
+    } finally {
+      setIsFetchingSessions(false);
     }
-  }, []);
+  }, [offset, searchTerm, isFetchingSessions]);
+
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchSessions(true);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   const loadSessionHistory = useCallback(async (sessionId: string) => {
     try {
-      setStatus('thinking');
-      const res = await fetch('/graphql', {
+      setStatus(AGENT_STATUS.THINKING);
+      const res = await fetch(API_ENDPOINTS.GRAPHQL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          query: `query($sessionId: String!) { getSessionHistory(sessionId: $sessionId) { role content } }`,
+          query: GQL_QUERIES.GET_SESSION_HISTORY,
           variables: { sessionId }
         })
       });
@@ -120,19 +168,64 @@ export const JarvishAgent: React.FC = () => {
       console.error('Failed to load history:', e);
       setErrorMessage("Failed to load conversation history.");
     } finally {
-      setStatus('idle');
+      setStatus(AGENT_STATUS.IDLE);
     }
   }, []);
 
+  const pollingIntervalRef = useRef<any>(null);
+
+  const startPollingSummary = useCallback((sessionId: string) => {
+    if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
+    
+    pollingIntervalRef.current = setInterval(async () => {
+      try {
+        const res = await fetch(API_ENDPOINTS.GRAPHQL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query: GQL_QUERIES.GET_SESSION_SUMMARY,
+            variables: { sessionId }
+          })
+        });
+        const result = await res.json();
+        if (result.data?.getSessionSummary) {
+          setSessions(prev => prev.map(s => 
+            s.id === sessionId ? { ...s, summary: result.data.getSessionSummary } : s
+          ));
+          clearInterval(pollingIntervalRef.current);
+        }
+      } catch (e) {
+        console.error("Polling summary failed", e);
+      }
+    }, 3000);
+  }, []);
+
+  const selectSession = useCallback((id: string) => {
+    setCurrentSessionId(id);
+    localStorage.setItem(STORAGE_KEYS.SESSION_ID, id);
+    setMessages([INITIAL_MESSAGE]);
+    loadSessionHistory(id);
+    setErrorMessage(null);
+    setStatusLogs([]);
+
+    // Always show summary view first when selecting from history
+    const session = sessions.find(s => s.id === id);
+    setShowFullConversation(false);
+    
+    if (session && !session.summary) {
+      startPollingSummary(id);
+    }
+  }, [loadSessionHistory, sessions, startPollingSummary]);
+
   const createNewSession = useCallback(async () => {
     const id = `session-${Date.now()}`;
-    const title = `New Research ${new Date().toLocaleDateString()}`;
+    const title = `${UI_STRINGS.NEW_RESEARCH_PREFIX} ${new Date().toLocaleDateString()}`;
     try {
-      const res = await fetch('/graphql', {
+      const res = await fetch(API_ENDPOINTS.GRAPHQL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          query: `mutation($id: String!, $title: String!) { createSession(id: $id, title: $title) { id title } }`,
+          query: GQL_MUTATIONS.CREATE_SESSION,
           variables: { id, title }
         })
       });
@@ -145,33 +238,24 @@ export const JarvishAgent: React.FC = () => {
     } catch (e) {
       console.error('Failed to create session:', e);
     }
-  }, []);
-
-  const selectSession = useCallback((id: string) => {
-    setCurrentSessionId(id);
-    localStorage.setItem('jarvish_session_id', id);
-    setMessages([INITIAL_MESSAGE]);
-    loadSessionHistory(id);
-    setErrorMessage(null);
-    setStatusLogs([]);
-  }, [loadSessionHistory]);
+  }, [selectSession]);
 
   const deleteSession = useCallback(async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm("Are you sure you want to delete this session?")) return;
+    if (!confirm(UI_STRINGS.DELETE_CONFIRMATION)) return;
     try {
-      await fetch('/graphql', {
+      await fetch(API_ENDPOINTS.GRAPHQL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          query: `mutation($id: String!) { deleteSession(id: $id) }`,
+          query: GQL_MUTATIONS.DELETE_SESSION,
           variables: { id }
         })
       });
       setSessions(prev => prev.filter(s => s.id !== id));
       if (currentSessionId === id) {
         setCurrentSessionId(null);
-        localStorage.removeItem('jarvish_session_id');
+        localStorage.removeItem(STORAGE_KEYS.SESSION_ID);
         setMessages([INITIAL_MESSAGE]);
       }
     } catch (e) {
@@ -182,10 +266,33 @@ export const JarvishAgent: React.FC = () => {
   // --- Initial Data Fetch ---
   useEffect(() => {
     fetchSessions();
-    if (currentSessionId) {
-      loadSessionHistory(currentSessionId);
-    }
+    return () => {
+      if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
+    };
   }, []); // Run once on mount
+
+  const copyToInput = useCallback((text: string) => {
+    setInput(text);
+    textareaRef.current?.focus();
+  }, []);
+
+  const triggerSummary = useCallback(async (sessionId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      // Calling getSessionSummary on BE triggers async generation if missing
+      await fetch(API_ENDPOINTS.GRAPHQL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: GQL_QUERIES.GET_SESSION_SUMMARY,
+          variables: { sessionId }
+        })
+      });
+      startPollingSummary(sessionId);
+    } catch (e) {
+      console.error("Failed to trigger summary:", e);
+    }
+  }, [startPollingSummary]);
 
   // --- Standard Logic ---
 
@@ -228,7 +335,7 @@ export const JarvishAgent: React.FC = () => {
   useEffect(() => {
     const fetchConfig = async () => {
       try {
-        const res = await fetch('/api/config');
+        const res = await fetch(API_ENDPOINTS.CONFIG);
         const data = await res.json();
         if (data.googleClientId) {
           setClientId(data.googleClientId);
@@ -302,9 +409,14 @@ export const JarvishAgent: React.FC = () => {
     setErrorMessage(null);
   }, []);
 
+  const clearInput = useCallback(() => {
+    setInput('');
+    setTimeout(() => textareaRef.current?.focus(), 0);
+  }, []);
+
   const sendMessage = useCallback(async (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (!input.trim() || status !== 'idle') return;
+    if (!input.trim() || status !== AGENT_STATUS.IDLE) return;
 
     // Auto-create session if none active
     let sessionId = currentSessionId;
@@ -312,11 +424,11 @@ export const JarvishAgent: React.FC = () => {
       const id = `session-${Date.now()}`;
       const title = input.substring(0, 30) + (input.length > 30 ? '...' : '');
       try {
-        const res = await fetch('/graphql', {
+        const res = await fetch(API_ENDPOINTS.GRAPHQL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            query: `mutation($id: String!, $title: String!) { createSession(id: $id, title: $title) { id title } }`,
+            query: GQL_MUTATIONS.CREATE_SESSION,
             variables: { id, title }
           })
         });
@@ -324,7 +436,7 @@ export const JarvishAgent: React.FC = () => {
         if (result.data?.createSession) {
           sessionId = result.data.createSession.id;
           setCurrentSessionId(sessionId);
-          localStorage.setItem('jarvish_session_id', sessionId!);
+          localStorage.setItem(STORAGE_KEYS.SESSION_ID, sessionId!);
           setSessions(prev => [result.data.createSession, ...prev]);
         }
       } catch (e) {
@@ -335,10 +447,11 @@ export const JarvishAgent: React.FC = () => {
     setErrorMessage(null);
     setLastSentQuery(input);
     setStatusLogs([]);
-    const userMsg: Message = { id: Date.now().toString(), role: 'user', content: input, timestamp: Date.now() };
+    setIsReasoningVisible(true); // Show reasoning while active
+    const userMsg: Message = { id: Date.now().toString(), role: MESSAGE_ROLES.USER, content: input, timestamp: Date.now() };
     setMessages(prev => [...prev, userMsg]);
     setInput('');
-    setStatus('thinking');
+    setStatus(AGENT_STATUS.THINKING);
     setCurrentStage(1);
 
     abortControllerRef.current = new AbortController();
@@ -350,26 +463,16 @@ export const JarvishAgent: React.FC = () => {
       };
       if (googleToken) headers['x-google-token'] = googleToken;
 
-      const subscriptionQuery = `
-        subscription AgentChat($query: String!, $history: [MessageInput!]!, $attachments: [AttachmentInput!], $sessionId: String) {
-          agentEvents(query: $query, history: $history, attachments: $attachments, sessionId: $sessionId) {
-            type
-            content
-            stage
-          }
-        }
-      `;
-
-      const response = await fetch('/graphql', {
+      const response = await fetch(API_ENDPOINTS.GRAPHQL, {
         method: 'POST',
         headers,
         signal: abortControllerRef.current.signal,
         body: JSON.stringify({
-          query: subscriptionQuery,
+          query: GQL_SUBSCRIPTIONS.AGENT_CHAT,
           variables: {
             query: input,
             history: messages.map(m => ({ 
-              role: m.role === 'user' ? 'user' : 'assistant', 
+              role: m.role === MESSAGE_ROLES.USER ? 'user' : 'assistant', 
               content: m.content 
             })).slice(-10),
             attachments: attachments.map(a => ({
@@ -391,7 +494,6 @@ export const JarvishAgent: React.FC = () => {
       let assistantMessageContent = '';
       
       const assistantMsgId = (Date.now() + 1).toString();
-      setMessages(prev => [...prev, { id: assistantMsgId, role: 'agent', content: '', timestamp: Date.now() }]);
 
       let buffer = '';
       while (true) {
@@ -412,18 +514,42 @@ export const JarvishAgent: React.FC = () => {
             const data = result.data?.agentEvents;
             if (!data) continue;
 
-            if (data.type === 'STATUS') {
+            if (data.type === EVENT_TYPES.STATUS) {
               setStatusMessage(data.content);
               setStatusLogs(prev => [...prev, data.content]);
+              
+              // Also add as reasoning message
+              setMessages(prev => [...prev, {
+                id: `reason-${Date.now()}-${Math.random()}`,
+                role: MESSAGE_ROLES.REASONING,
+                content: data.content,
+                timestamp: Date.now()
+              }]);
+
               if (data.stage !== undefined) setCurrentStage(data.stage);
-            } else if (data.type === 'MESSAGE') {
+            } else if (data.type === EVENT_TYPES.REASONING) {
+              // Add larger intermediate content (like research results) as reasoning
+              setMessages(prev => [...prev, {
+                id: `reason-content-${Date.now()}-${Math.random()}`,
+                role: MESSAGE_ROLES.REASONING,
+                content: data.content,
+                timestamp: Date.now()
+              }]);
+            } else if (data.type === EVENT_TYPES.MESSAGE) {
               setStatusMessage(null); 
+              
+              // Ensure assistant message placeholder exists
+              setMessages(prev => {
+                const existing = prev.find(m => m.id === assistantMsgId);
+                if (!existing) {
+                  return [...prev, { id: assistantMsgId, role: MESSAGE_ROLES.AGENT, content: data.content, timestamp: Date.now() }];
+                }
+                return prev.map(m => m.id === assistantMsgId ? { ...m, content: m.content + data.content } : m);
+              });
+
               assistantMessageContent += data.content;
-              setStatus('responding');
-              setMessages(prev => prev.map(m => 
-                m.id === assistantMsgId ? { ...m, content: assistantMessageContent } : m
-              ));
-            } else if (data.type === 'ERROR') {
+              setStatus(AGENT_STATUS.RESPONDING);
+            } else if (data.type === EVENT_TYPES.ERROR) {
               setErrorMessage(`Agent Error: ${data.content}`);
             }
           } catch (e) {
@@ -431,15 +557,17 @@ export const JarvishAgent: React.FC = () => {
           }
         }
       }
-      setStatus('idle');
+      setStatus(AGENT_STATUS.IDLE);
       setStatusMessage(null);
       setCurrentStage(0);
       setRetryCountdown(null);
       setAttachments([]); 
+      setShowAllLogs(false); 
+      setIsReasoningVisible(false); // Collapse reasoning after finished
       readerRef.current = null;
     } catch (error: any) {
       if (error.name === 'AbortError') return;
-      setStatus('error');
+      setStatus(AGENT_STATUS.ERROR);
       setErrorMessage(error instanceof Error ? error.message : 'An unexpected error occurred');
       setMessages(prev => prev.filter(m => m.content !== ''));
     } finally {
@@ -459,24 +587,73 @@ export const JarvishAgent: React.FC = () => {
           <button onClick={createNewSession} className={styles.newChatBtn}>
             <Plus size={16} /> New Chat
           </button>
+          
+          <div className={styles.searchWrapper}>
+            <input 
+              type="text" 
+              placeholder="Search history..." 
+              value={searchTerm} 
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className={styles.searchInput}
+            />
+            {searchTerm && (
+              <button onClick={() => setSearchTerm('')} className={styles.clearSearch}>
+                <X size={12} />
+              </button>
+            )}
+          </div>
         </div>
         
         <div className={styles.sessionList}>
           {sessions.map(s => (
-            <button 
+            <div 
               key={s.id} 
               onClick={() => selectSession(s.id)}
               className={cn(styles.sessionItem, { [styles.active]: currentSessionId === s.id })}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <span className={styles.sessionTitle}>{s.title}</span>
+              <div className={styles.sessionItemHeader}>
+                <span className={styles.sessionTitle}>{s.summary?.summaryTitle || s.title}</span>
                 <Trash2 size={12} className={styles.deleteIcon} onClick={(e) => deleteSession(s.id, e)} />
               </div>
+              
+              {s.summary ? (
+                <div className={styles.summaryContent}>
+                  <p><strong>User:</strong> {s.summary.userMessage.substring(0, 50)}...</p>
+                  <p><strong>AI:</strong> {s.summary.aiAnswer.substring(0, 50)}...</p>
+                </div>
+              ) : (
+                <div className={styles.summaryActions}>
+                  {currentSessionId === s.id && pollingIntervalRef.current ? (
+                    <div className={styles.summaryLoading}>
+                      <Loader2 size={10} className={styles.spin} /> Generating...
+                    </div>
+                  ) : (
+                    <button 
+                      onClick={(e) => triggerSummary(s.id, e)} 
+                      className={styles.summarizeBtn}
+                    >
+                      <History size={10} /> Summarize
+                    </button>
+                  )}
+                </div>
+              )}
+              
               <span className={styles.sessionDate}>{new Date(s.updatedAt).toLocaleDateString()}</span>
-            </button>
+            </div>
           ))}
-          {sessions.length === 0 && (
-            <div style={{ textAlign: 'center', fontSize: '0.75rem', color: '#94a3b8', marginTop: '2rem' }}>
+          
+          {hasMore && (
+            <button 
+              onClick={() => fetchSessions(false)} 
+              className={styles.loadMoreBtn}
+              disabled={isFetchingSessions}
+            >
+              {isFetchingSessions ? <Loader2 size={14} className={styles.spin} /> : "Load More"}
+            </button>
+          )}
+
+          {sessions.length === 0 && !isFetchingSessions && (
+            <div className={styles.emptyHistory}>
               No history found.
             </div>
           )}
@@ -486,13 +663,23 @@ export const JarvishAgent: React.FC = () => {
       {/* MAIN CHAT */}
       <div className={styles.container}>
         <header className={styles.header}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div className={styles.sidebarTitleWrapper}>
             <Bot size={24} />
-            <h2>Jarvish Agent</h2>
+            <div>
+              <h2 className={styles.headerTitle}>Jarvish Agent</h2>
+              {currentSessionId && (
+                <button 
+                  onClick={() => setShowFullConversation(!showFullConversation)} 
+                  className={styles.viewToggle}
+                >
+                  {showFullConversation ? "Show Summary" : "Show Full Conversation"}
+                </button>
+              )}
+            </div>
           </div>
-          <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
+          <div className={styles.headerActions}>
             {googleToken ? (
-              <button onClick={logout} className={styles.button} title="Logout Google" style={{ color: '#10b981' }}><LogOut size={16} /></button>
+              <button onClick={logout} className={cn(styles.button, styles.logoutButton)} title="Logout Google"><LogOut size={16} /></button>
             ) : (
               <button onClick={loginWithGoogle} className={styles.button} title="Login Google"><LogIn size={16} /></button>
             )}
@@ -501,49 +688,153 @@ export const JarvishAgent: React.FC = () => {
         </header>
 
         <div className={styles.messages}>
-          {status !== 'idle' && (
-            <div className={styles.stageTracker}>
-              {[
-                { id: 1, label: 'Prepare' },
-                { id: 2, label: 'Research' },
-                { id: 3, label: 'Synthesize' },
-                { id: 4, label: 'Finalize' }
-              ].map((stage) => (
-                <div key={stage.id} className={cn(styles.stage, { 
-                  [styles.active]: currentStage === stage.id,
-                  [styles.completed]: currentStage > stage.id 
-                })}>
-                  <div className={styles.dot} />
-                  <span>{stage.label}</span>
+          {!showFullConversation && currentSessionId ? (
+            <div className={styles.summaryView}>
+               {sessions.find(s => s.id === currentSessionId)?.summary ? (
+                 <div className={styles.summaryCard}>
+                    <h3>{sessions.find(s => s.id === currentSessionId)?.summary?.summaryTitle}</h3>
+                    <div className={styles.summarySection}>
+                      <strong>Original Request:</strong>
+                      <p>{sessions.find(s => s.id === currentSessionId)?.summary?.userMessage}</p>
+                      <button onClick={() => copyToInput(sessions.find(s => s.id === currentSessionId)?.summary?.userMessage || '')} className={styles.copyBtnInline}>
+                        Copy to input
+                      </button>
+                    </div>
+                    <div className={styles.summarySection}>
+                      <strong>Key Findings:</strong>
+                      <p>{sessions.find(s => s.id === currentSessionId)?.summary?.aiAnswer}</p>
+                    </div>
+                    <button onClick={() => setShowFullConversation(true)} className={styles.showFullBtn}>
+                      View Full Conversation
+                    </button>
+                 </div>
+               ) : (
+                 <div className={styles.summaryPlaceholder}>
+                    <div className={styles.placeholderCard}>
+                      <History size={48} color="#94a3b8" />
+                      <h3>Summary is being prepared</h3>
+                      <p>Jarvish is analyzing this conversation to provide a concise overview. This will take just a few seconds.</p>
+                      <div className={styles.pollingStatus}>
+                        <Loader2 size={16} className={styles.spin} />
+                        <span>Checking for summary...</span>
+                      </div>
+                      <button onClick={() => setShowFullConversation(true)} className={styles.showFullBtnSecondary}>
+                        Skip to Full Conversation
+                      </button>
+                    </div>
+                 </div>
+               )}
+            </div>
+          ) : (
+            <>
+              {status !== AGENT_STATUS.IDLE && (
+                <div className={styles.stageTracker}>
+                  {[
+                    { id: 1, label: 'Prepare' },
+                    { id: 2, label: 'Research' },
+                    { id: 3, label: 'Synthesize' },
+                    { id: 4, label: 'Finalize' }
+                  ].map((stage) => (
+                    <div key={stage.id} className={cn(styles.stage, { 
+                      [styles.active]: currentStage === stage.id,
+                      [styles.completed]: currentStage > stage.id 
+                    })}>
+                      <div className={styles.dot} />
+                      <span>{stage.label}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
+              )}
 
-          {messages.map((msg) => (
-            <div key={msg.id} className={cn(styles.message, { [styles.user]: msg.role === 'user', [styles.agent]: msg.role === 'agent' })}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                {msg.role === 'user' ? <User size={12} /> : <Bot size={12} />}
-                <strong style={{ fontSize: '0.7rem' }}>{msg.role === 'user' ? 'You' : 'Jarvish'}</strong>
-              </div>
-              <div style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</div>
-            </div>
-          ))}
+              {(() => {
+                const elements: React.ReactNode[] = [];
+                let reasoningGroup: Message[] = [];
+
+                const flushReasoning = () => {
+                  if (reasoningGroup.length > 0) {
+                    const group = [...reasoningGroup];
+                    const isCollapsed = !isReasoningVisible;
+                    
+                    elements.push(
+                      <div key={`reason-group-${group[0].id}`} className={cn(styles.reasoningGroup, { [styles.collapsed]: isCollapsed })}>
+                        <div className={styles.reasoningHeader} onClick={() => setIsReasoningVisible(!isReasoningVisible)}>
+                          <BrainCircuit size={12} />
+                          <span>{isCollapsed ? `Show Thought Process (${group.length} steps)` : 'Hide Thought Process'}</span>
+                          {isCollapsed ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                        </div>
+                        {!isCollapsed && (
+                          <div className={styles.reasoningSteps}>
+                            {group.map(rm => (
+                              <div key={rm.id} className={styles.reasoningStep}>
+                                <div className={styles.dot} />
+                                {rm.content}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                    reasoningGroup = [];
+                  }
+                };
+
+                messages.forEach((msg) => {
+                  const isUser = msg.role === MESSAGE_ROLES.USER;
+                  const isAgent = msg.role === MESSAGE_ROLES.AGENT;
+                  const isReasoning = msg.role === MESSAGE_ROLES.REASONING;
+
+                  // When viewing history summary, don't show anything (it's handled by summaryView)
+                  if (currentSessionId && !showFullConversation) return;
+
+                  if (isReasoning) {
+                    reasoningGroup.push(msg);
+                  } else {
+                    flushReasoning();
+                    if (msg.content === '') return; // Skip empty tokens/messages
+
+                    elements.push(
+                      <div key={msg.id} className={cn(styles.message, { [styles.user]: isUser, [styles.agent]: isAgent })}>
+                        <div className={styles.messageHeader}>
+                          <div className={styles.messageSender}>
+                            {isUser ? <User size={12} /> : <Bot size={12} />}
+                            <strong className={styles.senderName}>{isUser ? 'You' : 'Jarvish'}</strong>
+                          </div>
+                          {isUser && (
+                            <button 
+                              onClick={() => copyToInput(msg.content)} 
+                              className={styles.copyIconBtn}
+                              title="Copy to prompt"
+                            >
+                              <Plus size={12} />
+                            </button>
+                          )}
+                        </div>
+                        <div style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</div>
+                      </div>
+                    );
+                  }
+                });
+                
+                flushReasoning();
+                return elements;
+              })()}
+            </>
+          )}
           
           {errorMessage && (
-            <div className={cn(styles.message, styles.agent)} style={{ background: '#fef2f2', border: '1px solid #fee2e2', color: '#b91c1c' }}>
-               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold', fontSize: '0.75rem', marginBottom: '4px' }}>
+            <div className={cn(styles.message, styles.agent, styles.errorMessageBlock)}>
+               <div className={styles.errorTitle}>
                  <AlertCircle size={14} /> System Error
                </div>
                {errorMessage}
             </div>
           )}
           
-          {status === 'thinking' && !errorMessage && (
+          {status === AGENT_STATUS.THINKING && !errorMessage && (
             <div className={cn(styles.message, styles.agent)}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div className={styles.messageSender}>
                 <Loader2 className={styles.loading} size={18} />
-                <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+                <span className={styles.thinkingText}>
                   {statusMessage || 'Jarvish is processing...'}
                 </span>
               </div>
@@ -598,9 +889,19 @@ export const JarvishAgent: React.FC = () => {
               placeholder="Type a message..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              disabled={status === 'thinking'}
+              disabled={status === AGENT_STATUS.THINKING}
             />
-            {status !== 'idle' ? (
+            {input && status === AGENT_STATUS.IDLE && (
+              <button 
+                type="button" 
+                onClick={clearInput} 
+                className={cn(styles.button, styles.clearButton)}
+                title="Clear input"
+              >
+                <X size={18} />
+              </button>
+            )}
+            {status !== AGENT_STATUS.IDLE ? (
               <button type="button" onClick={cancelRequest} className={cn(styles.button, styles.stopButton)} title="Stop generation">
                 <Square size={18} fill="currentColor" />
               </button>

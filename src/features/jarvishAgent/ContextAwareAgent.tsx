@@ -3,6 +3,7 @@ import { useAgent } from '../../hooks/useAgent';
 import { Send, Bot, User, Loader2, BrainCircuit, Activity } from 'lucide-react';
 import cn from 'classnames';
 import styles from './jarvish-agent.module.scss';
+import { UI_STRINGS, AGENT_STATUS } from './constants';
 
 export const ContextAwareAgent: React.FC = () => {
   const [query, setQuery] = useState('');
@@ -10,13 +11,13 @@ export const ContextAwareAgent: React.FC = () => {
 
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
-    if (!query.trim() || status !== 'idle') return;
+    if (!query.trim() || status !== AGENT_STATUS.IDLE) return;
     askAgent(query);
     setQuery('');
   }, [query, status, askAgent]);
 
   return (
-    <div className={styles.container} style={{ height: '700px' }}>
+    <div className={cn(styles.container, styles.agentContainer)}>
       <header className={styles.header}>
         <BrainCircuit size={24} />
         <h2>Context-Aware Agent (Thought Trace)</h2>
@@ -25,12 +26,12 @@ export const ContextAwareAgent: React.FC = () => {
       <div className={styles.messages}>
         {/* Thought Trace Pattern: Show synthesized context before final answer */}
         {synthesizedContext && (
-          <div className={cn(styles.message, styles.agent)} style={{ borderLeft: '4px solid #10b981', background: '#f0fdf4' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', color: '#059669' }}>
+          <div className={cn(styles.message, styles.agent, styles.synthesizedContextBlock)}>
+            <div className={styles.synthesizedContextHeader}>
               <Activity size={14} />
-              <strong style={{ fontSize: '0.75rem' }}>Synthesized Context (Memory + Entities)</strong>
+              <strong className={styles.agentName}>Synthesized Context (Memory + Entities)</strong>
             </div>
-            <p style={{ margin: 0, fontStyle: 'italic', fontSize: '0.8rem' }}>
+            <p className={styles.synthesizedContextText}>
               {synthesizedContext}
             </p>
           </div>
@@ -38,29 +39,29 @@ export const ContextAwareAgent: React.FC = () => {
 
         {response && (
           <div className={cn(styles.message, styles.agent)}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+            <div className={styles.agentMessageHeader}>
               <Bot size={14} />
-              <strong style={{ fontSize: '0.75rem' }}>Jarvish Execution Agent</strong>
+              <strong className={styles.agentName}>Jarvish Execution Agent</strong>
             </div>
-            <p style={{ margin: 0 }}>{response}</p>
+            <p className={styles.messageText}>{response}</p>
           </div>
         )}
 
-        {status !== 'idle' && status !== 'error' && !response && (
+        {status !== AGENT_STATUS.IDLE && status !== AGENT_STATUS.ERROR && !response && (
           <div className={cn(styles.message, styles.agent)}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div className={styles.statusWrapper}>
               <Loader2 className={styles.loading} size={18} />
               <span>
-                {status === 'loading_context' && 'Retrieving Memories...'}
-                {status === 'thinking' && 'Orchestrating Context...'}
-                {status === 'responding' && 'Executing Task...'}
+                {status === 'loading_context' && UI_STRINGS.STATUS_RETRIEVING}
+                {status === 'thinking' && UI_STRINGS.STATUS_ORCHESTRATING}
+                {status === 'responding' && UI_STRINGS.STATUS_EXECUTING}
               </span>
             </div>
           </div>
         )}
 
         {error && (
-          <div className={cn(styles.message, styles.agent)} style={{ background: '#fef2f2', color: '#dc2626' }}>
+          <div className={cn(styles.message, styles.agent, styles.errorMessageText)}>
             <strong>Error:</strong> {error}
           </div>
         )}
@@ -71,17 +72,17 @@ export const ContextAwareAgent: React.FC = () => {
           <input
             type="text"
             className={styles.input}
-            placeholder="Ask about inventory (e.g., 'Do we have SHOE-123 in stock?')"
+            placeholder={UI_STRINGS.CONTEXT_AGENT_PLACEHOLDER}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            disabled={status !== 'idle'}
+            disabled={status !== AGENT_STATUS.IDLE}
           />
           <button 
             type="submit" 
             className={styles.button}
-            disabled={!query.trim() || status !== 'idle'}
+            disabled={!query.trim() || status !== AGENT_STATUS.IDLE}
           >
-            {status !== 'idle' ? <Loader2 className={styles.loading} size={18} /> : <Send size={18} />}
+            {status !== AGENT_STATUS.IDLE ? <Loader2 className={styles.loading} size={18} /> : <Send size={18} />}
           </button>
         </form>
       </footer>

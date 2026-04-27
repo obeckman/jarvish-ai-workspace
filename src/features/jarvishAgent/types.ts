@@ -2,7 +2,7 @@ export type AgentStatus = 'idle' | 'thinking' | 'responding' | 'error';
 
 export interface Message {
   id: string;
-  role: 'user' | 'agent';
+  role: 'user' | 'agent' | 'reasoning';
   content: string;
   timestamp: number;
 }

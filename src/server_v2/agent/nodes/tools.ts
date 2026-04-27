@@ -6,6 +6,7 @@ import { fetchWebPage } from "../../services/tools/web.service.js";
 import { readPdf } from "../../services/tools/pdf.service.js";
 import { readFile } from "../../services/tools/file.service.js";
 import { addMemory } from "../../services/memory/memory.service.js";
+import { listCalendarEvents, searchGmailMessages, getGoogleDocContent } from "../../../server/agent/google_tools.js";
 
 /**
  * Node: Tool Execution
@@ -38,6 +39,15 @@ export async function toolsNode(state: AgentStateType) {
         output = await addMemory(call.args.fact, { category: call.args.category });
       } else if (call.name === 'query_attachments') {
         output = await handleQueryAttachments(call.args.query, state);
+      } else if (call.name === 'list_calendar_events') {
+        if (!state.googleToken) throw new Error("Google authentication required.");
+        output = await listCalendarEvents(state.googleToken, call.args);
+      } else if (call.name === 'search_gmail_messages') {
+        if (!state.googleToken) throw new Error("Google authentication required.");
+        output = await searchGmailMessages(state.googleToken, call.args);
+      } else if (call.name === 'get_google_doc_content') {
+        if (!state.googleToken) throw new Error("Google authentication required.");
+        output = await getGoogleDocContent(state.googleToken, call.args);
       } else {
         output = `Error: Tool '${call.name}' not recognized.`;
       }

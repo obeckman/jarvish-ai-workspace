@@ -53,6 +53,22 @@ export const AgentState = Annotation.Root({
     reducer: (x, y) => x.concat(y),
     default: () => [],
   }),
+
+  /**
+   * OAuth token for Google Workspace tools.
+   */
+  googleToken: Annotation<string | null>({
+    reducer: (x, y) => y ?? x,
+    default: () => null,
+  }),
+
+  /**
+   * Current session ID for persistence.
+   */
+  sessionId: Annotation<string | null>({
+    reducer: (x, y) => y ?? x,
+    default: () => null,
+  }),
 });
 
 /**

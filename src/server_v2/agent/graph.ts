@@ -1,4 +1,5 @@
 import { StateGraph, START, END } from "@langchain/langgraph";
+import { BaseCheckpointSaver } from "@langchain/langgraph-checkpoint";
 import { AgentState, AgentStateType } from "./state.js";
 import { contextNode } from "./nodes/context.js";
 import { processingNode } from "./nodes/processing.js";
@@ -51,5 +52,5 @@ export function createAgentGraph(checkpointer?: BaseCheckpointSaver) {
     // Finish after archiving
     .addEdge("archive", END);
 
-  return workflow.compile();
+  return workflow.compile({ checkpointer });
 }

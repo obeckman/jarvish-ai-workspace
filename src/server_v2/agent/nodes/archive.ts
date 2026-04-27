@@ -3,6 +3,9 @@ import { addMemory } from "../../services/memory/memory.service.js";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { ARCHIVE_MODEL } from "../models.js";
 import { PDFParse } from 'pdf-parse';
+import { summarizeSession } from "../../services/summarization.service.js";
+import { db } from "../../db/index.js";
+import { sessionSummaries } from "../../db/schema.js";
 
 /**
  * Node: Memory Archiving
@@ -10,9 +13,39 @@ import { PDFParse } from 'pdf-parse';
  * 1. Summarize the current interaction.
  * 2. Index all attachments (PDFs, Images, Text) into long-term memory.
  * 3. Persist everything to Weaviate for long-term recall.
+ * 4. Generate and store a high-level session summary for history UI.
  */
 export async function archiveNode(state: AgentStateType) {
-  // 1. Archive Conversation Summary
+  // 1. Generate Session Summary for UI History (New Requirement)
+  if (state.sessionId) {
+    console.log(`[Agent Graph] Node: Archive | Generating session summary for ${state.sessionId}`);
+    try {
+      const history = state.messages.map(m => ({
+        role: m.role === 'user' || m.role === 'human' ? 'user' : 'assistant',
+        content: m.content
+      }));
+      
+      const summary = await summarizeSession(history);
+      await db.insert(sessionSummaries).values({
+        sessionId: state.sessionId,
+        summaryTitle: summary.summaryTitle,
+        userMessage: summary.userMessage,
+        aiAnswer: summary.aiAnswer,
+      }).onConflictDoUpdate({
+        target: sessionSummaries.sessionId,
+        set: {
+          summaryTitle: summary.summaryTitle,
+          userMessage: summary.userMessage,
+          aiAnswer: summary.aiAnswer,
+        }
+      });
+      console.log(`[Agent Graph] Node: Archive | Session summary stored.`);
+    } catch (err) {
+      console.error("[Archive Node Error: Session Summary]", err);
+    }
+  }
+
+  // 2. Archive Conversation Summary to Vector Store
   const lastUserMessage = state.messages.findLast(m => m.role === 'user');
   const lastModelMessage = state.messages.findLast(m => m.role === 'assistant' || (m.role === 'model' && !m.tool_calls));
 

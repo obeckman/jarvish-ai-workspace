@@ -11,13 +11,17 @@ export const schema = createSchema({
     type Query {
       status: String!
       """
-      Retrieves all persistent research sessions.
+      Retrieves all persistent research sessions with pagination and optional search.
       """
-      getSessions: [Session!]!
+      getSessions(limit: Int, offset: Int, search: String): [Session!]!
       """
       Retrieves the message history for a specific session.
       """
       getSessionHistory(sessionId: String!): [Message!]!
+      """
+      Retrieves or generates a summary for a specific session.
+      """
+      getSessionSummary(sessionId: String!): SessionSummary
     }
 
     type Mutation {
@@ -47,6 +51,15 @@ export const schema = createSchema({
       title: String!
       createdAt: String!
       updatedAt: String!
+      summary: SessionSummary
+    }
+
+    type SessionSummary {
+      sessionId: String!
+      summaryTitle: String!
+      userMessage: String!
+      aiAnswer: String!
+      createdAt: String!
     }
 
     type Message {

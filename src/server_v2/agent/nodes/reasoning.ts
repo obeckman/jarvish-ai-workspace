@@ -8,7 +8,10 @@ import {
   readPdfDeclaration, 
   readFileDeclaration, 
   addMemoryDeclaration,
-  queryAttachmentsDeclaration
+  queryAttachmentsDeclaration,
+  googleCalendarDeclaration,
+  gmailSearchDeclaration,
+  googleDocsDeclaration
 } from "./registry.js";
 
 /**
@@ -50,6 +53,9 @@ export async function reasoningNode(state: AgentStateType) {
   Directives:
   - If you need more info from uploaded files, call 'query_attachments'.
   - If you need info from the web, call 'web_search'.
+  - If you need info from the user's Google Calendar, call 'list_calendar_events'.
+  - If you need to search the user's Gmail, call 'search_gmail_messages'.
+  - If you need to read a Google Doc, call 'get_google_doc_content'.
   - If you have enough info, provide a detailed final answer.`;
 
   const model = genAI.getGenerativeModel({
@@ -63,7 +69,10 @@ export async function reasoningNode(state: AgentStateType) {
         readPdfDeclaration as any,
         readFileDeclaration as any,
         addMemoryDeclaration as any,
-        queryAttachmentsDeclaration as any
+        queryAttachmentsDeclaration as any,
+        googleCalendarDeclaration as any,
+        gmailSearchDeclaration as any,
+        googleDocsDeclaration as any
       ]
     }]
   });
@@ -71,10 +80,39 @@ export async function reasoningNode(state: AgentStateType) {
   console.log(`[Agent Graph] Node: Reasoning | Deciding next steps...`);
 
   // Map state messages to Gemini parts
-  let history = state.messages.map(m => ({
-    role: (m.role === 'user' || m.role === 'human') ? 'user' : 'model',
-    parts: [{ text: m.content || m.text || "" }]
-  }));
+  let history = state.messages.map(m => {
+    let role = 'model';
+    if (m.role === 'user' || m.role === 'human') {
+      role = 'user';
+    } else if (m.role === 'tool') {
+      role = 'function';
+    }
+
+    const parts: any[] = [];
+    
+    if (m.tool_calls && m.tool_calls.length > 0) {
+      // Model calling a tool
+      parts.push(...m.tool_calls.map((tc: any) => ({
+        functionCall: {
+          name: tc.name,
+          args: tc.args
+        }
+      })));
+    } else if (m.role === 'tool') {
+      // Result of a tool call
+      parts.push({
+        functionResponse: {
+          name: m.name || 'unknown_tool', 
+          response: { result: m.content }
+        }
+      });
+    } else {
+      // Regular text message
+      parts.push({ text: m.content || m.text || "" });
+    }
+
+    return { role, parts };
+  });
 
   // Gemini Requirement: History must start with a 'user' message.
   const firstUserIndex = history.findIndex(m => m.role === 'user');
