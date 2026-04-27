@@ -211,17 +211,40 @@ export const JarvishAgent: React.FC = () => {
     abortControllerRef.current = new AbortController();
 
     try {
-      const headers: any = { 'Content-Type': 'application/json' };
+      const headers: any = { 
+        'Content-Type': 'application/json',
+        'Accept': 'text/event-stream'
+      };
       if (googleToken) headers['x-google-token'] = googleToken;
 
-      const response = await fetch('/api/agent', {
+      const subscriptionQuery = `
+        subscription AgentChat($query: String!, $history: [MessageInput!]!, $attachments: [AttachmentInput!]) {
+          agentEvents(query: $query, history: $history, attachments: $attachments) {
+            type
+            content
+            stage
+          }
+        }
+      `;
+
+      const response = await fetch('/graphql', {
         method: 'POST',
         headers,
         signal: abortControllerRef.current.signal,
-        body: JSON.stringify({ 
-          query: input,
-          history: messages.map(m => ({ role: m.role, content: m.content })),
-          attachments
+        body: JSON.stringify({
+          query: subscriptionQuery,
+          variables: {
+            query: input,
+            history: messages.map(m => ({ 
+              role: m.role === 'user' ? 'user' : 'assistant', 
+              content: m.content 
+            })).slice(-10),
+            attachments: attachments.map(a => ({
+              name: a.name,
+              data: a.data,
+              mimeType: a.mimeType
+            }))
+          }
         }),
       });
 
@@ -233,45 +256,49 @@ export const JarvishAgent: React.FC = () => {
       if (!response.body) throw new Error('No response body received from server');
       
       const reader = response.body.getReader();
-      readerRef.current = reader; // Store for manual cancellation
+      readerRef.current = reader; 
       const decoder = new TextDecoder();
       let assistantMessageContent = '';
       
       const assistantMsgId = (Date.now() + 1).toString();
       setMessages(prev => [...prev, { id: assistantMsgId, role: 'agent', content: '', timestamp: Date.now() }]);
 
+      let buffer = '';
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n').filter(l => l.trim());
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || ''; // Keep the last incomplete line in the buffer
 
         for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          
+          const jsonStr = line.replace('data: ', '').trim();
+          if (!jsonStr) continue;
+
           try {
-            const data = JSON.parse(line);
-            if (data.type === 'status') {
+            const result = JSON.parse(jsonStr);
+            const data = result.data?.agentEvents;
+            if (!data) continue;
+
+            if (data.type === 'STATUS') {
               setStatusMessage(data.content);
               setStatusLogs(prev => [...prev, data.content]);
               if (data.stage !== undefined) setCurrentStage(data.stage);
-              
-              if (data.retryIn) {
-                setRetryCountdown(Math.round(data.retryIn / 1000));
-              } else {
-                setRetryCountdown(null);
-              }
-            } else if (data.type === 'message') {
-              setStatusMessage(null); // Clear status once we get real text
+            } else if (data.type === 'MESSAGE') {
+              setStatusMessage(null); 
               assistantMessageContent += data.content;
               setStatus('responding');
               setMessages(prev => prev.map(m => 
                 m.id === assistantMsgId ? { ...m, content: assistantMessageContent } : m
               ));
-            } else if (data.type === 'error') {
+            } else if (data.type === 'ERROR') {
               setErrorMessage(`Agent Error: ${data.content}`);
             }
           } catch (e) {
-            console.warn('Failed to parse NDJSON line:', line);
+            console.warn('Failed to parse SSE JSON:', jsonStr);
           }
         }
       }

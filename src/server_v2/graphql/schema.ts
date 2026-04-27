@@ -1,10 +1,12 @@
 import { createSchema } from 'graphql-yoga';
+import { resolvers } from './resolvers.js';
 
 /**
  * GraphQL Schema Definition
  * Defines the contract between the frontend and the research agent.
  */
 export const schema = createSchema({
+  resolvers,
   typeDefs: /* GraphQL */ `
     type Query {
       status: String!
@@ -21,12 +23,18 @@ export const schema = createSchema({
       """
       Streams events from the Jarvish Agent (logs, tokens, stage updates).
       """
-      agentEvents(query: String!, history: [MessageInput!]): AgentEvent!
+      agentEvents(query: String!, history: [MessageInput!], attachments: [AttachmentInput!]): AgentEvent!
     }
 
     input MessageInput {
       role: String!
       content: String!
+    }
+
+    input AttachmentInput {
+      name: String!
+      data: String!
+      mimeType: String!
     }
 
     type AgentEvent {

@@ -22,7 +22,7 @@ export const resolvers = {
        * The 'subscribe' generator function is where the magic happens.
        * We run the LangGraph and yield events as they come in.
        */
-      subscribe: async function* (_: any, { query, history }: any) {
+      subscribe: async function* (_: any, { query, history, attachments = [] }: any) {
         const graph = createAgentGraph();
         
         // Initial state for the graph
@@ -31,6 +31,7 @@ export const resolvers = {
             ...history.map((h: any) => ({ role: h.role, content: h.content })),
             { role: "user", content: query }
           ],
+          attachments,
           metadata: { stage: 1, status: "Initializing..." }
         };
 
@@ -47,7 +48,8 @@ export const resolvers = {
               // Extract status from node metadata
               const nodeName = Object.keys(chunk)[0];
               const update = chunk[nodeName];
-              
+
+              // 1. Yield Status Update
               yield {
                 agentEvents: {
                   type: "STATUS",
@@ -55,6 +57,20 @@ export const resolvers = {
                   stage: update.metadata?.stage,
                 }
               };
+
+              // 2. Yield Messages if any were added in this update
+              if (update.messages && Array.isArray(update.messages)) {
+                for (const msg of update.messages) {
+                  if (msg.content && !msg.tool_calls?.length) {
+                    yield {
+                      agentEvents: {
+                        type: "MESSAGE",
+                        content: msg.content,
+                      }
+                    };
+                  }
+                }
+              }
             } else if (mode === "messages") {
               // Extract text tokens
               const [message, metadata] = chunk;

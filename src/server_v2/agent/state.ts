@@ -37,6 +37,14 @@ export const AgentState = Annotation.Root({
     reducer: (x, y) => ({ ...x, ...y }),
     default: () => ({ stage: 1, status: "idle" }),
   }),
+
+  /**
+   * Files attached to the user's query.
+   */
+  attachments: Annotation<any[]>({
+    reducer: (x, y) => y,
+    default: () => [],
+  }),
 });
 
 /**

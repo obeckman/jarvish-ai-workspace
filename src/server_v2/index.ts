@@ -5,7 +5,7 @@ import path from 'node:path';
 import { WeaviateVectorStore } from './services/memory/weaviate.store.js';
 import { setVectorStore } from './services/memory/memory.service.js';
 
-const PORT = process.env.PORT || 4000; // Use a different port for v2 during dev
+const PORT = process.env.PORT || 3000; // Match old server's port
 
 /**
  * Main Server Bootstrapper
@@ -18,7 +18,7 @@ async function bootstrap() {
 
   // 1. Initialize Weaviate Embedded
   const embeddedOptions = new EmbeddedOptions({
-    port: 8081, // Port for v2 DB
+    port: 8080, // Match old server's DB port
     env: {
       DEFAULT_VECTORIZER_MODULE: 'none',
       PERSISTENCE_DATA_PATH: path.join(process.cwd(), 'src', 'server_v2', 'weaviate_data'),
@@ -26,7 +26,7 @@ async function bootstrap() {
   });
 
   const client = weaviate.client(embeddedOptions, {
-    host: 'localhost:8081',
+    host: 'localhost:8080',
     scheme: 'http'
   });
 
