@@ -418,6 +418,8 @@ export const JarvishAgent: React.FC = () => {
     e?.preventDefault();
     if (!input.trim() || status !== AGENT_STATUS.IDLE) return;
 
+    setShowFullConversation(true); // Ensure we see the active conversation
+    
     // Auto-create session if none active
     let sessionId = currentSessionId;
     if (!sessionId) {

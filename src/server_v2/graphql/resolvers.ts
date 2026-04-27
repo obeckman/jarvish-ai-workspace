@@ -1,7 +1,7 @@
 import { createAgentGraph } from '../agent/graph.js';
 import { db, sqlite } from '../db/index.js';
 import { sessions, sessionSummaries } from '../db/schema.js';
-import { desc, eq, like } from 'drizzle-orm';
+import { desc, eq, like, or } from 'drizzle-orm';
 import { SqliteSaver } from "@langchain/langgraph-checkpoint-sqlite";
 import { summarizeSession } from '../services/summarization.service.js';
 
@@ -20,11 +20,26 @@ export const resolvers = {
       
       if (search) {
         const searchTerm = `%${search}%`;
-        results = await db.select().from(sessions)
-          .where(like(sessions.title, searchTerm))
-          .limit(limit)
-          .offset(offset)
-          .orderBy(desc(sessions.updatedAt));
+        // Join with summaries to search in all relevant text fields
+        results = await db.select({
+          id: sessions.id,
+          title: sessions.title,
+          createdAt: sessions.createdAt,
+          updatedAt: sessions.updatedAt
+        })
+        .from(sessions)
+        .leftJoin(sessionSummaries, eq(sessions.id, sessionSummaries.sessionId))
+        .where(
+          or(
+            like(sessions.title, searchTerm),
+            like(sessionSummaries.summaryTitle, searchTerm),
+            like(sessionSummaries.userMessage, searchTerm),
+            like(sessionSummaries.aiAnswer, searchTerm)
+          )
+        )
+        .limit(limit)
+        .offset(offset)
+        .orderBy(desc(sessions.updatedAt));
       } else {
         results = await db.select().from(sessions)
           .limit(limit)
@@ -181,6 +196,8 @@ export const resolvers = {
             if (mode === "updates") {
               // Extract status from node metadata
               const nodeName = Object.keys(chunk)[0];
+              if (!nodeName) continue;
+              
               const update = chunk[nodeName];
 
               // 1. Yield Status Update
