@@ -47,7 +47,7 @@ export async function archiveNode(state: AgentStateType) {
         } else if (att.mimeType.startsWith('image/')) {
           // Use Gemini to describe the image for indexing
           const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-          const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+          const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
           const prompt = "Describe this image in detail for a searchable research database. Focus on identifying objects, text, and context.";
           
           const result = await model.generateContent([

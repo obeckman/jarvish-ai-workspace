@@ -22,7 +22,7 @@ export async function processingNode(state: AgentStateType) {
   console.log(`[Agent Graph] Node: Processing | Extracting clean text from ${newAttachments.length} new files.`);
   
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
   
   const results: any[] = [];
 
