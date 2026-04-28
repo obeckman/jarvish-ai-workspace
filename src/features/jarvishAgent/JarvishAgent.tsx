@@ -24,7 +24,8 @@ export const JarvishAgent: React.FC = () => {
     loginWithGoogle, 
     logout, 
     authError, 
-    setAuthError 
+    setAuthError,
+    checkAndRefreshToken
   } = useGoogleAuth();
 
   const {
@@ -59,7 +60,7 @@ export const JarvishAgent: React.FC = () => {
     removeAttachment,
     clearMessages,
     loadSessionHistory
-  } = useJarvishChat(currentSessionId, googleToken);
+  } = useJarvishChat(currentSessionId, googleToken, checkAndRefreshToken);
 
   // Sync Error Messages
   useEffect(() => {

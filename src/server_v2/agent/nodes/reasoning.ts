@@ -67,6 +67,15 @@ export async function reasoningNode(state: AgentStateType) {
   PROCESSED DOCUMENTS (EXTRACTED TEXT):
   ${attachmentsContext}
 
+  USER AUTHENTICATION STATUS:
+  - Google Services: ${state.googleToken ? "AUTHENTICATED" : "NOT AUTHENTICATED"}
+  
+  CRITICAL INSTRUCTION: 
+  - If Google Services status is AUTHENTICATED, you MUST attempt to call the requested tool (e.g., search_gmail). 
+  - The system ensures your token is valid before the flow starts.
+  - NEVER provide a canned response about authentication if the status is AUTHENTICATED. 
+  - If you encounter a real error after calling the tool (e.g., 403 Forbidden), report that specific error.
+
   CURRENT RESEARCH NOTES:
   ${state.researchNotes.join('\n')}
 

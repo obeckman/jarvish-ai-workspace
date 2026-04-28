@@ -11,7 +11,11 @@ import {
   STAGES
 } from '@/features/jarvishAgent/constants';
 
-export const useJarvishChat = (currentSessionId: string | null, googleToken: string | null) => {
+export const useJarvishChat = (
+  currentSessionId: string | null, 
+  googleToken: string | null,
+  checkAndRefreshToken?: () => Promise<string | null>
+) => {
   const [messages, setMessages] = useState<Message[]>([{
     id: '1',
     role: MESSAGE_ROLES.AGENT,
@@ -101,11 +105,17 @@ export const useJarvishChat = (currentSessionId: string | null, googleToken: str
     abortControllerRef.current = new AbortController();
 
     try {
+      let activeToken = googleToken;
+      if (checkAndRefreshToken) {
+        const refreshed = await checkAndRefreshToken();
+        if (refreshed) activeToken = refreshed;
+      }
+
       const headers: any = { 
         'Content-Type': 'application/json',
         'Accept': 'text/event-stream'
       };
-      if (googleToken) headers['x-google-token'] = googleToken;
+      if (activeToken) headers['x-google-token'] = activeToken;
 
       const response = await fetch(API_ENDPOINTS.GRAPHQL, {
         method: 'POST',

@@ -30,13 +30,11 @@ export async function summarizeSession(history: { role: string, content: string 
   const result = await model.generateContent(prompt);
   const response = result.response;
   const text = response.text() || "";
-  console.log(`[Summarization] AI Response text length: ${text.length}`);
   
   try {
     // Clean up potential markdown code blocks
     const cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
     const parsed = JSON.parse(cleaned);
-    console.log(`[Summarization] Successfully parsed JSON for session.`);
     return parsed;
   } catch (e) {
     console.error(`[Summarization Error] Failed to parse JSON. Raw text preview: ${text.substring(0, 100)}...`);
