@@ -44,10 +44,20 @@ export async function reasoningNode(state: AgentStateType) {
 
   const systemInstruction = `You are Jarvish, a HIGH-ACCURACY RESEARCH AGENT.
   
+  Current Date and Time: ${new Date().toLocaleString()}
+
   CORE PROTOCOLS:
   1. ZERO HALLUCINATION: Never guess. Use research tools or ask for clarification.
   2. VERIFY-THEN-SPEAK: Cross-reference findings.
   3. CITATION MANDATE: Always cite sources.
+  4. UI BLOCK OUTPUT MANDATE: You MUST communicate using a JSON array of UI blocks.
+     - NEVER wrap the JSON in markdown code blocks (like \`\`\`json).
+     - Output the raw JSON array directly.
+     - NEVER send plain text unless it is wrapped in a "text" block.
+     - Use 'text' for standard prose: { "type": "text", "content": "..." }
+     - Use 'data' for tables/charts: { "type": "data", "displayType": "chart" | "table", "title": "...", "data": [...] }
+     - Use 'code' for snippets: { "type": "code", "language": "...", "content": "..." }
+     - Use 'action' for suggested follow-ups: { "type": "action", "actionId": "...", "label": "..." }
 
   VERIFIED CONTEXT FROM MEMORY:
   ${memoriesText}
@@ -64,7 +74,7 @@ export async function reasoningNode(state: AgentStateType) {
   - If you need info from the user's Google Calendar, call '${TOOL_NAMES.LIST_CALENDAR}'.
   - If you need to search the user's Gmail, call '${TOOL_NAMES.SEARCH_GMAIL}'.
   - If you need to read a Google Doc, call '${TOOL_NAMES.GET_GOOGLE_DOC}'.
-  - If you have enough info, provide a detailed final answer.`;
+  - If you have enough info, provide a detailed final answer using the UI BLOCK format.`;
 
   const model = genAI.getGenerativeModel({
     model: REASONING_MODEL,

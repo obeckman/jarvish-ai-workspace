@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getHighlighter, Highlighter } from 'shiki';
+import { createHighlighter } from 'shiki';
 import { Copy, Check } from 'lucide-react';
 import styles from '../../jarvish-agent.module.scss';
 
@@ -16,17 +16,21 @@ export const CodeBlock: React.FC<CodeBlockProps> = React.memo(({ content, langua
     let isMounted = true;
     
     async function highlight() {
-      const highlighter = await getHighlighter({
-        themes: ['nord'],
-        langs: ['typescript', 'javascript', 'python', 'json', 'bash', 'markdown', 'html', 'css'],
-      });
-      
-      if (isMounted) {
-        const html = highlighter.codeToHtml(content, {
-          lang: language,
-          theme: 'nord',
+      try {
+        const highlighter = await createHighlighter({
+          themes: ['nord'],
+          langs: ['typescript', 'javascript', 'python', 'json', 'bash', 'markdown', 'html', 'css'],
         });
-        setHighlighted(html);
+        
+        if (isMounted) {
+          const html = highlighter.codeToHtml(content, {
+            lang: language,
+            theme: 'nord',
+          });
+          setHighlighted(html);
+        }
+      } catch (err) {
+        console.error('Failed to highlight code:', err);
       }
     }
 

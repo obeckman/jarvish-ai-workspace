@@ -16,45 +16,66 @@ export const useStreamingBlocks = (rawContent: string): AgentMessageBlock[] => {
   return useMemo(() => {
     if (!rawContent) return [];
 
-    const trimmed = rawContent.trim();
+    const content = rawContent.trim();
 
-    // If it doesn't start with a JSON array bracket, it's likely standard text
-    if (!trimmed.startsWith('[')) {
+    // 1. Try to find the JSON boundaries
+    // We look for the first '[' or '{' and the last ']' or '}'
+    const firstBracket = content.indexOf('[');
+    const firstBrace = content.indexOf('{');
+    let startIdx = -1;
+
+    if (firstBracket !== -1 && (firstBrace === -1 || firstBracket < firstBrace)) {
+      startIdx = firstBracket;
+    } else if (firstBrace !== -1) {
+      startIdx = firstBrace;
+    }
+
+    // If no JSON-like start is found, treat as plain text
+    if (startIdx === -1) {
       return [{ type: BLOCK_TYPES.TEXT, content: rawContent }];
     }
+
+    const lastBracket = content.lastIndexOf(']');
+    const lastBrace = content.lastIndexOf('}');
+    const endIdx = Math.max(lastBracket, lastBrace);
+
+    if (endIdx === -1 || endIdx <= startIdx) {
+      return [{ type: BLOCK_TYPES.TEXT, content: rawContent }];
+    }
+
+    const jsonPotential = content.substring(startIdx, endIdx + 1);
 
     try {
-      // partial-json-parser helps close dangling quotes/brackets
-      const parsed = parse(rawContent);
+      // partial-json-parser helps close dangling quotes/brackets for streaming
+      const parsed = parse(jsonPotential);
+      
+      // Ensure we're working with an array of blocks
+      const blocksArray = Array.isArray(parsed) ? parsed : [parsed];
 
-      if (Array.isArray(parsed)) {
-        return parsed.map((block: any) => {
-          // Attempt Zod validation
-          const result = AgentMessageBlockSchema.safeParse(block);
-          
-          if (result.success) {
-            return result.data;
-          }
+      return blocksArray.map((block: any) => {
+        // Attempt Zod validation
+        const result = AgentMessageBlockSchema.safeParse(block);
+        
+        if (result.success) {
+          return result.data;
+        }
 
-          // Fallback for partially formed blocks that Zod might reject
-          // e.g. if 'type' is missing yet, but we have 'content'
-          if (typeof block === 'object' && block !== null) {
-            return {
-              type: (block.type as any) || BLOCK_TYPES.TEXT,
-              content: block.content || '',
-              ...block
-            } as AgentMessageBlock;
-          }
+        // Fallback for partially formed or schema-mismatched objects
+        if (typeof block === 'object' && block !== null) {
+          return {
+            type: (block.type as any) || BLOCK_TYPES.TEXT,
+            content: block.content || JSON.stringify(block),
+            ...block
+          } as AgentMessageBlock;
+        }
 
-          // Absolute fallback
-          return { type: BLOCK_TYPES.TEXT, content: JSON.stringify(block) };
-        });
-      }
+        // Absolute fallback for non-object parsed results
+        return { type: BLOCK_TYPES.TEXT, content: String(block) };
+      });
+      
     } catch (e) {
-      // If total failure, fallback to raw text
+      // If parsing fails (e.g. it wasn't actually JSON), fallback to raw text
       return [{ type: BLOCK_TYPES.TEXT, content: rawContent }];
     }
-
-    return [{ type: BLOCK_TYPES.TEXT, content: rawContent }];
   }, [rawContent]);
 };
