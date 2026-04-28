@@ -19,6 +19,10 @@ export async function contextNode(state: AgentStateType) {
 
   return {
     memories: memories,
+    messages: [{
+      role: "reasoning",
+      content: `Retrieved ${memories.length} relevant memories from long-term storage.`
+    }],
     metadata: { 
       stage: 1, 
       status: `Retrieved ${memories.length} relevant memories.` 

@@ -60,12 +60,13 @@ export const resolvers = {
       if (!state || !state.values.messages) return [];
       return state.values.messages.map((m: any) => {
         // Map LangChain roles to FE roles
-        // m._getType() or m.constructor.name can also be used, but LangGraph messages often have 'role' or type info
         const type = m._getType?.() || m.type;
-        let role = (type === 'human' || m.role === 'user') ? 'user' : 'agent';
+        const mRole = m.role || m.lc_kwargs?.role;
         
-        // Reasoning markers: Tool messages, Model messages with tool_calls, or specific reasoning indicators
-        if (type === 'tool' || m.role === 'tool' || (m.tool_calls && m.tool_calls.length > 0)) {
+        let role = (type === 'human' || mRole === 'user' || mRole === 'human') ? 'user' : 'agent';
+        
+        // Reasoning markers: Tool messages, Model messages with tool_calls, or explicit reasoning role
+        if (type === 'tool' || mRole === 'tool' || mRole === 'reasoning' || (m.tool_calls && m.tool_calls.length > 0)) {
           role = 'reasoning';
         }
 
@@ -77,7 +78,7 @@ export const resolvers = {
 
         return {
           role,
-          content: content || (role === 'reasoning' ? "Executing tool..." : "")
+          content: content || (role === 'reasoning' ? "Processing research step..." : "")
         };
       });
     },

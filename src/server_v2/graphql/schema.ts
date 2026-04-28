@@ -88,6 +88,7 @@ export const schema = createSchema({
     enum EventType {
       STATUS
       MESSAGE
+      REASONING
       ERROR
       RETRY
     }

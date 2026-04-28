@@ -66,10 +66,15 @@
   border-radius: 6px;
   outline: none;
   background-color: #fff;
+  color: #1e293b; // Ensure text is visible
   transition: border-color 0.2s;
 
   &:focus {
     border-color: #3b82f6;
+  }
+
+  &::placeholder {
+    color: #94a3b8;
   }
 }
 

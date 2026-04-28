@@ -63,6 +63,10 @@ export async function processingNode(state: AgentStateType) {
 
   return {
     processedAttachments: results,
+    messages: [{
+      role: "reasoning",
+      content: `Successfully converted ${results.length} files to clean text versions for analysis.`
+    }],
     metadata: { 
       stage: 2, 
       status: `Successfully converted ${results.length} files to clean text versions.` 

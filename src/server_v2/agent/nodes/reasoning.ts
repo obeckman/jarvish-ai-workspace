@@ -80,7 +80,9 @@ export async function reasoningNode(state: AgentStateType) {
   console.log(`[Agent Graph] Node: Reasoning | Deciding next steps...`);
 
   // Map state messages to Gemini parts
-  let history = state.messages.map(m => {
+  let history = state.messages
+    .filter(m => m.role !== 'reasoning') // UI-only messages, don't send to LLM
+    .map(m => {
     let role = 'model';
     if (m.role === 'user' || m.role === 'human') {
       role = 'user';

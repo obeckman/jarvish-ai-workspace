@@ -387,7 +387,7 @@ export const JarvishAgent: React.FC = () => {
     try {
       const client = (window as any).google.accounts.oauth2.initTokenClient({
         client_id: clientId,
-        scope: 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/documents.readonly',
+        scope: 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.events.readonly https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/documents.readonly',
         callback: (tokenResponse: any) => {
           if (tokenResponse.access_token) {
             localStorage.setItem('google_access_token', tokenResponse.access_token);
@@ -792,7 +792,7 @@ export const JarvishAgent: React.FC = () => {
                     reasoningGroup.push(msg);
                   } else {
                     flushReasoning();
-                    if (msg.content === '') return; // Skip empty tokens/messages
+                    if (msg.content === '' && (isUser || isAgent)) return; // Skip only empty user/agent messages
 
                     elements.push(
                       <div key={msg.id} className={cn(styles.message, { [styles.user]: isUser, [styles.agent]: isAgent })}>
