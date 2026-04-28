@@ -1,6 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 .layout {
+  * {
+    box-sizing: border-box;
+  }
   display: flex;
   max-width: 1600px;
   margin: var(--spacing-md) auto;
@@ -29,6 +32,7 @@
 
 .sidebar {
   width: 320px;
+  min-width: 320px;
   background: var(--jarvish-sidebar-bg);
   backdrop-filter: blur(12px);
   border: 1px solid var(--jarvish-glass-border);
@@ -36,11 +40,12 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   flex-shrink: 0;
 
   &.collapsed {
     width: 80px;
+    min-width: 80px;
 
     .sidebarHeader {
       padding: 1.5rem 0.5rem;
