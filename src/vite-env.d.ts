@@ -14,5 +14,6 @@ declare module '*.css' {}
 declare module '*.scss' {}
 
 declare module 'partial-json-parser' {
-  export function parse(json: string): any;
+  const parse: (json: string) => any;
+  export default parse;
 }

@@ -1,7 +1,9 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import parse from "partial-json-parser";
 import { AgentStateType } from "@/server_v2/agent/state";
 import { REASONING_MODEL } from "@/server_v2/agent/models";
 import { ROLES, STAGES, TOOL_NAMES } from "@/server_v2/agent/constants";
+import { AgentMessageBlocksSchema, BLOCK_TYPES } from "@/server_v2/agent/schema";
 import { 
   inventoryToolDeclaration, 
   webSearchDeclaration, 
@@ -176,8 +178,70 @@ export async function reasoningNode(state: AgentStateType) {
   const response = result.response;
 
   // Map response back to a format our graph understands
-  const content = response.text();
+  let content = response.text();
   const toolCalls = response.functionCalls();
+
+  // --- Double-Lock Security (Zod + Discriminated Unions) ---
+  if (content && !toolCalls?.length) {
+    try {
+      let cleaned = content.trim();
+      
+      // Strip markdown code blocks if the agent ignored the mandate
+      if (cleaned.startsWith('```')) {
+        const firstNewline = cleaned.indexOf('\n');
+        if (firstNewline !== -1) {
+          cleaned = cleaned.substring(firstNewline + 1);
+        }
+        if (cleaned.endsWith('```')) {
+          cleaned = cleaned.substring(0, cleaned.length - 3).trim();
+        }
+      }
+
+      // Detect JSON boundaries
+      const firstBracket = cleaned.indexOf('[');
+      const firstBrace = cleaned.indexOf('{');
+      let startIdx = -1;
+
+      if (firstBracket !== -1 && (firstBrace === -1 || firstBracket < firstBrace)) {
+        startIdx = firstBracket;
+      } else if (firstBrace !== -1) {
+        startIdx = firstBrace;
+      }
+
+      if (startIdx !== -1) {
+        const lastBracket = cleaned.lastIndexOf(']');
+        const lastBrace = cleaned.lastIndexOf('}');
+        const endIdx = Math.max(lastBracket, lastBrace);
+
+        if (endIdx > startIdx) {
+          const jsonPotential = cleaned.substring(startIdx, endIdx + 1);
+          const parsed = parse(jsonPotential);
+          const blocksArray = Array.isArray(parsed) ? parsed : [parsed];
+
+          // Runtime validation with Zod
+          const validation = AgentMessageBlocksSchema.safeParse(blocksArray);
+          
+          if (validation.success) {
+            // Re-stringify validated content to ensure clean output for the UI
+            content = JSON.stringify(validation.data);
+            console.log(`[Agent Graph] Node: Reasoning | Validated ${validation.data.length} UI blocks.`);
+          } else {
+            console.warn(`[Agent Graph] Node: Reasoning | UI Block validation failed. Falling back to text.`);
+            // Fallback: If it was intended as blocks but failed, we keep raw content 
+          }
+        }
+      } else {
+        // No JSON found, wrap prose in a text block for the UI to be safe
+        content = JSON.stringify([{ type: BLOCK_TYPES.TEXT, content }]);
+      }
+    } catch (e) {
+      console.error(`[Agent Graph] Node: Reasoning | Error during UI Block validation:`, e);
+      // Fallback: Ensure even on error we attempt to return something the UI can render
+      if (!content.startsWith('[') && !content.startsWith('{')) {
+        content = JSON.stringify([{ type: BLOCK_TYPES.TEXT, content }]);
+      }
+    }
+  }
 
   return {
     messages: [{

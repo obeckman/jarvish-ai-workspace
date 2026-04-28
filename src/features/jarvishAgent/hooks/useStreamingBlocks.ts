@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { parse } from 'partial-json-parser';
+import parse from 'partial-json-parser';
 import { AgentMessageBlock, AgentMessageBlockSchema } from '../types';
 import { BLOCK_TYPES } from '../constants';
 
