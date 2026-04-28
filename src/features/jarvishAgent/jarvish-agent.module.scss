@@ -524,6 +524,59 @@
     gap: 12px;
 }
 
+.googleStatusWrapper {
+    display: flex;
+    align-items: center;
+    margin-left: 4px;
+}
+
+.googleBadge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--jarvish-glass-border);
+    border-radius: 100px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    color: var(--jarvish-text-secondary);
+    font-size: 0.725rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+
+    &:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(66, 133, 244, 0.5);
+        transform: translateY(-1px);
+        color: var(--jarvish-text-primary);
+        box-shadow: 0 4px 12px rgba(66, 133, 244, 0.1);
+    }
+
+    &.disconnected {
+        background: rgba(255, 255, 255, 0.02);
+        opacity: 0.7;
+        
+        &:hover {
+            opacity: 1;
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+    }
+
+    svg {
+        flex-shrink: 0;
+    }
+}
+
+.statusDot {
+    width: 6px;
+    height: 6px;
+    background: #34A853;
+    border-radius: 50%;
+    box-shadow: 0 0 8px rgba(52, 168, 83, 0.6);
+}
+
 .botIconWrapper {
     background: var(--primary-gradient);
     padding: 8px;
