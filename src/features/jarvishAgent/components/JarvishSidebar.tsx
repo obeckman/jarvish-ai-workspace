@@ -1,5 +1,5 @@
-import React from 'react';
-import { History, Plus, X, Trash2, Loader2, Search, MessageSquareCode } from 'lucide-react';
+import React, { useState } from 'react';
+import { History, Plus, X, Trash2, Loader2, Search, MessageSquareCode, ChevronLeft, ChevronRight, List } from 'lucide-react';
 import cn from 'classnames';
 import styles from '@/features/jarvishAgent/jarvish-agent.module.scss';
 import { Session } from '@/features/jarvishAgent/types';
@@ -33,35 +33,67 @@ export const JarvishSidebar: React.FC<JarvishSidebarProps> = ({
   isFetching,
   isPollingSummary
 }) => {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCompact, setIsCompact] = useState(false);
+
   return (
-    <aside className={styles.sidebar}>
+    <aside className={cn(styles.sidebar, { 
+      [styles.collapsed]: isCollapsed,
+      [styles.compactMode]: isCompact 
+    })}>
       <div className={styles.sidebarHeader}>
         <div className={styles.sidebarHeaderTop}>
-          <History size={16} color="var(--jarvish-text-secondary)" />
-          <h3>Research History</h3>
+          <div className={styles.sidebarTitleArea}>
+            <History size={16} strokeWidth={2.5} />
+            {!isCollapsed && <h3>Research History</h3>}
+          </div>
+          <div className={styles.sidebarActions}>
+            {!isCollapsed && (
+              <button 
+                className={cn(styles.actionIconBtn, { [styles.active]: isCompact })}
+                onClick={() => setIsCompact(!isCompact)}
+                title={isCompact ? "Show Details" : "Compact View"}
+              >
+                <List size={16} strokeWidth={2.5} color="currentColor" />
+              </button>
+            )}
+            <button 
+              className={styles.collapseToggle} 
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+            >
+              {isCollapsed ? (
+                <ChevronRight size={16} strokeWidth={2.5} color="currentColor" />
+              ) : (
+                <ChevronLeft size={16} strokeWidth={2.5} color="currentColor" />
+              )}
+            </button>
+          </div>
         </div>
         
         <button onClick={onCreateSession} className={styles.newChatBtn}>
-          <Plus size={18} /> New Session
+          <Plus size={18} strokeWidth={2.5} /> {!isCollapsed && "New Session"}
         </button>
         
-        <div className={styles.searchWrapper}>
-          <div className={styles.searchIconWrapper}>
-            <Search size={14} />
+        {!isCollapsed && (
+          <div className={styles.searchWrapper}>
+            <div className={styles.searchIconWrapper}>
+              <Search size={14} />
+            </div>
+            <input 
+              type="text" 
+              placeholder="Search sessions..." 
+              value={searchTerm} 
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className={styles.searchInput}
+            />
+            {searchTerm && (
+              <button onClick={() => setSearchTerm('')} className={styles.clearSearch}>
+                <X size={14} />
+              </button>
+            )}
           </div>
-          <input 
-            type="text" 
-            placeholder="Search sessions..." 
-            value={searchTerm} 
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className={styles.searchInput}
-          />
-          {searchTerm && (
-            <button onClick={() => setSearchTerm('')} className={styles.clearSearch}>
-              <X size={14} />
-            </button>
-          )}
-        </div>
+        )}
       </div>
       
       <div className={styles.sessionList}>
@@ -69,53 +101,74 @@ export const JarvishSidebar: React.FC<JarvishSidebarProps> = ({
           <div 
             key={s.id} 
             onClick={() => onSelectSession(s.id)}
-            className={cn(styles.sessionItem, { [styles.active]: currentSessionId === s.id })}
+            className={cn(styles.sessionItem, { 
+              [styles.active]: currentSessionId === s.id,
+              [styles.collapsedItem]: isCollapsed,
+              [styles.compactItem]: isCompact && !isCollapsed
+            })}
+            title={isCollapsed ? (s.summary?.summaryTitle || s.title) : undefined}
           >
             <div className={styles.sessionItemHeader}>
-              <span className={styles.sessionTitle}>{s.summary?.summaryTitle || s.title}</span>
-              <button 
-                className={styles.removeBtn} 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDeleteSession(s.id, e);
-                }}
-              >
-                <Trash2 size={12} />
-              </button>
-            </div>
-            
-            {s.summary ? (
-              <div className={styles.summaryContent}>
-                <p>
-                  {s.summary.aiAnswer}
-                </p>
-              </div>
-            ) : (
-              <div className={styles.summaryActions}>
-                {currentSessionId === s.id && isPollingSummary ? (
-                  <div className={styles.summaryLoading}>
-                    <Loader2 size={10} className={styles.spin} /> 
-                    <span>Generating Summary...</span>
-                  </div>
-                ) : (
+              {!isCollapsed ? (
+                <>
+                  <span className={styles.sessionTitle}>{s.summary?.summaryTitle || s.title}</span>
                   <button 
+                    className={styles.removeBtn} 
                     onClick={(e) => {
                       e.stopPropagation();
-                      onTriggerSummary(s.id, e);
-                    }} 
-                    className={styles.summarizeBtn}
+                      onDeleteSession(s.id, e);
+                    }}
                   >
-                    <MessageSquareCode size={10} /> Summarize
+                    <Trash2 size={12} />
                   </button>
+                </>
+              ) : (
+                <div className={styles.collapsedIcon}>
+                  <MessageSquareCode size={20} strokeWidth={2.5} color="currentColor" />
+                </div>
+              )}
+            </div>
+            
+            {!isCollapsed && !isCompact && (
+              <>
+                {s.summary ? (
+                  <div className={styles.summaryContent}>
+                    <p>
+                      {s.summary.aiAnswer}
+                    </p>
+                  </div>
+                ) : (
+                  <div className={styles.summaryActions}>
+                    {currentSessionId === s.id && isPollingSummary ? (
+                      <div className={styles.summaryLoading}>
+                        <Loader2 size={10} className={styles.spin} /> 
+                        <span>Generating Summary...</span>
+                      </div>
+                    ) : (
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onTriggerSummary(s.id, e);
+                        }} 
+                        className={styles.summarizeBtn}
+                      >
+                        <MessageSquareCode size={10} /> Summarize
+                      </button>
+                    )}
+                  </div>
                 )}
-              </div>
+                
+                <span className={styles.sessionDate}>{new Date(s.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+              </>
             )}
             
-            <span className={styles.sessionDate}>{new Date(s.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+            {!isCollapsed && isCompact && (
+               <span className={styles.sessionDateCompact}>{new Date(s.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+            )}
           </div>
         ))}
         
-        {hasMore && (
+        {hasMore && !isCollapsed && (
           <button 
             onClick={onLoadMore} 
             className={styles.loadMoreBtn}
@@ -125,7 +178,7 @@ export const JarvishSidebar: React.FC<JarvishSidebarProps> = ({
           </button>
         )}
 
-        {sessions.length === 0 && !isFetching && (
+        {sessions.length === 0 && !isFetching && !isCollapsed && (
           <div className={styles.emptyHistory}>
             <p>No research sessions found.</p>
           </div>
