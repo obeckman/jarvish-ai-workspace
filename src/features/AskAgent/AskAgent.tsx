@@ -1,4 +1,6 @@
 import React from 'react';
+import { Markdown } from '@/components/shared/Markdown/Markdown';
+
 export const AskAgent = () => {
   const [input, setInput] = React.useState('');
   const [response, setResponse] = React.useState('');
@@ -31,7 +33,7 @@ const askAgent = async (text: string) => {
         </form>
         <div>
             <h2>Agent's Response:</h2>
-            <p>{response}</p>
+            <Markdown content={response} />
         </div>
     </div>
     );

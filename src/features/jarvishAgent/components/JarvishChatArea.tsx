@@ -16,6 +16,7 @@ import { Message, Session, AgentStatus } from '@/features/jarvishAgent/types';
 import { MESSAGE_ROLES, AGENT_STATUS, STAGES } from '@/features/jarvishAgent/constants';
 
 import { ChatMessage } from './Blocks/ChatMessage';
+import { Markdown } from '@/components/shared/Markdown/Markdown';
 
 interface JarvishChatAreaProps {
   messages: Message[];
@@ -71,7 +72,7 @@ export const JarvishChatArea: React.FC<JarvishChatAreaProps> = ({
                 {currentReasoningGroup.map((rm) => (
                   <div key={rm.id} className={styles.reasoningStep}>
                     <div className={styles.dot} />
-                    <span>{rm.content}</span>
+                    <Markdown content={rm.content} />
                   </div>
                 ))}
               </div>
@@ -131,7 +132,7 @@ export const JarvishChatArea: React.FC<JarvishChatAreaProps> = ({
                     </div>
                     <strong style={{ margin: 0, color: 'var(--jarvish-text-primary)' }}>Synthesized Findings</strong>
                 </div>
-                <p>{summary.aiAnswer}</p>
+                <Markdown content={summary.aiAnswer} />
               </div>
 
               <button 

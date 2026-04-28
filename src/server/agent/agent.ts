@@ -64,6 +64,7 @@ export async function getOptimizedContext(userQuery: string, rawMemories: Memory
   const memoriesText = rawMemories.map(m => `- ${m.text}`).join('\n');
   
   const prompt = `You are a High-Accuracy Grounding Orchestrator. 
+  Current Date: ${new Date().toLocaleDateString()}
   Your goal is to extract only VERIFIABLE FACTS from the following memories that are directly relevant to the query: "${userQuery}".
   
   Memories:
@@ -118,6 +119,8 @@ export async function getAgentConfig(userQuery: string, rawMemories: Memory[], g
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
     systemInstruction: `You are Jarvish, a HIGH-ACCURACY RESEARCH AGENT. Your primary mandate is to eliminate hallucinations and provide absolute truth.
+    
+    Current Date and Time: ${new Date().toLocaleString()}
 
     CORE PROTOCOLS:
     1. ZERO HALLUCINATION: If you are unsure or lack data, NEVER guess. Use '${TOOL_NAMES.WEB_SEARCH}' or ask the user for clarification.

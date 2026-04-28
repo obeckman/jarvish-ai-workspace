@@ -4,6 +4,7 @@ import { Send, Bot, User, Loader2, BrainCircuit, Activity } from 'lucide-react';
 import cn from 'classnames';
 import styles from '@/features/jarvishAgent/jarvish-agent.module.scss';
 import { UI_STRINGS, AGENT_STATUS } from '@/features/jarvishAgent/constants';
+import { Markdown } from '@/components/shared/Markdown/Markdown';
 
 export const ContextAwareAgent: React.FC = () => {
   const [query, setQuery] = useState('');
@@ -31,9 +32,7 @@ export const ContextAwareAgent: React.FC = () => {
               <Activity size={14} />
               <strong className={styles.agentName}>Synthesized Context (Memory + Entities)</strong>
             </div>
-            <p className={styles.synthesizedContextText}>
-              {synthesizedContext}
-            </p>
+            <Markdown content={synthesizedContext} className={styles.synthesizedContextText} />
           </div>
         )}
 
@@ -43,7 +42,7 @@ export const ContextAwareAgent: React.FC = () => {
               <Bot size={14} />
               <strong className={styles.agentName}>Jarvish Execution Agent</strong>
             </div>
-            <p className={styles.messageText}>{response}</p>
+            <Markdown content={response} className={styles.messageText} />
           </div>
         )}
 

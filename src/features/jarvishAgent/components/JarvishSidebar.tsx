@@ -3,6 +3,7 @@ import { History, Plus, X, Trash2, Loader2, Search, MessageSquareCode, ChevronLe
 import cn from 'classnames';
 import styles from '@/features/jarvishAgent/jarvish-agent.module.scss';
 import { Session } from '@/features/jarvishAgent/types';
+import { Markdown } from '@/components/shared/Markdown/Markdown';
 
 interface JarvishSidebarProps {
   sessions: Session[];
@@ -133,9 +134,7 @@ export const JarvishSidebar: React.FC<JarvishSidebarProps> = ({
               <>
                 {s.summary ? (
                   <div className={styles.summaryContent}>
-                    <p>
-                      {s.summary.aiAnswer}
-                    </p>
+                    <Markdown content={s.summary.aiAnswer} />
                   </div>
                 ) : (
                   <div className={styles.summaryActions}>

@@ -1,9 +1,8 @@
 import React from 'react';
-import ReactMarkdown from 'react-markdown';
-import rehypeSanitize from 'rehype-sanitize';
 import { Sparkles, ChevronDown } from 'lucide-react';
 import cn from 'classnames';
 import styles from '../../jarvish-agent.module.scss';
+import { Markdown } from '@/components/shared/Markdown/Markdown';
 
 interface ReasoningBlockProps {
   content: string;
@@ -21,9 +20,7 @@ export const ReasoningBlock: React.FC<ReasoningBlockProps> = React.memo(({ conte
         <ChevronDown size={16} className={styles.chevron} />
       </summary>
       <div className={styles.reasoningContent}>
-        <ReactMarkdown rehypePlugins={[rehypeSanitize]}>
-          {content}
-        </ReactMarkdown>
+        <Markdown content={content} />
       </div>
     </details>
   );

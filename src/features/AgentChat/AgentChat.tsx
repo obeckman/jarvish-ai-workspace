@@ -3,6 +3,7 @@ import { Bot, Send, Loader2, Sparkles, LogIn, LogOut } from 'lucide-react';
 import cn from 'classnames';
 import { useAgent } from '../../hooks/useAgent';
 import styles from './AgentChat.module.scss';
+import { Markdown } from '@/components/shared/Markdown/Markdown';
 
 // Note: You need to set this Client ID in your environment or here
 const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
@@ -99,13 +100,13 @@ export const AgentChat: React.FC = () => {
             <Sparkles size={14} />
             Synthesized Context (Thought Trace)
           </h4>
-          <p>{synthesizedContext}</p>
+          <Markdown content={synthesizedContext} />
         </div>
       )}
 
       <div className={styles.responseArea}>
         {response ? (
-          <div className={styles.responseText}>{response}</div>
+          <Markdown content={response} className={styles.responseText} />
         ) : (
           !isLoading && <div className={styles.placeholder}>
             {googleToken 

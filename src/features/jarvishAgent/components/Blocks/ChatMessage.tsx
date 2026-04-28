@@ -6,6 +6,7 @@ import { Message } from '../../types';
 import { MESSAGE_ROLES } from '../../constants';
 import { useStreamingBlocks } from '../../hooks/useStreamingBlocks';
 import { BlockRenderer } from './BlockRenderer';
+import { Markdown } from '@/components/shared/Markdown/Markdown';
 
 interface ChatMessageProps {
   message: Message;
@@ -37,7 +38,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({ message, on
         {isAgent ? (
           <BlockRenderer blocks={blocks} onAction={onAction} />
         ) : (
-          <p className={styles.messageText}>{message.content}</p>
+          <Markdown content={message.content} className={styles.messageText} />
         )}
       </div>
     </div>
