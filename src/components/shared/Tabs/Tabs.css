@@ -1,5 +1,21 @@
-.Tabs-content {
-    padding: 16px;
-    border: 1px solid #ccc;
-    border-top: none;
+.create_tab_system-Tabs-trigger {
+    padding: var(--spacing-sm) var(--spacing-md);
+    cursor: pointer;
+    border-radius: var(--radius-md);
+    transition: all 0.2s;
+    user-select: none;
+}
+
+.create_tab_system-Tabs-trigger:hover {
+    background-color: var(--bg-secondary);
+}
+
+.create_tab_system-Tabs-trigger[data-state='active'] {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.create_tab_system-Tabs-content {
+    width: 100%;
+    height: 100%;
 }

@@ -52,6 +52,8 @@ const useSetActiveTabContext = () => {
 }
 const TabsTrigger = React.memo(({value, children, className}:TabsTriggerProps<any>) => {
     const {setActiveTab} = useSetActiveTabContext();
+    const {activeTab} = useActiveTabContext();
+    const isActive = activeTab === value;
 
     const onClick = React.useCallback(() => {
         setActiveTab(value);
@@ -60,6 +62,7 @@ const TabsTrigger = React.memo(({value, children, className}:TabsTriggerProps<an
     return <div 
         className={`create_tab_system-Tabs-trigger ${className ?? ""}`} 
         onClick={onClick}
+        data-state={isActive ? 'active' : 'inactive'}
         >
         {children}
     </div>

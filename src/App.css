@@ -1,103 +1,71 @@
 #root {
-
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
-  background-color: beige;
+  margin: 0;
+  padding: 0;
   height: 100vh;
   width: 100vw;
   box-sizing: border-box;
-  /* Ensures padding is included in the 100vh */
   display: flex;
   flex-direction: column;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 .app-layout-wrapper {
-
-
   display: grid;
-  grid-template-columns: 215px 1fr;
-  grid-template-rows: auto 1fr auto;
-  grid-template-areas:
-    "header header"
-    "tabList tabContent"
-    "footer footer";
+  grid-template-columns: 250px 1fr;
+  grid-template-rows: 1fr;
+  grid-template-areas: "tabList tabContent";
   width: 100%;
-  height: 100%;
-  column-gap: 1rem;
-  row-gap: 0;
+  height: 100vh;
   overflow: hidden;
 }
 
-
 .app-tab-list {
-  /*
-    gap: 5px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    background-color: #e0e0e0;
-    color: blueviolet;
-    justify-content: space-around;
-    align-items: center;
-
-
- */
   grid-area: tabList;
   display: flex;
   flex-direction: column;
-  /* Remove justify-content: space-around; it conflicts with flex: 1 on children */
   height: 100%;
-  overflow-y: auto; 
-    overflow-x: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   box-sizing: border-box;
-  border-right: 1px solid rgba(255, 255, 255, 0.1);
-gap: 5px;
-   
-    background-color: #e0e0e0;
-    color: blueviolet;
-    justify-content: space-around;
-    align-items: center;
+  border-right: 1px solid var(--border-color);
+  background-color: var(--bg-secondary);
+  padding: var(--spacing-md);
+  gap: var(--spacing-xs);
 }
 
 .app-panel-wrapper {
-  /* grid-area: tabContent;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 5px;
-  width: 100%; */
-
-
   grid-area: tabContent;
   height: 100%;
   overflow-y: auto;
-  /* Allows content to scroll without pushing the footer down */
   display: block;
-  /* Flex center often messes up scrolling content */
+  background-color: var(--bg-primary);
 }
 
-.Tabs-trigger {
-  padding: 8px 16px;
+.tabs-trigger {
+  padding: 0.75rem 1rem;
   cursor: pointer;
-  border-radius: 4px;
-  background-color: #c0c0c0;
+  border-radius: var(--radius-md);
+  background-color: transparent;
+  border: 1px solid transparent;
+  text-align: left;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+  color: var(--text-secondary);
 
+  &:hover {
+    background-color: var(--border-color);
+    color: var(--text-primary);
+  }
 
+  &[data-state='active'] {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+  }
 }
 
-.Tabs-trigger:hover {
-  background-color: #a0a0a0;
-}
-
-.Tabs-content {
-  grid-area: tabContent;
-  padding: 16px;
-  background-color: #f0f0f0;
-  border-radius: 4px;
-
-  grid-area: tabContent;
+.tabs-content {
   height: 100%;
-  overflow-y: auto;
-  /* Allows content to scroll without pushing the footer down */
-  display: block;
-  /* Flex center often messes up scrolling content */
+  width: 100%;
 }

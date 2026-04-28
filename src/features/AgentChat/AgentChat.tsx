@@ -1,5 +1,6 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Bot, Send, Loader2, Sparkles, LogIn, LogOut } from 'lucide-react';
+import cn from 'classnames';
 import { useAgent } from '../../hooks/useAgent';
 import styles from './AgentChat.module.scss';
 
@@ -52,18 +53,18 @@ export const AgentChat: React.FC = () => {
 
   return (
     <div className={styles.container}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <h2 className={styles.title} style={{ marginBottom: 0 }}>
+      <div className={styles.header}>
+        <h2 className={styles.title}>
           <Bot className={styles.icon} />
           Jarvish: Workspace Agent
         </h2>
         
         {googleToken ? (
-          <button onClick={logout} className={styles.button} style={{ background: '#ef4444' }}>
+          <button onClick={logout} className={cn(styles.button, styles.logoutButton)}>
             <LogOut size={16} /> Logout
           </button>
         ) : (
-          <button onClick={loginWithGoogle} className={styles.button} style={{ background: '#4285F4' }}>
+          <button onClick={loginWithGoogle} className={cn(styles.button, styles.loginButton)}>
             <LogIn size={16} /> Login with Google
           </button>
         )}
@@ -95,7 +96,7 @@ export const AgentChat: React.FC = () => {
       {synthesizedContext && (
         <div className={styles.thoughtTrace}>
           <h4>
-            <Sparkles size={14} style={{ marginRight: '4px' }} />
+            <Sparkles size={14} />
             Synthesized Context (Thought Trace)
           </h4>
           <p>{synthesizedContext}</p>
@@ -104,7 +105,7 @@ export const AgentChat: React.FC = () => {
 
       <div className={styles.responseArea}>
         {response ? (
-          <div style={{ whiteSpace: 'pre-wrap' }}>{response}</div>
+          <div className={styles.responseText}>{response}</div>
         ) : (
           !isLoading && <div className={styles.placeholder}>
             {googleToken 
@@ -125,7 +126,7 @@ export const AgentChat: React.FC = () => {
       )}
       
       {!googleToken && !isLoading && (
-        <p style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: '1rem', textAlign: 'center' }}>
+        <p className={styles.hint}>
           💡 Login with Google to unlock access to your Gmail, Calendar, and Docs.
         </p>
       )}
