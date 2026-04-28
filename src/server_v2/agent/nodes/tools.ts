@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { AgentStateType } from "../state.js";
 import { TOOL_EXECUTION_MODEL } from "../models.js";
+import { ROLES, STAGES } from "../constants.js";
 import { searchWeb } from "../../services/tools/search.service.js";
 import { fetchWebPage } from "../../services/tools/web.service.js";
 import { readPdf } from "../../services/tools/pdf.service.js";
@@ -56,7 +57,8 @@ export async function toolsNode(state: AgentStateType) {
     }
 
     results.push({
-      role: "tool",
+      role: ROLES.TOOL,
+      name: call.name,
       content: output,
       tool_call_id: call.id,
     });
@@ -66,7 +68,7 @@ export async function toolsNode(state: AgentStateType) {
   return {
     messages: results,
     researchNotes: notes,
-    metadata: { stage: 2, status: `Completed ${toolCalls.length} research steps.` }
+    metadata: { stage: STAGES.RESEARCH, status: `Completed ${toolCalls.length} research steps.` }
   };
 }
 

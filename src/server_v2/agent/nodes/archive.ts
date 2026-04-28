@@ -47,11 +47,11 @@ export async function archiveNode(state: AgentStateType) {
 
   // 2. Archive Conversation Summary to Vector Store
   const lastUserMessage = state.messages.findLast(m => m.role === 'user');
-  const lastModelMessage = state.messages.findLast(m => m.role === 'assistant' || (m.role === 'model' && !m.tool_calls));
+  const lastModelMessage = state.messages.findLast(m => m.role === 'assistant' || m.role === 'agent' || (m.role === 'model' && !m.tool_calls));
 
   if (lastUserMessage && lastModelMessage) {
     console.log(`[Agent Graph] Node: Archive | Saving interaction to memory.`);
-    
+
     const summary = `Conversation Summary [${new Date().toLocaleTimeString()}]:
     User: ${lastUserMessage.content}
     Assistant: ${lastModelMessage.content}`;
@@ -59,8 +59,11 @@ export async function archiveNode(state: AgentStateType) {
     await addMemory(summary, { 
       type: 'history', 
       timestamp: new Date().toISOString() 
-    }).catch(err => console.error("[Archive Node Error: Summary]", err));
+    }).catch(err => console.error("[Archive Node Error: Summary Archival]", err));
+  } else {
+    console.log(`[Agent Graph] Node: Archive | Interaction skipped (missing User or Model message). Roles present: ${state.messages.map(m => m.role).join(', ')}`);
   }
+
 
   // 2. Index Attachments
   if (state.attachments && state.attachments.length > 0) {

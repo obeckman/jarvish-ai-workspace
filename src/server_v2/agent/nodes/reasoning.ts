@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { AgentStateType } from "../state.js";
 import { REASONING_MODEL } from "../models.js";
+import { ROLES, STAGES } from "../constants.js";
 import { 
   inventoryToolDeclaration, 
   webSearchDeclaration, 
@@ -81,13 +82,13 @@ export async function reasoningNode(state: AgentStateType) {
 
   // Map state messages to Gemini parts
   let history = state.messages
-    .filter(m => m.role !== 'reasoning') // UI-only messages, don't send to LLM
+    .filter(m => m.role !== ROLES.REASONING) // UI-only messages, don't send to LLM
     .map(m => {
-    let role = 'model';
-    if (m.role === 'user' || m.role === 'human') {
-      role = 'user';
-    } else if (m.role === 'tool') {
-      role = 'function';
+    let role: string = ROLES.MODEL;
+    if (m.role === ROLES.USER || m.role === ROLES.HUMAN) {
+      role = ROLES.USER;
+    } else if (m.role === ROLES.TOOL) {
+      role = ROLES.FUNCTION;
     }
 
     const parts: any[] = [];
@@ -100,7 +101,7 @@ export async function reasoningNode(state: AgentStateType) {
           args: tc.args
         }
       })));
-    } else if (m.role === 'tool') {
+    } else if (m.role === ROLES.TOOL) {
       // Result of a tool call
       parts.push({
         functionResponse: {
@@ -117,7 +118,7 @@ export async function reasoningNode(state: AgentStateType) {
   });
 
   // Gemini Requirement: History must start with a 'user' message.
-  const firstUserIndex = history.findIndex(m => m.role === 'user');
+  const firstUserIndex = history.findIndex(m => m.role === ROLES.USER);
   if (firstUserIndex !== -1) {
     history = history.slice(firstUserIndex);
   }
@@ -153,10 +154,10 @@ export async function reasoningNode(state: AgentStateType) {
 
   return {
     messages: [{
-      role: "model",
+      role: ROLES.MODEL,
       content: content,
       tool_calls: toolCalls
     }],
-    metadata: { stage: 3, status: "Jarvish is thinking..." }
+    metadata: { stage: STAGES.SYNTHESIZE, status: "Jarvish is thinking..." }
   };
 }

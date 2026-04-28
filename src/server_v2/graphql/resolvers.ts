@@ -4,6 +4,7 @@ import { sessions, sessionSummaries } from '../db/schema.js';
 import { desc, eq, like, or } from 'drizzle-orm';
 import { SqliteSaver } from "@langchain/langgraph-checkpoint-sqlite";
 import { summarizeSession } from '../services/summarization.service.js';
+import { EVENT_TYPES, NODE_NAMES, ROLES } from '../agent/constants.js';
 
 // Global checkpointer instance
 const checkpointer = new SqliteSaver(sqlite);
@@ -63,11 +64,11 @@ export const resolvers = {
         const type = m._getType?.() || m.type;
         const mRole = m.role || m.lc_kwargs?.role;
         
-        let role = (type === 'human' || mRole === 'user' || mRole === 'human') ? 'user' : 'agent';
+        let role = (type === ROLES.HUMAN || mRole === ROLES.USER || mRole === ROLES.HUMAN) ? ROLES.USER : ROLES.AGENT;
         
         // Reasoning markers: Tool messages, Model messages with tool_calls, or explicit reasoning role
-        if (type === 'tool' || mRole === 'tool' || mRole === 'reasoning' || (m.tool_calls && m.tool_calls.length > 0)) {
-          role = 'reasoning';
+        if (type === ROLES.TOOL || mRole === ROLES.TOOL || mRole === ROLES.REASONING || (m.tool_calls && m.tool_calls.length > 0)) {
+          role = ROLES.REASONING;
         }
 
         // Handle content which can be string or array of parts
@@ -174,7 +175,7 @@ export const resolvers = {
         const initialState = {
           messages: [
             ...history.map((h: any) => ({ role: h.role, content: h.content })),
-            { role: "user", content: query }
+            { role: ROLES.USER, content: query }
           ],
           attachments,
           googleToken,
@@ -204,7 +205,7 @@ export const resolvers = {
               // 1. Yield Status Update
               yield {
                 agentEvents: {
-                  type: "STATUS",
+                  type: EVENT_TYPES.STATUS,
                   content: update.metadata?.status || `Entering ${nodeName} phase.`,
                   stage: update.metadata?.stage,
                 }
@@ -216,12 +217,17 @@ export const resolvers = {
                   if (msg.content && !msg.tool_calls?.length) {
                     // If the message comes from a node that isn't the final reasoning node, 
                     // it's likely an intermediate result (reasoning).
-                    const isFinal = nodeName === 'reasoning';
+                    const isFinal = nodeName === NODE_NAMES.REASONING;
+                    
+                    // Ensure content is a string (tool outputs might be objects/arrays)
+                    const stringContent = typeof msg.content === 'string' 
+                      ? msg.content 
+                      : JSON.stringify(msg.content);
                     
                     yield {
                       agentEvents: {
-                        type: isFinal ? "MESSAGE" : "REASONING",
-                        content: msg.content,
+                        type: isFinal ? EVENT_TYPES.MESSAGE : EVENT_TYPES.REASONING,
+                        content: stringContent,
                       }
                     };
                   }
@@ -233,7 +239,7 @@ export const resolvers = {
               if (message.content) {
                 yield {
                   agentEvents: {
-                    type: "MESSAGE",
+                    type: EVENT_TYPES.MESSAGE,
                     content: message.content,
                   }
                 };
@@ -243,7 +249,7 @@ export const resolvers = {
         } catch (error: any) {
           yield {
             agentEvents: {
-              type: "ERROR",
+              type: EVENT_TYPES.ERROR,
               content: error.message || "Unknown graph execution error",
             }
           };

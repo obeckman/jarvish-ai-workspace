@@ -51,8 +51,8 @@ export const googleDocsDeclaration: FunctionDeclaration = {
 
 export async function listCalendarEvents(accessToken: string, args: { maxResults?: number }) {
   try {
-    console.log(`[Google Tool] listCalendarEvents called with maxResults: ${args.maxResults || 10}`);
-    const calendar = google.calendar({ version: 'v3', auth: getClient(accessToken) });
+    const oauth2Client = getClient(accessToken);
+    const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
     const res = await calendar.events.list({
       calendarId: 'primary',
       timeMin: new Date().toISOString(),
@@ -60,10 +60,13 @@ export async function listCalendarEvents(accessToken: string, args: { maxResults
       singleEvents: true,
       orderBy: 'startTime',
     });
-    console.log(`[Google Tool] listCalendarEvents success: ${res.data.items?.length || 0} events found.`);
     return res.data.items || [];
   } catch (error: any) {
     console.error(`[Google Tool Error] listCalendarEvents failed:`, error.message);
+    if (error.response?.data) {
+      console.error(`Response Data:`, JSON.stringify(error.response.data));
+    }
+    
     if (error.code === 401 || error.status === 401) {
       return "ERROR: Google authentication has expired or is invalid. Please log out and log in again to refresh your access.";
     }
@@ -76,39 +79,31 @@ export async function listCalendarEvents(accessToken: string, args: { maxResults
 
 export async function searchGmailMessages(accessToken: string, args: { query: string }) {
   try {
-    console.log(`[Google Tool] searchGmailMessages called with query: ${args.query}`);
     const gmail = google.gmail({ version: 'v1', auth: getClient(accessToken) });
     const res = await gmail.users.messages.list({ userId: 'me', q: args.query, maxResults: 5 });
-    if (!res.data.messages) {
-      console.log(`[Google Tool] searchGmailMessages: No messages found.`);
-      return [];
-    }
+    if (!res.data.messages) return [];
     
-    const results = await Promise.all(res.data.messages.map(async (msg) => {
+    return await Promise.all(res.data.messages.map(async (msg) => {
       const detail = await gmail.users.messages.get({ userId: 'me', id: msg.id!, format: 'minimal' });
       return detail.data.snippet;
     }));
-    console.log(`[Google Tool] searchGmailMessages success: ${results.length} snippets retrieved.`);
-    return results;
   } catch (error: any) {
-    console.error(`[Google Tool Error] searchGmailMessages failed:`, error.message, error.response?.data);
+    console.error(`[Google Tool Error] searchGmailMessages failed:`, error.message);
     throw error;
   }
 }
 
 export async function getGoogleDocContent(accessToken: string, args: { documentId: string }) {
   try {
-    console.log(`[Google Tool] getGoogleDocContent called for ID: ${args.documentId}`);
     const docs = google.docs({ version: 'v1', auth: getClient(accessToken) });
     const res = await docs.documents.get({ documentId: args.documentId });
     let content = '';
     res.data.body?.content?.forEach(e => e.paragraph?.elements?.forEach(el => {
       if (el.textRun?.content) content += el.textRun.content;
     }));
-    console.log(`[Google Tool] getGoogleDocContent success: ${content.length} characters extracted.`);
     return content;
   } catch (error: any) {
-    console.error(`[Google Tool Error] getGoogleDocContent failed:`, error.message, error.response?.data);
+    console.error(`[Google Tool Error] getGoogleDocContent failed:`, error.message);
     throw error;
   }
 }

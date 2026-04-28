@@ -8,6 +8,7 @@
     "server": "tsx src/server/server.ts",
     "server:v2": "tsx src/server_v2/index.ts",
     "start": "concurrently \"npm run server:v2\" \"npm run dev\"",
+    "restart": "lsof -ti:3000,5173,8080 | xargs kill -9 || true && npm start",
     "build": "vite build",
     "lint": "eslint .",
     "db:generate": "drizzle-kit generate",

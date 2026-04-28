@@ -36,7 +36,7 @@ export async function addMemory(text: string, metadata: Record<string, any> = {}
   if (!vectorStore) throw new Error('Vector store not initialized');
 
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-  const model = genAI.getGenerativeModel({ model: "embedding-001" });
+  const model = genAI.getGenerativeModel({ model: "gemini-embedding-001" });
   
   // Generate embedding for the text
   const result = await withRetry(() => model.embedContent(text));
@@ -61,7 +61,7 @@ export async function retrieveMemories(query: string, topK: number = 5): Promise
 
   try {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-    const model = genAI.getGenerativeModel({ model: "embedding-001" });
+    const model = genAI.getGenerativeModel({ model: "gemini-embedding-001" });
     
     // Convert query text into a vector
     const result = await withRetry(() => model.embedContent(query));

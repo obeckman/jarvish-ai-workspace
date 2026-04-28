@@ -352,7 +352,6 @@ export const JarvishAgent: React.FC = () => {
     if (googleToken || !clientId) return;
 
     const handleOneTapResponse = (response: any) => {
-      console.log('One Tap response received');
       if (response.credential) {
         loginWithGoogle();
       }
@@ -387,7 +386,7 @@ export const JarvishAgent: React.FC = () => {
     try {
       const client = (window as any).google.accounts.oauth2.initTokenClient({
         client_id: clientId,
-        scope: 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.events.readonly https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/documents.readonly',
+        scope: 'openid profile https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.events.readonly https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/documents.readonly',
         callback: (tokenResponse: any) => {
           if (tokenResponse.access_token) {
             localStorage.setItem('google_access_token', tokenResponse.access_token);
