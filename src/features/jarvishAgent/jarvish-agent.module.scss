@@ -1213,6 +1213,9 @@
 
 .chartWrapper {
   padding-top: 1rem;
+  width: 100%;
+  min-height: 300px;
+  position: relative;
 }
 
 .blockLoading {
