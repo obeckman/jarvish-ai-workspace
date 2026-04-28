@@ -151,6 +151,7 @@ export const JarvishAgent: React.FC = () => {
           currentSessionId={currentSessionId}
           sessions={sessions}
           onCopyToInput={handleCopyToInput}
+          onSendMessage={sendMessage}
         />
 
         <JarvishChatInput 

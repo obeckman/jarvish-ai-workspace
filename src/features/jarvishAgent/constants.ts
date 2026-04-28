@@ -17,6 +17,14 @@ export const API_ENDPOINTS = {
   CONFIG: '/api/config',
 } as const;
 
+export const BLOCK_TYPES = {
+  TEXT: 'text',
+  CODE: 'code',
+  REASONING: 'reasoning',
+  ACTION: 'action',
+  DATA: 'data',
+} as const;
+
 export const MESSAGE_ROLES = ROLES;
 
 export const AGENT_STATUS = {

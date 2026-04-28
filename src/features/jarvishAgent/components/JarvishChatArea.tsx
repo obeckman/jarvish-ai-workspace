@@ -15,6 +15,8 @@ import styles from '@/features/jarvishAgent/jarvish-agent.module.scss';
 import { Message, Session, AgentStatus } from '@/features/jarvishAgent/types';
 import { MESSAGE_ROLES, AGENT_STATUS, STAGES } from '@/features/jarvishAgent/constants';
 
+import { ChatMessage } from './Blocks/ChatMessage';
+
 interface JarvishChatAreaProps {
   messages: Message[];
   status: AgentStatus;
@@ -28,6 +30,7 @@ interface JarvishChatAreaProps {
   currentSessionId: string | null;
   sessions: Session[];
   onCopyToInput: (text: string) => void;
+  onSendMessage: (sessionId: string, queryOverride?: string) => Promise<void>;
 }
 
 export const JarvishChatArea: React.FC<JarvishChatAreaProps> = ({
@@ -42,7 +45,8 @@ export const JarvishChatArea: React.FC<JarvishChatAreaProps> = ({
   setShowFullConversation,
   currentSessionId,
   sessions,
-  onCopyToInput
+  onCopyToInput,
+  onSendMessage
 }) => {
   const currentSession = sessions.find(s => s.id === currentSessionId);
   const summary = currentSession?.summary;
@@ -84,21 +88,15 @@ export const JarvishChatArea: React.FC<JarvishChatAreaProps> = ({
       } else {
         flushReasoning();
         rendered.push(
-          <div 
+          <ChatMessage 
             key={m.id} 
-            className={cn(styles.message, {
-              [styles.user]: m.role === MESSAGE_ROLES.USER,
-              [styles.agent]: m.role === MESSAGE_ROLES.AGENT,
-            })}
-          >
-            <div className={styles.messageHeader}>
-              <div className={styles.messageSender}>
-                {m.role === MESSAGE_ROLES.USER ? <User size={14} /> : <Bot size={14} />}
-                <span className={styles.senderName}>{m.role === MESSAGE_ROLES.USER ? 'You' : 'Jarvish'}</span>
-              </div>
-            </div>
-            <p className={styles.messageText}>{m.content}</p>
-          </div>
+            message={m} 
+            onAction={async (label) => {
+              if (currentSessionId) {
+                await onSendMessage(currentSessionId, label);
+              }
+            }} 
+          />
         );
       }
     });
