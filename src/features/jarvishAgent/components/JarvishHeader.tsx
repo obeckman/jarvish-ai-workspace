@@ -78,19 +78,19 @@ export const JarvishHeader: React.FC<JarvishHeaderProps> = ({
 
       <div className={styles.headerActions}>
         {currentSessionId && (
-          <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', padding: '4px', borderRadius: '10px', marginRight: '1rem' }}>
+          <div className={styles.viewToggleGroup}>
             <button 
               className={cn(styles.viewToggle, !showFullConversation && styles.active)}
               onClick={() => setShowFullConversation(false)}
             >
-              <Layout size={14} style={{ marginRight: '6px' }} />
+              <Layout size={14} />
               Summary
             </button>
             <button 
               className={cn(styles.viewToggle, showFullConversation && styles.active)}
               onClick={() => setShowFullConversation(true)}
             >
-              <MessageSquare size={14} style={{ marginRight: '6px' }} />
+              <MessageSquare size={14} />
               Chat
             </button>
           </div>

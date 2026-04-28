@@ -882,6 +882,20 @@
   }
 }
 
+.headerActions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.viewToggleGroup {
+    display: flex;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 4px;
+    border-radius: 12px;
+    border: 1px solid var(--jarvish-glass-border);
+}
+
 .viewToggle {
   display: flex;
   align-items: center;
@@ -894,6 +908,7 @@
   cursor: pointer;
   transition: all 0.25s;
   font-weight: 600;
+  gap: 6px;
   
   &:hover {
     color: var(--jarvish-text-primary);
