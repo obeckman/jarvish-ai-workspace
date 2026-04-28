@@ -29,7 +29,7 @@ export async function summarizeSession(history: { role: string, content: string 
 
   const result = await model.generateContent(prompt);
   const response = result.response;
-  const text = response.text();
+  const text = response.text() || "";
   console.log(`[Summarization] AI Response text length: ${text.length}`);
   
   try {

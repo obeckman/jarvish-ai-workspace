@@ -7,7 +7,7 @@ import { fetchWebPage } from "../../services/tools/web.service";
 import { readPdf } from "../../services/tools/pdf.service";
 import { readFile } from "../../services/tools/file.service";
 import { addMemory } from "../../services/memory/memory.service";
-import { listCalendarEvents, searchGmailMessages, getGoogleDocContent } from "../../../server/agent/google_tools";
+import { listCalendarEvents, searchGmailMessages, getGoogleDocContent } from "../../services/tools/google.service";
 
 /**
  * Node: Tool Execution
@@ -62,7 +62,11 @@ export async function toolsNode(state: AgentStateType) {
       content: output,
       tool_call_id: call.id,
     });
-    notes.push(`[Source: ${call.name}] ${typeof output === 'string' ? output.substring(0, 500) : JSON.stringify(output).substring(0, 500)}...`);
+    const safeOutput = typeof output === 'string' 
+      ? output 
+      : (JSON.stringify(output) || '');
+    
+    notes.push(`[Source: ${call.name}] ${safeOutput.substring(0, 500)}...`);
   }
 
   return {

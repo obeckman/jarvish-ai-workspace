@@ -18,15 +18,23 @@ function getOAuth2Client(accessToken: string) {
  * @param args Contains optional maxResults parameter.
  */
 export async function listCalendarEvents(accessToken: string, args: { maxResults?: number }) {
-  const calendar = google.calendar({ version: 'v3', auth: getOAuth2Client(accessToken) });
-  const res = await calendar.events.list({
-    calendarId: 'primary',
-    timeMin: new Date().toISOString(),
-    maxResults: args.maxResults || 10,
-    singleEvents: true,
-    orderBy: 'startTime',
-  });
-  return res.data.items || [];
+  try {
+    const calendar = google.calendar({ version: 'v3', auth: getOAuth2Client(accessToken) });
+    const res = await calendar.events.list({
+      calendarId: 'primary',
+      timeMin: new Date().toISOString(),
+      maxResults: args.maxResults || 10,
+      singleEvents: true,
+      orderBy: 'startTime',
+    });
+    return res.data.items || [];
+  } catch (error: any) {
+    console.error(`[Google Service Error] listCalendarEvents failed:`, error.message);
+    if (error.code === 401 || error.status === 401) {
+      return "ERROR: Google authentication has expired or is invalid. Please log out and log in again to refresh your access.";
+    }
+    return `ERROR: Failed to access Google Calendar: ${error.message}`;
+  }
 }
 
 /**
@@ -36,15 +44,27 @@ export async function listCalendarEvents(accessToken: string, args: { maxResults
  * @param args Contains the search query.
  */
 export async function searchGmailMessages(accessToken: string, args: { query: string }) {
-  const gmail = google.gmail({ version: 'v1', auth: getOAuth2Client(accessToken) });
-  const res = await gmail.users.messages.list({ userId: 'me', q: args.query, maxResults: 5 });
-  
-  if (!res.data.messages) return [];
-  
-  return Promise.all(res.data.messages.map(async (msg) => {
-    const detail = await gmail.users.messages.get({ userId: 'me', id: msg.id!, format: 'minimal' });
-    return detail.data.snippet;
-  }));
+  try {
+    const gmail = google.gmail({ version: 'v1', auth: getOAuth2Client(accessToken) });
+    const res = await gmail.users.messages.list({ userId: 'me', q: args.query, maxResults: 5 });
+    
+    if (!res.data.messages) return [];
+    
+    return Promise.all(res.data.messages.map(async (msg) => {
+      const detail = await gmail.users.messages.get({ userId: 'me', id: msg.id!, format: 'minimal' });
+      return {
+        id: msg.id,
+        snippet: detail.data.snippet,
+        threadId: detail.data.threadId
+      };
+    }));
+  } catch (error: any) {
+    console.error(`[Google Service Error] searchGmailMessages failed:`, error.message);
+    if (error.code === 401 || error.status === 401) {
+      return "ERROR: Google authentication has expired or is invalid. Please log out and log in again to refresh your access.";
+    }
+    return `ERROR: Failed to search Gmail: ${error.message}`;
+  }
 }
 
 /**
@@ -54,17 +74,23 @@ export async function searchGmailMessages(accessToken: string, args: { query: st
  * @param args Contains the Document ID.
  */
 export async function getGoogleDocContent(accessToken: string, args: { documentId: string }) {
-  const docs = google.docs({ version: 'v1', auth: getOAuth2Client(accessToken) });
-  const res = await docs.documents.get({ documentId: args.documentId });
-  
-  let content = '';
-  res.data.body?.content?.forEach(element => {
-    element.paragraph?.elements?.forEach(part => {
-      if (element.textRun?.content) content += element.textRun.content;
-      // Also handle nested elements if necessary
-      if (part.textRun?.content) content += part.textRun.content;
+  try {
+    const docs = google.docs({ version: 'v1', auth: getOAuth2Client(accessToken) });
+    const res = await docs.documents.get({ documentId: args.documentId });
+    
+    let content = '';
+    res.data.body?.content?.forEach(element => {
+      element.paragraph?.elements?.forEach(part => {
+        if (part.textRun?.content) content += part.textRun.content;
+      });
     });
-  });
-  
-  return content;
+    
+    return content;
+  } catch (error: any) {
+    console.error(`[Google Service Error] getGoogleDocContent failed:`, error.message);
+    if (error.code === 401 || error.status === 401) {
+      return "ERROR: Google authentication has expired or is invalid. Please log out and log in again to refresh your access.";
+    }
+    return `ERROR: Failed to access Google Doc: ${error.message}`;
+  }
 }
