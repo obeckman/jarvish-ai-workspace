@@ -56,5 +56,6 @@ export const TOOL_NAMES = {
   LIST_CALENDAR: 'list_calendar_events',
   SEARCH_GMAIL: 'search_gmail_messages',
   GET_GOOGLE_DOC: 'get_google_doc_content',
+  UPDATE_GOOGLE_DOC: 'update_google_doc',
   CHECK_INVENTORY: 'check_inventory',
 } as const;

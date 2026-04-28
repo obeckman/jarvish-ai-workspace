@@ -77,7 +77,7 @@ export const GQL_QUERIES = {
 
 export const GQL_MUTATIONS = {
   CREATE_SESSION: `
-    mutation($id: String!, $title: String, $initialQuery: String) { 
+    mutation($id: String!, $title: String!, $initialQuery: String) { 
       createSession(id: $id, title: $title, initialQuery: $initialQuery) { id title } 
     }
   `,

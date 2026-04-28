@@ -85,13 +85,17 @@ export const useJarvishSessions = (searchTerm: string) => {
 
   const createNewSession = useCallback(async (initialQuery?: string) => {
     const id = `session-${Date.now()}`;
+    const title = initialQuery 
+      ? (initialQuery.substring(0, 30) + (initialQuery.length > 30 ? '...' : ''))
+      : 'New Research';
+      
     try {
       const res = await fetch(API_ENDPOINTS.GRAPHQL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           query: GQL_MUTATIONS.CREATE_SESSION,
-          variables: { id, initialQuery }
+          variables: { id, title, initialQuery }
         })
       });
       const result = await res.json();

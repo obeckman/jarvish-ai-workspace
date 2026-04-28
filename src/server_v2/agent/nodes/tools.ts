@@ -7,7 +7,7 @@ import { fetchWebPage } from "../../services/tools/web.service";
 import { readPdf } from "../../services/tools/pdf.service";
 import { readFile, writeFile } from "../../services/tools/file.service";
 import { addMemory, forgetMemory } from "../../services/memory/memory.service";
-import { listCalendarEvents, searchGmailMessages, getGoogleDocContent } from "../../services/tools/google.service";
+import { listCalendarEvents, searchGmailMessages, getGoogleDocContent, updateGoogleDoc } from "../../services/tools/google.service";
 
 /**
  * Node: Tool Execution
@@ -57,6 +57,9 @@ export async function toolsNode(state: AgentStateType) {
       } else if (call.name === TOOL_NAMES.GET_GOOGLE_DOC) {
         if (!state.googleToken) throw new Error("Google authentication required.");
         output = await getGoogleDocContent(state.googleToken, call.args);
+      } else if (call.name === TOOL_NAMES.UPDATE_GOOGLE_DOC) {
+        if (!state.googleToken) throw new Error("Google authentication required.");
+        output = await updateGoogleDoc(state.googleToken, call.args);
       } else {
         output = `Error: Tool '${call.name}' not recognized.`;
         confidence = 0;

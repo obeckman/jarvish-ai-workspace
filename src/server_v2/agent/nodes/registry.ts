@@ -153,3 +153,17 @@ export const googleDocsDeclaration = {
     required: ['documentId'],
   },
 };
+
+export const updateGoogleDocDeclaration = {
+  name: TOOL_NAMES.UPDATE_GOOGLE_DOC,
+  description: 'Appends or replaces content in a Google Doc.',
+  parameters: {
+    type: 'object',
+    properties: {
+      documentId: { type: 'string', description: 'Doc ID.' },
+      content: { type: 'string', description: 'Text to add/update.' },
+      append: { type: 'boolean', description: 'If true, appends to the end. Defaults to true.' }
+    },
+    required: ['documentId', 'content'],
+  },
+};

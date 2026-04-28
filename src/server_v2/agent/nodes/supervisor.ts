@@ -38,13 +38,15 @@ export async function supervisorNode(state: AgentStateType) {
   - Google Services: ${state.googleToken ? "AUTHENTICATED" : "NOT AUTHENTICATED"}
 
   THE TEAM:
-  1. research_worker: Best for web searches, reading PDFs, fetching URLs, and analyzing uploaded documents.
-  2. google_worker: Best for accessing user's Gmail, Calendar, and Google Docs.
-  3. coder_worker: Best for local file reading, codebase analysis, writing code, and technical implementation.
+  1. research_worker: Search the web, read PDFs, fetch URLs, and analyze uploaded documents.
+  2. google_worker: SEARCH AND RETRIEVE from user's Gmail, Calendar, and Google Docs.
+  3. coder_worker: CREATE AND IMPLEMENT. Best for drafting documents (proposals, emails), writing code, analyzing codebase, and updating local files.
 
   DELEGATION STRATEGY:
-  - If the task requires specific capabilities, you MUST delegate.
-  - If you have enough information, synthesize a final response using UI blocks.
+  - If the user wants to DRAFT, WRITE, or IMPLEMENT something, delegate to the coder_worker.
+  - If the user wants to FIND info in their private accounts, delegate to the google_worker.
+  - If the user wants to FIND info on the web or in documents, delegate to the research_worker.
+  - If the task requires multiple steps, delegate sequentially.
 
   UI BLOCK OUTPUT MANDATE:
   - When providing a final answer, you MUST use a JSON array of UI blocks.

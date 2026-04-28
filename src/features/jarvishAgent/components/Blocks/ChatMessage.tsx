@@ -14,7 +14,7 @@ interface ChatMessageProps {
 }
 
 export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({ message, onAction }) => {
-  const isAgent = message.role === MESSAGE_ROLES.AGENT;
+  const isAgent = message.role === MESSAGE_ROLES.AGENT || message.role === MESSAGE_ROLES.MODEL;
   const isUser = message.role === MESSAGE_ROLES.USER;
 
   // Only attempt to parse blocks for agent messages
