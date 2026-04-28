@@ -46,8 +46,11 @@ export async function addMemory(text: string, metadata: Record<string, any> = {}
   await vectorStore.add(text, embedding, metadata);
 }
 
+const RELEVANCE_THRESHOLD = 0.7;
+
 /**
  * Retrieves the most semantically relevant memories based on a text query.
+ * Filters results by a RELEVANCE_THRESHOLD to avoid context poisoning.
  * 
  * @param query The user's question or topic.
  * @param topK Number of relevant snippets to retrieve.
@@ -69,9 +72,24 @@ export async function retrieveMemories(query: string, topK: number = 5): Promise
 
     // Perform vector similarity search in the store
     const results = await vectorStore.search(queryVector, topK);
-    return results;
+    
+    // Apply relevance threshold to prevent poisoning
+    const filtered = results.filter(m => m.score >= RELEVANCE_THRESHOLD);
+    
+    console.log(`[Memory Service] Query: "${query}" | Found ${results.length} results | ${filtered.length} passed threshold (${RELEVANCE_THRESHOLD})`);
+    
+    return filtered;
   } catch (error) {
     console.error(`[Memory Service Error]`, error);
     return [];
   }
+}
+
+/**
+ * Removes a memory from the store.
+ * @param id The ID of the memory to forget.
+ */
+export async function forgetMemory(id: string) {
+  if (!vectorStore) throw new Error('Vector store not initialized');
+  await vectorStore.delete(id);
 }

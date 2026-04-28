@@ -5,8 +5,8 @@ import { ROLES, STAGES, TOOL_NAMES } from "../constants";
 import { searchWeb } from "../../services/tools/search.service";
 import { fetchWebPage } from "../../services/tools/web.service";
 import { readPdf } from "../../services/tools/pdf.service";
-import { readFile } from "../../services/tools/file.service";
-import { addMemory } from "../../services/memory/memory.service";
+import { readFile, writeFile } from "../../services/tools/file.service";
+import { addMemory, forgetMemory } from "../../services/memory/memory.service";
 import { listCalendarEvents, searchGmailMessages, getGoogleDocContent } from "../../services/tools/google.service";
 
 /**
@@ -25,8 +25,11 @@ export async function toolsNode(state: AgentStateType) {
   const results: any[] = [];
   const notes: string[] = [];
 
+  let minimumConfidence = 100;
+
   for (const call of toolCalls) {
     let output: any;
+    let confidence = 100;
     try {
       if (call.name === TOOL_NAMES.WEB_SEARCH) {
         output = await searchWeb(call.args);
@@ -36,8 +39,13 @@ export async function toolsNode(state: AgentStateType) {
         output = await readPdf(call.args);
       } else if (call.name === TOOL_NAMES.READ_FILE) {
         output = await readFile(call.args);
+      } else if (call.name === TOOL_NAMES.WRITE_FILE) {
+        output = await writeFile(call.args);
       } else if (call.name === TOOL_NAMES.ADD_MEMORY) {
         output = await addMemory(call.args.fact, { category: call.args.category });
+      } else if (call.name === TOOL_NAMES.FORGET_MEMORY) {
+        await forgetMemory(call.args.memoryId);
+        output = `Successfully forgotten memory with ID: ${call.args.memoryId}`;
       } else if (call.name === TOOL_NAMES.QUERY_ATTACHMENTS) {
         output = await handleQueryAttachments(call.args.query, state);
       } else if (call.name === TOOL_NAMES.LIST_CALENDAR) {
@@ -51,9 +59,26 @@ export async function toolsNode(state: AgentStateType) {
         output = await getGoogleDocContent(state.googleToken, call.args);
       } else {
         output = `Error: Tool '${call.name}' not recognized.`;
+        confidence = 0;
       }
+      
+      // Analyze output to determine confidence
+      const outputStr = String(output).toLowerCase();
+      if (!output || outputStr.trim() === '') {
+        confidence = 0;
+      } else if (outputStr.includes('error:') || outputStr.includes('failed to')) {
+        confidence = 0;
+      } else if (outputStr.includes('no results found') || outputStr.includes('could not find')) {
+        confidence = 50; // Partial confidence: tool worked, but no data
+      }
+      
     } catch (e: any) {
       output = `Error executing tool: ${e.message}`;
+      confidence = 0;
+    }
+
+    if (confidence < minimumConfidence) {
+      minimumConfidence = confidence;
     }
 
     results.push({
@@ -66,12 +91,13 @@ export async function toolsNode(state: AgentStateType) {
       ? output 
       : (JSON.stringify(output) || '');
     
-    notes.push(`[Source: ${call.name}] ${safeOutput.substring(0, 500)}...`);
+    notes.push(`[Source: ${call.name} | Conf: ${confidence}%] ${safeOutput.substring(0, 500)}...`);
   }
 
   return {
     messages: results,
     researchNotes: notes,
+    toolConfidence: minimumConfidence,
     metadata: { stage: STAGES.RESEARCH, status: `Completed ${toolCalls.length} research steps.` }
   };
 }

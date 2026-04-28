@@ -108,4 +108,20 @@ export class WeaviateVectorStore implements IVectorStore {
       return [];
     }
   }
+
+  /**
+   * Deletes a document by its ID.
+   */
+  async delete(id: string): Promise<void> {
+    try {
+      await this.client.data
+        .deleter()
+        .withClassName(this.className)
+        .withId(id)
+        .do();
+    } catch (error) {
+      console.error('[Weaviate Delete Error]', error);
+      throw error;
+    }
+  }
 }

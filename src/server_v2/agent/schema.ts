@@ -6,6 +6,7 @@ export const BLOCK_TYPES = {
   REASONING: 'reasoning',
   ACTION: 'action',
   DATA: 'data',
+  DRAFT: 'draft',
 } as const;
 
 export const TextBlockSchema = z.object({
@@ -41,12 +42,20 @@ export const DataBlockSchema = z.object({
   data: z.any(),
 });
 
+export const DraftBlockSchema = z.object({
+  type: z.literal(BLOCK_TYPES.DRAFT),
+  title: z.string().optional(),
+  content: z.string(),
+  metadata: z.record(z.any()).optional(),
+});
+
 export const AgentMessageBlockSchema = z.discriminatedUnion('type', [
   TextBlockSchema,
   CodeBlockSchema,
   ReasoningBlockSchema,
   ActionBlockSchema,
   DataBlockSchema,
+  DraftBlockSchema,
 ]);
 
 export const AgentMessageBlocksSchema = z.array(AgentMessageBlockSchema);

@@ -4,6 +4,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { ARCHIVE_MODEL } from "@/server_v2/agent/models";
 import { PDFParse } from 'pdf-parse';
 import { summarizeSession } from "@/server_v2/services/summarization.service";
+import { extractAndStoreFacts } from "@/server_v2/services/factExtraction.service";
 import { db } from "@/server_v2/db/index";
 import { sessionSummaries } from "@/server_v2/db/schema";
 import { STAGES, ROLES } from "@/server_v2/agent/constants";
@@ -15,6 +16,7 @@ import { STAGES, ROLES } from "@/server_v2/agent/constants";
  * 2. Index all attachments (PDFs, Images, Text) into long-term memory.
  * 3. Persist everything to Weaviate for long-term recall.
  * 4. Generate and store a high-level session summary for history UI.
+ * 5. Extract static facts for the structured user profile.
  */
 export async function archiveNode(state: AgentStateType) {
   // 1. Generate Session Summary for UI History (New Requirement)
@@ -28,7 +30,7 @@ export async function archiveNode(state: AgentStateType) {
           content: m.content
         };
       });
-      
+
       const summary = await summarizeSession(history);
       await db.insert(sessionSummaries).values({
         sessionId: state.sessionId,
@@ -44,8 +46,11 @@ export async function archiveNode(state: AgentStateType) {
         }
       });
       console.log(`[Agent Graph] Node: Archive | Session summary stored.`);
-    } catch (err) {
-      console.error("[Archive Node Error: Session Summary]", err);
+
+      // 5. Extract Static Facts
+      await extractAndStoreFacts(state.sessionId, history);
+
+    } catch (err) {      console.error("[Archive Node Error: Session Summary]", err);
     }
   }
 

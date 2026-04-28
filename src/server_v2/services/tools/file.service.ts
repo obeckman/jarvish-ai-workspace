@@ -23,3 +23,26 @@ export async function readFile(args: { path: string }): Promise<string> {
     return `Failed to read file: ${error.message}`;
   }
 }
+
+/**
+ * Writes content to a local file in the project directory.
+ * Includes security checks to prevent directory traversal.
+ */
+export async function writeFile(args: { path: string, content: string }): Promise<string> {
+  try {
+    // SECURITY: Absolute path resolution and containment check
+    const fullPath = path.resolve(process.cwd(), args.path);
+    
+    if (!fullPath.startsWith(process.cwd())) {
+      return "Error: Access denied. You can only write files within the project directory.";
+    }
+
+    // Ensure directory exists
+    await fs.mkdir(path.dirname(fullPath), { recursive: true });
+    
+    await fs.writeFile(fullPath, args.content, 'utf-8');
+    return `Successfully wrote to file: ${args.path}`;
+  } catch (error: any) {
+    return `Failed to write file: ${error.message}`;
+  }
+}

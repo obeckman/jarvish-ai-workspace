@@ -1,9 +1,11 @@
 import { createAgentGraph } from '@/server_v2/agent/graph';
 import { db, sqlite } from '@/server_v2/db/index';
-import { sessions, sessionSummaries } from '@/server_v2/db/schema';
+import { sessions, sessionSummaries, structuredFacts } from '@/server_v2/db/schema';
 import { desc, eq, like, or } from 'drizzle-orm';
 import { SqliteSaver } from "@langchain/langgraph-checkpoint-sqlite";
 import { summarizeSession } from '@/server_v2/services/summarization.service';
+import { generateTitle } from '@/server_v2/services/titling.service';
+import { extractAndStoreFacts } from '@/server_v2/services/factExtraction.service';
 import { EVENT_TYPES, NODE_NAMES, ROLES, STAGES } from '@/server_v2/agent/constants';
 
 // ... (rest of imports)
@@ -139,6 +141,13 @@ export const resolvers = {
       })();
 
       return null;
+    },
+    getStructuredFacts: async () => {
+      const results = await db.select().from(structuredFacts).orderBy(desc(structuredFacts.createdAt));
+      return results.map(f => ({
+        ...f,
+        createdAt: f.createdAt instanceof Date ? f.createdAt.toISOString() : String(f.createdAt)
+      }));
     }
   },
 
@@ -158,10 +167,16 @@ export const resolvers = {
       // Mutations can be used for non-streaming background tasks
       return "Research task acknowledged";
     },
-    createSession: async (_: any, { id, title }: { id: string, title: string }) => {
+    createSession: async (_: any, { id, title, initialQuery }: { id: string, title?: string, initialQuery?: string }) => {
+      let finalTitle = title || "New Research";
+      
+      if (initialQuery) {
+        finalTitle = await generateTitle(initialQuery);
+      }
+
       await db.insert(sessions).values({
         id,
-        title,
+        title: finalTitle,
       });
       const [newSession] = await db.select().from(sessions).where(eq(sessions.id, id));
       return newSession;
@@ -169,6 +184,10 @@ export const resolvers = {
     deleteSession: async (_: any, { id }: { id: string }) => {
       await db.delete(sessions).where(eq(sessions.id, id));
       // Note: In a full implementation, we'd also delete checkpoints from SqliteSaver's tables
+      return true;
+    },
+    deleteStructuredFact: async (_: any, { id }: { id: string }) => {
+      await db.delete(structuredFacts).where(eq(structuredFacts.id, id));
       return true;
     }
   },

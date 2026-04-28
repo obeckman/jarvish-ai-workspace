@@ -81,6 +81,19 @@ export const readFileDeclaration = {
   },
 };
 
+export const writeFileDeclaration = {
+  name: TOOL_NAMES.WRITE_FILE,
+  description: 'Writes content to a local file within the project.',
+  parameters: {
+    type: 'object',
+    properties: {
+      path: { type: 'string', description: 'The relative path where the file will be written.' },
+      content: { type: 'string', description: 'The content to write into the file.' },
+    },
+    required: ['path', 'content'],
+  },
+};
+
 export const addMemoryDeclaration = {
   name: TOOL_NAMES.ADD_MEMORY,
   description: 'Saves a specific fact or information to long-term memory.',
@@ -91,6 +104,18 @@ export const addMemoryDeclaration = {
       category: { type: 'string', description: 'Optional category (e.g., "personal", "work").' },
     },
     required: ['fact'],
+  },
+};
+
+export const forgetMemoryDeclaration = {
+  name: "forget_memory",
+  description: 'Removes a specific memory by its ID. Use this when the user wants you to forget something or when information is outdated.',
+  parameters: {
+    type: 'object',
+    properties: {
+      memoryId: { type: 'string', description: 'The unique ID of the memory to remove.' },
+    },
+    required: ['memoryId'],
   },
 };
 

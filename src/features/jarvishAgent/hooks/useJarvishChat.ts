@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import parse from 'partial-json-parser';
 import { Message, AgentStatus, Attachment } from '@/features/jarvishAgent/types';
 import { 
   MESSAGE_ROLES, 
@@ -190,15 +191,28 @@ export const useJarvishChat = (
             } else if (data.type === EVENT_TYPES.MESSAGE) {
               setStatusMessage(null); 
               
+              assistantMessageContent += data.content;
+              
+              // Attempt to parse partial JSON for preview rendering
+              let displayContent = assistantMessageContent;
+              try {
+                // partial-json-parser is great for streaming UI blocks
+                const parsed = parse(assistantMessageContent);
+                if (parsed) {
+                  displayContent = JSON.stringify(Array.isArray(parsed) ? parsed : [parsed]);
+                }
+              } catch (e) {
+                // Still incomplete JSON, fall back to raw content for now
+              }
+
               setMessages(prev => {
                 const existing = prev.find(m => m.id === assistantMsgId);
                 if (!existing) {
-                  return [...prev, { id: assistantMsgId, role: MESSAGE_ROLES.AGENT, content: data.content, timestamp: Date.now() }];
+                  return [...prev, { id: assistantMsgId, role: MESSAGE_ROLES.AGENT, content: displayContent, timestamp: Date.now() }];
                 }
-                return prev.map(m => m.id === assistantMsgId ? { ...m, content: m.content + data.content } : m);
+                return prev.map(m => m.id === assistantMsgId ? { ...m, content: displayContent } : m);
               });
 
-              assistantMessageContent += data.content;
               setStatus(AGENT_STATUS.RESPONDING);
             } else if (data.type === EVENT_TYPES.ERROR) {
               setErrorMessage(`Agent Error: ${data.content}`);

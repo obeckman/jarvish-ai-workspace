@@ -83,16 +83,15 @@ export const useJarvishSessions = (searchTerm: string) => {
     }
   }, [startPollingSummary]);
 
-  const createNewSession = useCallback(async (initialTitle?: string) => {
+  const createNewSession = useCallback(async (initialQuery?: string) => {
     const id = `session-${Date.now()}`;
-    const title = initialTitle || `${UI_STRINGS.NEW_RESEARCH_PREFIX} ${new Date().toLocaleDateString()}`;
     try {
       const res = await fetch(API_ENDPOINTS.GRAPHQL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           query: GQL_MUTATIONS.CREATE_SESSION,
-          variables: { id, title }
+          variables: { id, initialQuery }
         })
       });
       const result = await res.json();

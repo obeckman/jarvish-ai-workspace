@@ -32,4 +32,10 @@ export interface IVectorStore {
    * @param topK Number of results to return.
    */
   search(queryEmbedding: number[], topK: number): Promise<Memory[]>;
+
+  /**
+   * Removes a memory from the store by its ID.
+   * @param id The unique identifier of the memory.
+   */
+  delete(id: string): Promise<void>;
 }

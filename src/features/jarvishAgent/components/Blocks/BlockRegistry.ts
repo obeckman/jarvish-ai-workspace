@@ -2,6 +2,7 @@ import React from 'react';
 import { BLOCK_TYPES } from '../../constants';
 import { TextBlock } from './TextBlock';
 import { ReasoningBlock } from './ReasoningBlock';
+import { DraftBlock } from './DraftBlock';
 
 // Lazy load heavy blocks
 const CodeBlock = React.lazy(() => import('./CodeBlock').then(m => ({ default: m.CodeBlock })));
@@ -14,4 +15,5 @@ export const BLOCK_COMPONENTS: Record<string, React.ComponentType<any>> = {
   [BLOCK_TYPES.CODE]: CodeBlock,
   [BLOCK_TYPES.ACTION]: ActionBlock,
   [BLOCK_TYPES.DATA]: DataBlock,
+  [BLOCK_TYPES.DRAFT]: DraftBlock,
 };

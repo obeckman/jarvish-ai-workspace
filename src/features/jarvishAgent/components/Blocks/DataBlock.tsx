@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   BarChart, 
   Bar, 
@@ -13,16 +13,34 @@ interface DataBlockProps {
   displayType: 'table' | 'chart';
   title?: string;
   data: any[];
+  onAction?: (label: string) => void;
 }
 
-export const DataBlock: React.FC<DataBlockProps> = React.memo(({ displayType, title, data }) => {
-  console.log(`[DataBlock] Rendering ${displayType}:`, { title, dataLength: data?.length, data });
+export const DataBlock: React.FC<DataBlockProps> = React.memo(({ displayType, title, data, onAction }) => {
+  const [tableData, setTableData] = useState<any[]>(data);
+
+  useEffect(() => {
+    setTableData(data);
+  }, [data]);
+
+  const handleCellBlur = (rowIndex: number, column: string, newValue: string, oldValue: string) => {
+    if (newValue === oldValue) return;
+
+    const updatedData = [...tableData];
+    updatedData[rowIndex] = { ...updatedData[rowIndex], [column]: newValue };
+    setTableData(updatedData);
+
+    if (onAction) {
+      const updateMessage = `[x-block-update] User updated '${title || 'table'}' data. Row ${rowIndex + 1}, column '${column}' changed from '${oldValue}' to '${newValue}'. Please recalculate the summary based on this new data.`;
+      onAction(updateMessage);
+    }
+  };
 
   if (displayType === 'table') {
-    if (!data || !Array.isArray(data) || data.length === 0) {
+    if (!tableData || !Array.isArray(tableData) || tableData.length === 0) {
       return <div className={styles.dataBlock}>No data available for table.</div>;
     }
-    const headers = Object.keys(data[0]);
+    const headers = Object.keys(tableData[0]);
 
     return (
       <div className={styles.dataBlock}>
@@ -35,14 +53,24 @@ export const DataBlock: React.FC<DataBlockProps> = React.memo(({ displayType, ti
               </tr>
             </thead>
             <tbody>
-              {data.map((row, i) => (
+              {tableData.map((row, i) => (
                 <tr key={i}>
-                  {headers.map(h => <td key={h}>{String(row[h])}</td>)}
+                  {headers.map(h => (
+                    <td key={`${i}-${h}`}>
+                      <input 
+                        type="text" 
+                        defaultValue={String(row[h])}
+                        onBlur={(e) => handleCellBlur(i, h, e.target.value, String(row[h]))}
+                        className={styles.editableCell}
+                      />
+                    </td>
+                  ))}
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+        <p className={styles.editHint}>* Cells are editable. Changing a value updates the agent's context.</p>
       </div>
     );
   }

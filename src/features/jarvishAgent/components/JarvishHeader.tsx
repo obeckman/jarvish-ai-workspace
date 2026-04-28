@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bot, LogIn, Trash2, Layout, MessageSquare } from 'lucide-react';
+import { Bot, LogIn, Trash2, Layout, MessageSquare, BrainCircuit } from 'lucide-react';
 import cn from 'classnames';
 import styles from '@/features/jarvishAgent/jarvish-agent.module.scss';
 
@@ -11,9 +11,12 @@ interface JarvishHeaderProps {
   onLogin: () => void;
   onLogout: () => void;
   onResetUI: () => void;
+  viewMode: 'chat' | 'memory';
+  setViewMode: (mode: 'chat' | 'memory') => void;
 }
 
 const GoogleIcon = () => (
+// ... (omitting google icon for brevity but keeping it in the actual string below)
   <svg width="14" height="14" viewBox="0 0 24 24">
     <path
       fill="#4285F4"
@@ -41,7 +44,9 @@ export const JarvishHeader: React.FC<JarvishHeaderProps> = ({
   googleToken,
   onLogin,
   onLogout,
-  onResetUI
+  onResetUI,
+  viewMode,
+  setViewMode
 }) => {
   return (
     <header className={styles.header}>
@@ -77,24 +82,34 @@ export const JarvishHeader: React.FC<JarvishHeaderProps> = ({
       </div>
 
       <div className={styles.headerActions}>
-        {currentSessionId && (
-          <div className={styles.viewToggleGroup}>
-            <button 
-              className={cn(styles.viewToggle, !showFullConversation && styles.active)}
-              onClick={() => setShowFullConversation(false)}
-            >
-              <Layout size={14} />
-              Summary
-            </button>
-            <button 
-              className={cn(styles.viewToggle, showFullConversation && styles.active)}
-              onClick={() => setShowFullConversation(true)}
-            >
-              <MessageSquare size={14} />
-              Chat
-            </button>
-          </div>
-        )}
+        <div className={styles.viewToggleGroup}>
+          <button 
+            className={cn(styles.viewToggle, viewMode === 'memory' && styles.active)}
+            onClick={() => setViewMode('memory')}
+          >
+            <BrainCircuit size={14} />
+            Memory
+          </button>
+          
+          {currentSessionId && (
+            <>
+              <button 
+                className={cn(styles.viewToggle, viewMode === 'chat' && !showFullConversation && styles.active)}
+                onClick={() => { setViewMode('chat'); setShowFullConversation(false); }}
+              >
+                <Layout size={14} />
+                Summary
+              </button>
+              <button 
+                className={cn(styles.viewToggle, viewMode === 'chat' && showFullConversation && styles.active)}
+                onClick={() => { setViewMode('chat'); setShowFullConversation(true); }}
+              >
+                <MessageSquare size={14} />
+                Chat
+              </button>
+            </>
+          )}
+        </div>
 
         <button onClick={onResetUI} className={cn(styles.button, styles.clearButton)} title="Reset Chat UI">
           <Trash2 size={18} />

@@ -22,6 +22,10 @@ export const schema = createSchema({
       Retrieves or generates a summary for a specific session.
       """
       getSessionSummary(sessionId: String!): SessionSummary
+      """
+      Retrieves extracted static facts about the user.
+      """
+      getStructuredFacts: [StructuredFact!]!
     }
 
     type Mutation {
@@ -32,11 +36,15 @@ export const schema = createSchema({
       """
       Creates a new session record.
       """
-      createSession(id: String!, title: String!): Session!
+      createSession(id: String!, title: String!, initialQuery: String): Session!
       """
       Deletes a session and its associated state.
       """
       deleteSession(id: String!): Boolean!
+      """
+      Deletes an extracted static fact by ID.
+      """
+      deleteStructuredFact(id: String!): Boolean!
     }
 
     type Subscription {
@@ -44,6 +52,15 @@ export const schema = createSchema({
       Streams events from the Jarvish Agent (logs, tokens, stage updates).
       """
       agentEvents(query: String!, history: [MessageInput!], attachments: [AttachmentInput!], sessionId: String): AgentEvent!
+    }
+
+    type StructuredFact {
+      id: String!
+      sessionId: String
+      fact: String!
+      category: String!
+      confidence: Int!
+      createdAt: String!
     }
 
     type Session {

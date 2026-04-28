@@ -45,6 +45,19 @@ export const writes = sqliteTable('writes', {
   value: text('value'),
 });
 
+export const structuredFacts = sqliteTable('structured_facts', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  sessionId: text('session_id').references(() => sessions.id, { onDelete: 'cascade' }),
+  userId: text('user_id'), // For multi-user environments
+  fact: text('fact').notNull(),
+  category: text('category').default('general'),
+  confidence: integer('confidence').default(100), // e.g. 0-100
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+});
+
+export type StructuredFact = typeof structuredFacts.$inferSelect;
+export type NewStructuredFact = typeof structuredFacts.$inferInsert;
+
 export type Session = typeof sessions.$inferSelect;
 export type NewSession = typeof sessions.$inferInsert;
 export type SessionSummary = typeof sessionSummaries.$inferSelect;

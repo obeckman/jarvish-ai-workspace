@@ -64,6 +64,23 @@ export const AgentState = Annotation.Root({
   }),
 
   /**
+   * Tracks which worker was last active to return to them after tool execution.
+   */
+  lastWorker: Annotation<string | null>({
+    reducer: (x, y) => y ?? x,
+    default: () => null,
+  }),
+
+  /**
+   * Tracks the confidence score (0-100) of the most recently executed tool.
+   * If below 70, the graph routes to a Clarification Node.
+   */
+  toolConfidence: Annotation<number | null>({
+    reducer: (x, y) => y ?? x,
+    default: () => null,
+  }),
+
+  /**
    * Current session ID for persistence.
    */
   sessionId: Annotation<string | null>({

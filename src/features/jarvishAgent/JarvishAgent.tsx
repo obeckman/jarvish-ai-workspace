@@ -11,12 +11,16 @@ import { JarvishSidebar } from './components/JarvishSidebar';
 import { JarvishHeader } from './components/JarvishHeader';
 import { JarvishChatArea } from './components/JarvishChatArea';
 import { JarvishChatInput } from './components/JarvishChatInput';
+import { JarvishMemoryPanel } from './components/JarvishMemoryPanel';
+import { GhostWriterPanel } from './components/GhostWriterPanel';
 
 export const JarvishAgent: React.FC = () => {
   // Global/UI State not tied to a single domain
   const [searchTerm, setSearchTerm] = useState('');
   const [showFullConversation, setShowFullConversation] = useState(true);
   const [showAllLogs, setShowAllLogs] = useState(false);
+  const [viewMode, setViewMode] = useState<'chat' | 'memory'>('chat');
+  const [isGhostWriterVisible, setIsGhostWriterVisible] = useState(false);
 
   // Domain Hooks
   const { 
@@ -67,13 +71,47 @@ export const JarvishAgent: React.FC = () => {
     if (authError) setErrorMessage(authError);
   }, [authError, setErrorMessage]);
 
+  // --- Draft Management ---
+  const latestDraft = React.useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const msg = messages[i];
+      if (msg.role === 'MODEL' || msg.role === 'AGENT') {
+        try {
+          const content = msg.content.trim();
+          if (content.startsWith('[') || content.startsWith('{')) {
+            const blocks = JSON.parse(content);
+            const draftBlock = Array.isArray(blocks) 
+              ? blocks.find((b: any) => b.type === 'draft')
+              : (blocks.type === 'draft' ? blocks : null);
+            if (draftBlock) return draftBlock;
+          }
+        } catch (e) { /* Not JSON */ }
+      }
+    }
+    return null;
+  }, [messages]);
+
+  useEffect(() => {
+    if (latestDraft && !isGhostWriterVisible) {
+      setIsGhostWriterVisible(true);
+    }
+  }, [latestDraft, isGhostWriterVisible]);
+
   // --- Handlers ---
+
+  const handleGhostAction = useCallback(async (action: string) => {
+    if (!currentSessionId) return;
+    const query = `[x-draft-action] User requested to '${action}' the current draft. Please update the draft accordingly.`;
+    await sendMessage(currentSessionId, query);
+  }, [currentSessionId, sendMessage]);
 
   const handleSelectSession = useCallback((id: string) => {
     setCurrentSessionId(id);
     clearMessages();
     loadSessionHistory(id);
     setShowFullConversation(false);
+    setViewMode('chat');
+    setIsGhostWriterVisible(false);
   }, [setCurrentSessionId, clearMessages, loadSessionHistory]);
 
   const handleCreateNewSession = useCallback(async () => {
@@ -97,6 +135,7 @@ export const JarvishAgent: React.FC = () => {
 
     if (sessionId) {
       setShowFullConversation(true);
+      setViewMode('chat');
       sendMessage(sessionId);
     }
   }, [input, currentSessionId, createNewSession, setCurrentSessionId, sendMessage]);
@@ -137,37 +176,55 @@ export const JarvishAgent: React.FC = () => {
           onLogin={loginWithGoogle}
           onLogout={logout}
           onResetUI={handleResetUI}
+          viewMode={viewMode}
+          setViewMode={setViewMode}
         />
 
-        <JarvishChatArea 
-          messages={messages}
-          status={status}
-          statusMessage={statusMessage}
-          errorMessage={errorMessage}
-          currentStage={currentStage}
-          isReasoningVisible={isReasoningVisible}
-          setIsReasoningVisible={setIsReasoningVisible}
-          showFullConversation={showFullConversation}
-          setShowFullConversation={setShowFullConversation}
-          currentSessionId={currentSessionId}
-          sessions={sessions}
-          onCopyToInput={handleCopyToInput}
-          onSendMessage={sendMessage}
-        />
+        {viewMode === 'memory' ? (
+          <div className={styles.memoryContainer}>
+            <JarvishMemoryPanel />
+          </div>
+        ) : (
+          <>
+            <JarvishChatArea 
+              messages={messages}
+              status={status}
+              statusMessage={statusMessage}
+              errorMessage={errorMessage}
+              currentStage={currentStage}
+              isReasoningVisible={isReasoningVisible}
+              setIsReasoningVisible={setIsReasoningVisible}
+              showFullConversation={showFullConversation}
+              setShowFullConversation={setShowFullConversation}
+              currentSessionId={currentSessionId}
+              sessions={sessions}
+              onCopyToInput={handleCopyToInput}
+              onSendMessage={sendMessage}
+            />
 
-        <JarvishChatInput 
-          input={input}
-          setInput={setInput}
-          status={status}
-          statusLogs={statusLogs}
-          showAllLogs={showAllLogs}
-          setShowAllLogs={setShowAllLogs}
-          attachments={attachments}
-          onFileUpload={addAttachment}
-          onRemoveAttachment={removeAttachment}
-          onSendMessage={handleSendMessage}
-          onCancelRequest={cancelRequest}
-          onClearInput={() => setInput('')}
+            <JarvishChatInput 
+              input={input}
+              setInput={setInput}
+              status={status}
+              statusLogs={statusLogs}
+              showAllLogs={showAllLogs}
+              setShowAllLogs={setShowAllLogs}
+              attachments={attachments}
+              onFileUpload={addAttachment}
+              onRemoveAttachment={removeAttachment}
+              onSendMessage={handleSendMessage}
+              onCancelRequest={cancelRequest}
+              onClearInput={() => setInput('')}
+            />
+          </>
+        )}
+
+        <GhostWriterPanel 
+          content={latestDraft?.content || ''}
+          title={latestDraft?.title}
+          isVisible={isGhostWriterVisible && !!latestDraft}
+          onClose={() => setIsGhostWriterVisible(false)}
+          onAction={handleGhostAction}
         />
       </div>
     </div>

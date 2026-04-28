@@ -40,12 +40,19 @@ export const DataBlockSchema = z.object({
   data: z.any(),
 });
 
+export const DocumentBlockSchema = z.object({
+  type: z.literal(BLOCK_TYPES.DOCUMENT),
+  title: z.string().optional(),
+  content: z.string(), // Live draft content
+});
+
 export const AgentMessageBlockSchema = z.discriminatedUnion('type', [
   TextBlockSchema,
   CodeBlockSchema,
   ReasoningBlockSchema,
   ActionBlockSchema,
   DataBlockSchema,
+  DocumentBlockSchema,
 ]);
 
 export type AgentMessageBlock = z.infer<typeof AgentMessageBlockSchema>;
@@ -57,6 +64,14 @@ export interface Message {
   role: MessageRole;
   content: string; // This will now potentially be a JSON string of AgentMessageBlock[]
   timestamp: number;
+}
+
+export interface StructuredFact {
+  id: string;
+  fact: string;
+  category: string;
+  confidence: number;
+  createdAt: string;
 }
 
 export interface SessionSummary {

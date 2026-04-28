@@ -23,6 +23,7 @@ export const BLOCK_TYPES = {
   REASONING: 'reasoning',
   ACTION: 'action',
   DATA: 'data',
+  DOCUMENT: 'document',
 } as const;
 
 export const MESSAGE_ROLES = ROLES;
@@ -67,17 +68,27 @@ export const GQL_QUERIES = {
       getSessionSummary(sessionId: $sessionId) { summaryTitle userMessage aiAnswer } 
     }
   `,
+  GET_STRUCTURED_FACTS: `
+    query {
+      getStructuredFacts { id fact category confidence createdAt }
+    }
+  `,
 } as const;
 
 export const GQL_MUTATIONS = {
   CREATE_SESSION: `
-    mutation($id: String!, $title: String!) { 
-      createSession(id: $id, title: $title) { id title } 
+    mutation($id: String!, $title: String, $initialQuery: String) { 
+      createSession(id: $id, title: $title, initialQuery: $initialQuery) { id title } 
     }
   `,
   DELETE_SESSION: `
     mutation($id: String!) { 
       deleteSession(id: $id) 
+    }
+  `,
+  DELETE_STRUCTURED_FACT: `
+    mutation($id: String!) {
+      deleteStructuredFact(id: $id)
     }
   `,
 } as const;

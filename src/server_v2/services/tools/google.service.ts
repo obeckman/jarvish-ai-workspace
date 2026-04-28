@@ -94,3 +94,35 @@ export async function getGoogleDocContent(accessToken: string, args: { documentI
     return `ERROR: Failed to access Google Doc: ${error.message}`;
   }
 }
+
+/**
+ * Appends or replaces text in a Google Document.
+ */
+export async function updateGoogleDoc(accessToken: string, args: { documentId: string, content: string, append?: boolean }) {
+  try {
+    const docs = google.docs({ version: 'v1', auth: getOAuth2Client(accessToken) });
+    
+    const requests: any[] = [];
+    if (!args.append) {
+      // For simplicity, we just append in this implementation, 
+      // but in a full version we might replace or insert at specific indices.
+    }
+    
+    requests.push({
+      insertText: {
+        text: args.content,
+        endOfSegmentLocation: {}
+      }
+    });
+
+    await docs.documents.batchUpdate({
+      documentId: args.documentId,
+      requestBody: { requests }
+    });
+
+    return `Successfully updated Google Doc: ${args.documentId}`;
+  } catch (error: any) {
+    console.error(`[Google Service Error] updateGoogleDoc failed:`, error.message);
+    return `ERROR: Failed to update Google Doc: ${error.message}`;
+  }
+}
