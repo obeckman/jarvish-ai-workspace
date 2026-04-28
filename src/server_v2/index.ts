@@ -1,9 +1,9 @@
 import 'dotenv/config';
-import { createApp } from './app.js';
+import { createApp } from '@/server_v2/app';
 import weaviate, { EmbeddedOptions } from 'weaviate-ts-embedded';
 import path from 'node:path';
-import { WeaviateVectorStore } from './services/memory/weaviate.store.js';
-import { setVectorStore } from './services/memory/memory.service.js';
+import { WeaviateVectorStore } from '@/server_v2/services/memory/weaviate.store';
+import { setVectorStore } from '@/server_v2/services/memory/memory.service';
 
 const PORT = process.env.PORT || 3000; // Match old server's port
 

@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { REASONING_MODEL } from "../agent/models.js";
+import { REASONING_MODEL } from "@/server_v2/agent/models";
 
 export async function summarizeSession(history: { role: string, content: string }[]) {
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
@@ -42,8 +42,14 @@ export async function summarizeSession(history: { role: string, content: string 
     console.error(`[Summarization Error] Failed to parse JSON. Raw text preview: ${text.substring(0, 100)}...`);
     return {
       summaryTitle: "Conversation Summary",
-      userMessage: history.find(m => m.role === 'user')?.content?.substring(0, 100) || "N/A",
-      aiAnswer: history.reverse().find(m => m.role === 'agent' || m.role === 'assistant' || m.role === 'model')?.content?.substring(0, 100) || "N/A"
+      userMessage: history.find(m => {
+        const r = (m.role || "").toLowerCase();
+        return r === 'user' || r === 'human';
+      })?.content?.substring(0, 100) || "N/A",
+      aiAnswer: [...history].reverse().find(m => {
+        const r = (m.role || "").toLowerCase();
+        return r === 'agent' || r === 'assistant' || r === 'model' || r === 'ai';
+      })?.content?.substring(0, 100) || "N/A"
     };
   }
 }

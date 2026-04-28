@@ -1,4 +1,4 @@
-import { Memory } from './memory.js';
+import { Memory } from './memory';
 
 export interface IVectorStore {
   /**

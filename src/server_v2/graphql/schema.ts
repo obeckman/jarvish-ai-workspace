@@ -1,5 +1,5 @@
 import { createSchema } from 'graphql-yoga';
-import { resolvers } from './resolvers.js';
+import { resolvers } from '@/server_v2/graphql/resolvers';
 
 /**
  * GraphQL Schema Definition

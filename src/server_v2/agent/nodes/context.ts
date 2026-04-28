@@ -1,5 +1,6 @@
-import { AgentStateType } from "../state.js";
-import { retrieveMemories } from "../../services/memory/memory.service.js";
+import { AgentStateType } from "@/server_v2/agent/state";
+import { retrieveMemories } from "@/server_v2/services/memory/memory.service";
+import { ROLES, STAGES } from "@/server_v2/agent/constants";
 
 /**
  * Node: Context Retrieval
@@ -20,11 +21,11 @@ export async function contextNode(state: AgentStateType) {
   return {
     memories: memories,
     messages: [{
-      role: "reasoning",
+      role: ROLES.REASONING,
       content: `Retrieved ${memories.length} relevant memories from long-term storage.`
     }],
     metadata: { 
-      stage: 1, 
+      stage: STAGES.PREPARE, 
       status: `Retrieved ${memories.length} relevant memories.` 
     }
   };

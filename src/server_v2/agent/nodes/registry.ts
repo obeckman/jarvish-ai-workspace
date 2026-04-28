@@ -4,8 +4,10 @@
  * We follow the Gemini Function Declaration schema.
  */
 
+import { TOOL_NAMES } from "../constants";
+
 export const queryAttachmentsDeclaration = {
-  name: 'query_attachments',
+  name: TOOL_NAMES.QUERY_ATTACHMENTS,
   description: 'Searches through the AI-extracted text versions of the currently uploaded attachments.',
   parameters: {
     type: 'object',
@@ -17,7 +19,7 @@ export const queryAttachmentsDeclaration = {
 };
 
 export const inventoryToolDeclaration = {
-  name: 'check_inventory',
+  name: TOOL_NAMES.CHECK_INVENTORY,
   description: 'Checks the live inventory status for a specific product SKU.',
   parameters: {
     type: "object",
@@ -32,7 +34,7 @@ export const inventoryToolDeclaration = {
 };
 
 export const webSearchDeclaration = {
-  name: 'web_search',
+  name: TOOL_NAMES.WEB_SEARCH,
   description: 'Searches the web for information using Google Search.',
   parameters: {
     type: 'object',
@@ -44,7 +46,7 @@ export const webSearchDeclaration = {
 };
 
 export const fetchWebPageDeclaration = {
-  name: 'fetch_web_page',
+  name: TOOL_NAMES.FETCH_WEB_PAGE,
   description: 'Reads the text content of a specific URL.',
   parameters: {
     type: 'object',
@@ -56,7 +58,7 @@ export const fetchWebPageDeclaration = {
 };
 
 export const readPdfDeclaration = {
-  name: 'read_pdf',
+  name: TOOL_NAMES.READ_PDF,
   description: 'Extracts text from a PDF file at a given URL.',
   parameters: {
     type: 'object',
@@ -68,7 +70,7 @@ export const readPdfDeclaration = {
 };
 
 export const readFileDeclaration = {
-  name: 'read_file',
+  name: TOOL_NAMES.READ_FILE,
   description: 'Reads the content of a local file within the project.',
   parameters: {
     type: 'object',
@@ -80,7 +82,7 @@ export const readFileDeclaration = {
 };
 
 export const addMemoryDeclaration = {
-  name: 'add_to_memory',
+  name: TOOL_NAMES.ADD_MEMORY,
   description: 'Saves a specific fact or information to long-term memory.',
   parameters: {
     type: 'object',
@@ -93,7 +95,7 @@ export const addMemoryDeclaration = {
 };
 
 export const googleCalendarDeclaration = {
-  name: 'list_calendar_events',
+  name: TOOL_NAMES.LIST_CALENDAR,
   description: 'Lists upcoming events from the user\'s Google Calendar.',
   parameters: {
     type: 'object',
@@ -104,7 +106,7 @@ export const googleCalendarDeclaration = {
 };
 
 export const gmailSearchDeclaration = {
-  name: 'search_gmail_messages',
+  name: TOOL_NAMES.SEARCH_GMAIL,
   description: 'Searches Gmail messages.',
   parameters: {
     type: 'object',
@@ -116,7 +118,7 @@ export const gmailSearchDeclaration = {
 };
 
 export const googleDocsDeclaration = {
-  name: 'get_google_doc_content',
+  name: TOOL_NAMES.GET_GOOGLE_DOC,
   description: 'Reads a Google Doc.',
   parameters: {
     type: 'object',

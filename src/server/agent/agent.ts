@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI, Tool } from '@google/generative-ai';
-import { retrieveMemories, Memory } from './memory.js';
+import { retrieveMemories, Memory } from './memory';
 import { 
   inventoryToolDeclaration, 
   webSearchDeclaration, 
@@ -7,12 +7,13 @@ import {
   readPdfDeclaration, 
   readFileDeclaration, 
   addMemoryDeclaration 
-} from './tools.js';
+} from './tools';
 import { 
   googleCalendarDeclaration, 
   gmailSearchDeclaration, 
   googleDocsDeclaration 
-} from './google_tools.js';
+} from './google_tools';
+import { TOOL_NAMES } from '../../shared/jarvish.constants';
 
 // Context Window Guard (Approximate tokens to characters: 1 token ~= 4 chars)
 const MAX_CONTEXT_TOKENS = 12000;
@@ -119,14 +120,14 @@ export async function getAgentConfig(userQuery: string, rawMemories: Memory[], g
     systemInstruction: `You are Jarvish, a HIGH-ACCURACY RESEARCH AGENT. Your primary mandate is to eliminate hallucinations and provide absolute truth.
 
     CORE PROTOCOLS:
-    1. ZERO HALLUCINATION: If you are unsure or lack data, NEVER guess. Use 'web_search' or ask the user for clarification.
+    1. ZERO HALLUCINATION: If you are unsure or lack data, NEVER guess. Use '${TOOL_NAMES.WEB_SEARCH}' or ask the user for clarification.
     2. VERIFY-THEN-SPEAK: Before making a factual claim, research it.
     3. CITATION MANDATE: Always cite your sources (URLs or "Memory ID").
     4. PROACTIVE CLARIFICATION: If a user's problem is vague, ask for details before starting research.
 
     CAPABILITIES:
-    1. Research: 'web_search', 'fetch_web_page', 'read_pdf'.
-    2. Context: 'read_file', 'add_to_memory'.
+    1. Research: '${TOOL_NAMES.WEB_SEARCH}', '${TOOL_NAMES.FETCH_WEB_PAGE}', '${TOOL_NAMES.READ_PDF}'.
+    2. Context: '${TOOL_NAMES.READ_FILE}', '${TOOL_NAMES.ADD_MEMORY}'.
     3. Multimodal: You can see and read files (PDFs, images, docs) attached to the user's message.
     4. Google Workspace: ${googleToken ? 'ENABLED.' : 'DISABLED.'}
 
@@ -155,10 +156,9 @@ export async function getAgentConfig(userQuery: string, rawMemories: Memory[], g
 /**
  * Step 3: The Execution Agent (Legacy/Helper)
  */
-export async function runAgentTask(userQuery: string, synthesizedContext: string, googleToken?: string) {
-  const { model } = await getAgentConfig(userQuery, synthesizedContext, googleToken);
+export async function runAgentTask(userQuery: string, rawMemories: Memory[], googleToken?: string) {
+  const { model } = await getAgentConfig(userQuery, rawMemories, googleToken);
   const chat = model.startChat();
   const result = await chat.sendMessageStream(userQuery);
   return { stream: result.stream, chat };
 }
-

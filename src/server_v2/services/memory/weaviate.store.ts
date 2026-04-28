@@ -1,5 +1,5 @@
 import { WeaviateClient } from 'weaviate-client';
-import { IVectorStore, Memory } from './vector_store.interface.js';
+import { IVectorStore, Memory } from '@/server_v2/services/memory/vector_store.interface';
 
 /**
  * Weaviate Implementation of the Vector Store.

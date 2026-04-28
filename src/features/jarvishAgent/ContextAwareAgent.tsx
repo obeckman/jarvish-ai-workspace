@@ -1,9 +1,9 @@
 import React, { useState, useCallback } from 'react';
-import { useAgent } from '../../hooks/useAgent';
+import { useAgent } from '@/hooks/useAgent';
 import { Send, Bot, User, Loader2, BrainCircuit, Activity } from 'lucide-react';
 import cn from 'classnames';
-import styles from './jarvish-agent.module.scss';
-import { UI_STRINGS, AGENT_STATUS } from './constants';
+import styles from '@/features/jarvishAgent/jarvish-agent.module.scss';
+import { UI_STRINGS, AGENT_STATUS } from '@/features/jarvishAgent/constants';
 
 export const ContextAwareAgent: React.FC = () => {
   const [query, setQuery] = useState('');

@@ -633,6 +633,11 @@
   }
 }
 
+.inputAreaWrapper {
+  display: flex;
+  flex-direction: column;
+}
+
 .footer {
   padding: 1rem 1.5rem;
   background-color: #f8fafc;

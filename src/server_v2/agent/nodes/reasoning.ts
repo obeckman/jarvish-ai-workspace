@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { AgentStateType } from "../state.js";
-import { REASONING_MODEL } from "../models.js";
-import { ROLES, STAGES } from "../constants.js";
+import { AgentStateType } from "@/server_v2/agent/state";
+import { REASONING_MODEL } from "@/server_v2/agent/models";
+import { ROLES, STAGES, TOOL_NAMES } from "@/server_v2/agent/constants";
 import { 
   inventoryToolDeclaration, 
   webSearchDeclaration, 
@@ -13,7 +13,14 @@ import {
   googleCalendarDeclaration,
   gmailSearchDeclaration,
   googleDocsDeclaration
-} from "./registry.js";
+} from "@/server_v2/agent/nodes/registry";
+
+// Gemini API specific role strings
+const GEMINI_ROLES = {
+  USER: 'user',
+  MODEL: 'model',
+  FUNCTION: 'function',
+} as const;
 
 /**
  * Node: LLM Reasoning
@@ -52,11 +59,11 @@ export async function reasoningNode(state: AgentStateType) {
   ${state.researchNotes.join('\n')}
 
   Directives:
-  - If you need more info from uploaded files, call 'query_attachments'.
-  - If you need info from the web, call 'web_search'.
-  - If you need info from the user's Google Calendar, call 'list_calendar_events'.
-  - If you need to search the user's Gmail, call 'search_gmail_messages'.
-  - If you need to read a Google Doc, call 'get_google_doc_content'.
+  - If you need more info from uploaded files, call '${TOOL_NAMES.QUERY_ATTACHMENTS}'.
+  - If you need info from the web, call '${TOOL_NAMES.WEB_SEARCH}'.
+  - If you need info from the user's Google Calendar, call '${TOOL_NAMES.LIST_CALENDAR}'.
+  - If you need to search the user's Gmail, call '${TOOL_NAMES.SEARCH_GMAIL}'.
+  - If you need to read a Google Doc, call '${TOOL_NAMES.GET_GOOGLE_DOC}'.
   - If you have enough info, provide a detailed final answer.`;
 
   const model = genAI.getGenerativeModel({
@@ -82,13 +89,19 @@ export async function reasoningNode(state: AgentStateType) {
 
   // Map state messages to Gemini parts
   let history = state.messages
-    .filter(m => m.role !== ROLES.REASONING) // UI-only messages, don't send to LLM
+    .filter(m => {
+      const r = (m.role || "").toLowerCase();
+      return r !== ROLES.REASONING.toLowerCase();
+    }) // UI-only messages, don't send to LLM
     .map(m => {
-    let role: string = ROLES.MODEL;
-    if (m.role === ROLES.USER || m.role === ROLES.HUMAN) {
-      role = ROLES.USER;
-    } else if (m.role === ROLES.TOOL) {
-      role = ROLES.FUNCTION;
+    const r = (m.role || "").toLowerCase();
+    const t = (m.type || "").toLowerCase();
+
+    let role: string = GEMINI_ROLES.MODEL; // Default Gemini role
+    if (r === ROLES.USER.toLowerCase() || r === ROLES.HUMAN.toLowerCase() || t === ROLES.HUMAN.toLowerCase()) {
+      role = GEMINI_ROLES.USER;
+    } else if (r === ROLES.TOOL.toLowerCase() || r === ROLES.FUNCTION.toLowerCase() || t === ROLES.TOOL.toLowerCase()) {
+      role = GEMINI_ROLES.FUNCTION;
     }
 
     const parts: any[] = [];
@@ -101,7 +114,7 @@ export async function reasoningNode(state: AgentStateType) {
           args: tc.args
         }
       })));
-    } else if (m.role === ROLES.TOOL) {
+    } else if (role === GEMINI_ROLES.FUNCTION) {
       // Result of a tool call
       parts.push({
         functionResponse: {
@@ -109,16 +122,20 @@ export async function reasoningNode(state: AgentStateType) {
           response: { result: m.content }
         }
       });
-    } else {
+    } else if (m.content || m.text) {
       // Regular text message
-      parts.push({ text: m.content || m.text || "" });
+      parts.push({ text: m.content || m.text });
+    } else if (role === GEMINI_ROLES.USER) {
+      // User messages must have at least an empty text part if no content
+      parts.push({ text: "" });
     }
 
     return { role, parts };
-  });
+  })
+  .filter(m => m.parts.length > 0);
 
   // Gemini Requirement: History must start with a 'user' message.
-  const firstUserIndex = history.findIndex(m => m.role === ROLES.USER);
+  const firstUserIndex = history.findIndex(m => m.role === GEMINI_ROLES.USER);
   if (firstUserIndex !== -1) {
     history = history.slice(firstUserIndex);
   }

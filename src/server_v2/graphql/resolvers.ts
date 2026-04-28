@@ -1,10 +1,12 @@
-import { createAgentGraph } from '../agent/graph.js';
-import { db, sqlite } from '../db/index.js';
-import { sessions, sessionSummaries } from '../db/schema.js';
+import { createAgentGraph } from '@/server_v2/agent/graph';
+import { db, sqlite } from '@/server_v2/db/index';
+import { sessions, sessionSummaries } from '@/server_v2/db/schema';
 import { desc, eq, like, or } from 'drizzle-orm';
 import { SqliteSaver } from "@langchain/langgraph-checkpoint-sqlite";
-import { summarizeSession } from '../services/summarization.service.js';
-import { EVENT_TYPES, NODE_NAMES, ROLES } from '../agent/constants.js';
+import { summarizeSession } from '@/server_v2/services/summarization.service';
+import { EVENT_TYPES, NODE_NAMES, ROLES, STAGES } from '@/server_v2/agent/constants';
+
+// ... (rest of imports)
 
 // Global checkpointer instance
 const checkpointer = new SqliteSaver(sqlite);
@@ -59,27 +61,37 @@ export const resolvers = {
       const state = await graph.getState({ configurable: { thread_id: sessionId } });
 
       if (!state || !state.values.messages) return [];
+      
       return state.values.messages.map((m: any) => {
         // Map LangChain roles to FE roles
-        const type = m._getType?.() || m.type;
-        const mRole = m.role || m.lc_kwargs?.role;
+        const rawType = (m._getType?.() || m.type || "").toLowerCase();
+        const rawRole = (m.role || m.lc_kwargs?.role || "").toLowerCase();
         
-        let role = (type === ROLES.HUMAN || mRole === ROLES.USER || mRole === ROLES.HUMAN) ? ROLES.USER : ROLES.AGENT;
+        // Determine role with fallback to AGENT
+        let role: string = ROLES.AGENT;
         
-        // Reasoning markers: Tool messages, Model messages with tool_calls, or explicit reasoning role
-        if (type === ROLES.TOOL || mRole === ROLES.TOOL || mRole === ROLES.REASONING || (m.tool_calls && m.tool_calls.length > 0)) {
+        if (rawType === 'human' || rawRole === 'user' || rawRole === 'human') {
+          role = ROLES.USER;
+        } else if (
+          rawType === 'tool' || 
+          rawRole === 'tool' || 
+          rawRole === 'reasoning' || 
+          (m.tool_calls && m.tool_calls.length > 0)
+        ) {
           role = ROLES.REASONING;
         }
 
         // Handle content which can be string or array of parts
         let content = m.content;
         if (Array.isArray(content)) {
-          content = content.map(part => part.text || JSON.stringify(part)).join('\n');
+          content = content.map((part: any) => part.text || JSON.stringify(part)).join('\n');
+        } else if (typeof content !== 'string') {
+          content = content ? JSON.stringify(content) : "";
         }
 
         return {
           role,
-          content: content || (role === 'reasoning' ? "Processing research step..." : "")
+          content: content || (role === (ROLES.REASONING as string) ? "Processing research step..." : "")
         };
       });
     },
@@ -180,7 +192,7 @@ export const resolvers = {
           attachments,
           googleToken,
           sessionId,
-          metadata: { stage: 1, status: "Initializing..." }
+          metadata: { stage: STAGES.PREPARE, status: "Initializing..." }
         };
 
         const config = sessionId ? { configurable: { thread_id: sessionId } } : {};
@@ -190,11 +202,11 @@ export const resolvers = {
         // and 'messages' for the actual streaming tokens.
         const stream = await graph.stream(initialState, {
           ...config,
-          streamMode: ["updates", "messages"]
+          streamMode: ["updates", "messages"] as any
         });
 
         try {
-          for await (const [mode, chunk] of stream) {
+          for await (const [mode, chunk] of (stream as any)) {
             if (mode === "updates") {
               // Extract status from node metadata
               const nodeName = Object.keys(chunk)[0];

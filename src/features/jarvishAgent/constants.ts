@@ -3,6 +3,10 @@
  * Following the "Zero Magic Strings" policy.
  */
 
+import { ROLES, EVENT_TYPES, STAGES } from '@/shared/jarvish.constants';
+
+export { EVENT_TYPES, STAGES };
+
 export const STORAGE_KEYS = {
   GOOGLE_TOKEN: 'google_access_token',
   SESSION_ID: 'jarvish_session_id',
@@ -13,24 +17,13 @@ export const API_ENDPOINTS = {
   CONFIG: '/api/config',
 } as const;
 
-export const MESSAGE_ROLES = {
-  USER: 'user',
-  AGENT: 'agent',
-  REASONING: 'reasoning',
-} as const;
+export const MESSAGE_ROLES = ROLES;
 
 export const AGENT_STATUS = {
   IDLE: 'idle',
   THINKING: 'thinking',
   RESPONDING: 'responding',
   ERROR: 'error',
-} as const;
-
-export const EVENT_TYPES = {
-  STATUS: 'STATUS',
-  MESSAGE: 'MESSAGE',
-  REASONING: 'REASONING',
-  ERROR: 'ERROR',
 } as const;
 
 export const UI_STRINGS = {

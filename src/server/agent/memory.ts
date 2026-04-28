@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { IVectorStore } from './vector_store.interface.js';
-import { withRetry } from './agent.js';
+import { IVectorStore } from './vector_store.interface';
+import { withRetry } from './agent';
 
 export interface Memory {
   id: string;

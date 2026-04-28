@@ -1,7 +1,7 @@
 import express from 'express';
 import { createYoga } from 'graphql-yoga';
-import { schema } from './graphql/schema.js';
-import { resolvers } from './graphql/resolvers.js';
+import { schema } from '@/server_v2/graphql/schema';
+import { resolvers } from '@/server_v2/graphql/resolvers';
 import cors from 'cors';
 
 /**

@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { IVectorStore, Memory } from './vector_store.interface.js';
+import { IVectorStore, Memory } from '@/server_v2/services/memory/vector_store.interface';
 
 let vectorStore: IVectorStore | null = null;
 

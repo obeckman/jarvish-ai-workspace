@@ -1,9 +1,11 @@
-import { FunctionDeclaration } from '@google/generative-ai';
+import { FunctionDeclaration, SchemaType } from '@google/generative-ai';
 import { google } from 'googleapis';
+// @ts-ignore
 import { PDFParse } from 'pdf-parse';
 import fs from 'fs/promises';
 import path from 'path';
-import { addMemory } from './memory.js';
+import { addMemory } from './memory';
+import { TOOL_NAMES } from '../../shared/jarvish.constants';
 
 export interface InventoryCheckArgs {
   sku: string;
@@ -12,13 +14,13 @@ export interface InventoryCheckArgs {
 // --- Tool Declarations ---
 
 export const inventoryToolDeclaration: FunctionDeclaration = {
-  name: 'check_inventory',
+  name: TOOL_NAMES.CHECK_INVENTORY,
   description: 'Checks the live inventory status for a specific product SKU.',
   parameters: {
-    type: "OBJECT",
+    type: SchemaType.OBJECT,
     properties: {
       sku: {
-        type: "STRING",
+        type: SchemaType.STRING,
         description: 'The exact SKU of the product to check (e.g., "SHOE-123").',
       },
     },
@@ -27,61 +29,61 @@ export const inventoryToolDeclaration: FunctionDeclaration = {
 };
 
 export const webSearchDeclaration: FunctionDeclaration = {
-  name: 'web_search',
+  name: TOOL_NAMES.WEB_SEARCH,
   description: 'Searches the web for information using Google Search.',
   parameters: {
-    type: 'OBJECT',
+    type: SchemaType.OBJECT,
     properties: {
-      query: { type: 'STRING', description: 'The search query.' },
+      query: { type: SchemaType.STRING, description: 'The search query.' },
     },
     required: ['query'],
   },
 };
 
 export const fetchWebPageDeclaration: FunctionDeclaration = {
-  name: 'fetch_web_page',
+  name: TOOL_NAMES.FETCH_WEB_PAGE,
   description: 'Reads the text content of a specific URL.',
   parameters: {
-    type: 'OBJECT',
+    type: SchemaType.OBJECT,
     properties: {
-      url: { type: 'STRING', description: 'The URL to fetch.' },
+      url: { type: SchemaType.STRING, description: 'The URL to fetch.' },
     },
     required: ['url'],
   },
 };
 
 export const readPdfDeclaration: FunctionDeclaration = {
-  name: 'read_pdf',
+  name: TOOL_NAMES.READ_PDF,
   description: 'Extracts text from a PDF file at a given URL.',
   parameters: {
-    type: 'OBJECT',
+    type: SchemaType.OBJECT,
     properties: {
-      url: { type: 'STRING', description: 'The URL of the PDF file.' },
+      url: { type: SchemaType.STRING, description: 'The URL of the PDF file.' },
     },
     required: ['url'],
   },
 };
 
 export const readFileDeclaration: FunctionDeclaration = {
-  name: 'read_file',
+  name: TOOL_NAMES.READ_FILE,
   description: 'Reads the content of a local file within the project.',
   parameters: {
-    type: 'OBJECT',
+    type: SchemaType.OBJECT,
     properties: {
-      path: { type: 'STRING', description: 'The relative path to the file.' },
+      path: { type: SchemaType.STRING, description: 'The relative path to the file.' },
     },
     required: ['path'],
   },
 };
 
 export const addMemoryDeclaration: FunctionDeclaration = {
-  name: 'add_to_memory',
+  name: TOOL_NAMES.ADD_MEMORY,
   description: 'Saves a specific fact or information to long-term memory.',
   parameters: {
-    type: 'OBJECT',
+    type: SchemaType.OBJECT,
     properties: {
-      fact: { type: 'STRING', description: 'The fact or information to remember.' },
-      category: { type: 'STRING', description: 'Optional category (e.g., "personal", "work").' },
+      fact: { type: SchemaType.STRING, description: 'The fact or information to remember.' },
+      category: { type: SchemaType.STRING, description: 'Optional category (e.g., "personal", "work").' },
     },
     required: ['fact'],
   },
@@ -156,13 +158,13 @@ function getSearchProvider(): SearchProvider {
     console.log("[Search] Using Google CSE (Site-specific)");
     return new GoogleCSEProvider();
   }
-  throw new Error("No search provider configured. Add SERPER_API_KEY or GOOGLE_SEARCH keys to .env.");
+  throw new Error("No search provider configured. Add SERPER_API_KEY or Google Search keys to .env.");
 }
 
 // --- Tool Execution Logic ---
 
 export async function executeInventoryCheck(args: InventoryCheckArgs): Promise<string> {
-  console.log(`[Tool] Executing check_inventory for SKU: ${args.sku}`);
+  console.log(`[Tool] Executing ${TOOL_NAMES.CHECK_INVENTORY} for SKU: ${args.sku}`);
   const mockDb: Record<string, number> = { 'SHOE-123': 42, 'SHIRT-456': 0, 'HAT-789': 5 };
   const stock = mockDb[args.sku];
   return stock !== undefined ? (stock > 0 ? `In stock: ${stock} items available.` : 'Out of stock.') : 'SKU not found.';

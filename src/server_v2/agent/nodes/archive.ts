@@ -1,11 +1,12 @@
-import { AgentStateType } from "../state.js";
-import { addMemory } from "../../services/memory/memory.service.js";
+import { AgentStateType } from "@/server_v2/agent/state";
+import { addMemory } from "@/server_v2/services/memory/memory.service";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { ARCHIVE_MODEL } from "../models.js";
+import { ARCHIVE_MODEL } from "@/server_v2/agent/models";
 import { PDFParse } from 'pdf-parse';
-import { summarizeSession } from "../../services/summarization.service.js";
-import { db } from "../../db/index.js";
-import { sessionSummaries } from "../../db/schema.js";
+import { summarizeSession } from "@/server_v2/services/summarization.service";
+import { db } from "@/server_v2/db/index";
+import { sessionSummaries } from "@/server_v2/db/schema";
+import { STAGES, ROLES } from "@/server_v2/agent/constants";
 
 /**
  * Node: Memory Archiving
@@ -20,10 +21,13 @@ export async function archiveNode(state: AgentStateType) {
   if (state.sessionId) {
     console.log(`[Agent Graph] Node: Archive | Generating session summary for ${state.sessionId}`);
     try {
-      const history = state.messages.map(m => ({
-        role: m.role === 'user' || m.role === 'human' ? 'user' : 'assistant',
-        content: m.content
-      }));
+      const history = state.messages.map(m => {
+        const role = (m.role || "").toLowerCase();
+        return {
+          role: role === ROLES.USER.toLowerCase() || role === ROLES.HUMAN.toLowerCase() ? 'user' : 'assistant',
+          content: m.content
+        };
+      });
       
       const summary = await summarizeSession(history);
       await db.insert(sessionSummaries).values({
@@ -46,8 +50,15 @@ export async function archiveNode(state: AgentStateType) {
   }
 
   // 2. Archive Conversation Summary to Vector Store
-  const lastUserMessage = state.messages.findLast(m => m.role === 'user');
-  const lastModelMessage = state.messages.findLast(m => m.role === 'assistant' || m.role === 'agent' || (m.role === 'model' && !m.tool_calls));
+  const lastUserMessage = state.messages.findLast(m => {
+    const r = (m.role || "").toLowerCase();
+    return r === ROLES.USER.toLowerCase() || r === ROLES.HUMAN.toLowerCase();
+  });
+  
+  const lastModelMessage = state.messages.findLast(m => {
+    const r = (m.role || "").toLowerCase();
+    return r === ROLES.ASSISTANT.toLowerCase() || r === ROLES.AGENT.toLowerCase() || r === ROLES.MODEL.toLowerCase() || r === 'ai';
+  });
 
   if (lastUserMessage && lastModelMessage) {
     console.log(`[Agent Graph] Node: Archive | Saving interaction to memory.`);
@@ -110,6 +121,6 @@ export async function archiveNode(state: AgentStateType) {
   }
 
   return {
-    metadata: { stage: 4, status: "Jarvish has remembered this session and indexed all documents." }
+    metadata: { stage: STAGES.FINALIZE, status: "Jarvish has remembered this session and indexed all documents." }
   };
 }

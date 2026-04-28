@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { AgentStateType } from "../state.js";
-import { PROCESSING_MODEL } from "../models.js";
+import { AgentStateType } from "@/server_v2/agent/state";
+import { PROCESSING_MODEL } from "@/server_v2/agent/models";
+import { ROLES, STAGES } from "@/server_v2/agent/constants";
 
 /**
  * Node: Attachment Processing
@@ -64,11 +65,11 @@ export async function processingNode(state: AgentStateType) {
   return {
     processedAttachments: results,
     messages: [{
-      role: "reasoning",
+      role: ROLES.REASONING,
       content: `Successfully converted ${results.length} files to clean text versions for analysis.`
     }],
     metadata: { 
-      stage: 2, 
+      stage: STAGES.RESEARCH, 
       status: `Successfully converted ${results.length} files to clean text versions.` 
     }
   };

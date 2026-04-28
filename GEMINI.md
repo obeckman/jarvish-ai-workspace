@@ -106,4 +106,12 @@ export const API_ENDPOINTS = {
   STORAGE: '/api/storage',
 } as const;
 ```
-Avoid inline literals in JSX, hooks, or service calls.
+## 7. Absolute Imports Mandate
+
+Relative imports (using `./` or `../`) are strictly **FORBIDDEN**. All imports must use absolute paths relative to the project root or via configured path aliases.
+
+*   **Pattern:** Use the `@/` prefix to refer to the `src/` directory.
+*   **Example:**
+    *   *Bad:* `import { Button } from '../../components/shared/Button';`
+    *   *Good:* `import { Button } from '@/components/shared/Button';`
+*   **Rationale:** Absolute imports make code easier to move, refactor, and understand by providing clear context of where a module resides within the project structure.

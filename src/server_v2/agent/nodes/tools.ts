@@ -1,13 +1,13 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { AgentStateType } from "../state.js";
-import { TOOL_EXECUTION_MODEL } from "../models.js";
-import { ROLES, STAGES } from "../constants.js";
-import { searchWeb } from "../../services/tools/search.service.js";
-import { fetchWebPage } from "../../services/tools/web.service.js";
-import { readPdf } from "../../services/tools/pdf.service.js";
-import { readFile } from "../../services/tools/file.service.js";
-import { addMemory } from "../../services/memory/memory.service.js";
-import { listCalendarEvents, searchGmailMessages, getGoogleDocContent } from "../../../server/agent/google_tools.js";
+import { AgentStateType } from "../state";
+import { TOOL_EXECUTION_MODEL } from "../models";
+import { ROLES, STAGES, TOOL_NAMES } from "../constants";
+import { searchWeb } from "../../services/tools/search.service";
+import { fetchWebPage } from "../../services/tools/web.service";
+import { readPdf } from "../../services/tools/pdf.service";
+import { readFile } from "../../services/tools/file.service";
+import { addMemory } from "../../services/memory/memory.service";
+import { listCalendarEvents, searchGmailMessages, getGoogleDocContent } from "../../../server/agent/google_tools";
 
 /**
  * Node: Tool Execution
@@ -28,25 +28,25 @@ export async function toolsNode(state: AgentStateType) {
   for (const call of toolCalls) {
     let output: any;
     try {
-      if (call.name === 'web_search') {
+      if (call.name === TOOL_NAMES.WEB_SEARCH) {
         output = await searchWeb(call.args);
-      } else if (call.name === 'fetch_web_page') {
+      } else if (call.name === TOOL_NAMES.FETCH_WEB_PAGE) {
         output = await fetchWebPage(call.args);
-      } else if (call.name === 'read_pdf') {
+      } else if (call.name === TOOL_NAMES.READ_PDF) {
         output = await readPdf(call.args);
-      } else if (call.name === 'read_file') {
+      } else if (call.name === TOOL_NAMES.READ_FILE) {
         output = await readFile(call.args);
-      } else if (call.name === 'add_to_memory') {
+      } else if (call.name === TOOL_NAMES.ADD_MEMORY) {
         output = await addMemory(call.args.fact, { category: call.args.category });
-      } else if (call.name === 'query_attachments') {
+      } else if (call.name === TOOL_NAMES.QUERY_ATTACHMENTS) {
         output = await handleQueryAttachments(call.args.query, state);
-      } else if (call.name === 'list_calendar_events') {
+      } else if (call.name === TOOL_NAMES.LIST_CALENDAR) {
         if (!state.googleToken) throw new Error("Google authentication required.");
         output = await listCalendarEvents(state.googleToken, call.args);
-      } else if (call.name === 'search_gmail_messages') {
+      } else if (call.name === TOOL_NAMES.SEARCH_GMAIL) {
         if (!state.googleToken) throw new Error("Google authentication required.");
         output = await searchGmailMessages(state.googleToken, call.args);
-      } else if (call.name === 'get_google_doc_content') {
+      } else if (call.name === TOOL_NAMES.GET_GOOGLE_DOC) {
         if (!state.googleToken) throw new Error("Google authentication required.");
         output = await getGoogleDocContent(state.googleToken, call.args);
       } else {

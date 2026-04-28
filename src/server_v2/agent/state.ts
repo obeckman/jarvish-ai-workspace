@@ -1,5 +1,6 @@
 import { Annotation } from "@langchain/langgraph";
-import { Memory } from "../services/memory/vector_store.interface.js";
+import { Memory } from "@/server_v2/services/memory/vector_store.interface";
+import { STAGES } from "@/server_v2/agent/constants";
 
 /**
  * Definition of the Agent's shared state.
@@ -35,7 +36,7 @@ export const AgentState = Annotation.Root({
    */
   metadata: Annotation<Record<string, any>>({
     reducer: (x, y) => ({ ...x, ...y }),
-    default: () => ({ stage: 1, status: "idle" }),
+    default: () => ({ stage: STAGES.PREPARE, status: "idle" }),
   }),
 
   /**

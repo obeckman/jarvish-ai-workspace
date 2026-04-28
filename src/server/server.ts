@@ -7,8 +7,8 @@ import path from 'node:path';
 
 // Weaviate Embedded
 import weaviate, { EmbeddedOptions } from 'weaviate-ts-embedded';
-import { WeaviateVectorStore } from './agent/WeaviateVectorStore.js';
-import { setVectorStore } from './agent/memory.js';
+import { WeaviateVectorStore } from './agent/WeaviateVectorStore';
+import { setVectorStore } from './agent/memory';
 
 const startServer = async () => {
   const PORT = process.env.PORT || 3000;
@@ -77,7 +77,9 @@ const startServer = async () => {
   });
 
   // --- CONTEXT-AWARE AGENT (Advanced) ---
+  const { TOOL_NAMES } = await import('../shared/jarvish.constants.js');
   const { retrieveMemories } = await import('./agent/memory.js');
+
   const { getOptimizedContext, runAgentTask, withRetry } = await import('./agent/agent.js');
   const { 
     executeInventoryCheck, 
@@ -179,16 +181,16 @@ const startServer = async () => {
                 
                 let toolResult: any;
                 try {
-                  if (call.name === 'check_inventory') toolResult = await executeInventoryCheck(call.args as any);
-                  else if (call.name === 'web_search') toolResult = await executeWebSearch(call.args as any);
-                  else if (call.name === 'fetch_web_page') toolResult = await executeFetchWebPage(call.args as any);
-                  else if (call.name === 'read_pdf') toolResult = await executeReadPdf(call.args as any);
-                  else if (call.name === 'read_file') toolResult = await executeReadFile(call.args as any);
-                  else if (call.name === 'add_to_memory') toolResult = await executeAddMemory(call.args as any);
+                  if (call.name === TOOL_NAMES.CHECK_INVENTORY) toolResult = await executeInventoryCheck(call.args as any);
+                  else if (call.name === TOOL_NAMES.WEB_SEARCH) toolResult = await executeWebSearch(call.args as any);
+                  else if (call.name === TOOL_NAMES.FETCH_WEB_PAGE) toolResult = await executeFetchWebPage(call.args as any);
+                  else if (call.name === TOOL_NAMES.READ_PDF) toolResult = await executeReadPdf(call.args as any);
+                  else if (call.name === TOOL_NAMES.READ_FILE) toolResult = await executeReadFile(call.args as any);
+                  else if (call.name === TOOL_NAMES.ADD_MEMORY) toolResult = await executeAddMemory(call.args as any);
                   else if (googleToken) {
-                    if (call.name === 'list_calendar_events') toolResult = await listCalendarEvents(googleToken, call.args as any);
-                    else if (call.name === 'search_gmail_messages') toolResult = await searchGmailMessages(googleToken, call.args as any);
-                    else if (call.name === 'get_google_doc_content') toolResult = await getGoogleDocContent(googleToken, call.args as any);
+                    if (call.name === TOOL_NAMES.LIST_CALENDAR) toolResult = await listCalendarEvents(googleToken, call.args as any);
+                    else if (call.name === TOOL_NAMES.SEARCH_GMAIL) toolResult = await searchGmailMessages(googleToken, call.args as any);
+                    else if (call.name === TOOL_NAMES.GET_GOOGLE_DOC) toolResult = await getGoogleDocContent(googleToken, call.args as any);
                     else toolResult = `Error: Tool ${call.name} not implemented.`;
                   } else toolResult = "Error: User not authenticated.";
                 } catch (e: any) { toolResult = `Error: ${e.message}`; }

@@ -1,5 +1,6 @@
 import { google } from 'googleapis';
-import { FunctionDeclaration } from '@google/generative-ai';
+import { FunctionDeclaration, SchemaType } from '@google/generative-ai';
+import { TOOL_NAMES } from '../../shared/jarvish.constants';
 
 /**
  * Helper to create an authorized client on the fly using the user's token.
@@ -13,35 +14,35 @@ function getClient(accessToken: string) {
 
 // --- Tool Declarations --- (Remain the same)
 export const googleCalendarDeclaration: FunctionDeclaration = {
-  name: 'list_calendar_events',
+  name: TOOL_NAMES.LIST_CALENDAR,
   description: 'Lists upcoming events from the user\'s Google Calendar.',
   parameters: {
-    type: 'OBJECT',
+    type: SchemaType.OBJECT,
     properties: {
-      maxResults: { type: 'NUMBER', description: 'Max results (default 10).' },
+      maxResults: { type: SchemaType.NUMBER, description: 'Max results (default 10).' },
     }
   },
 };
 
 export const gmailSearchDeclaration: FunctionDeclaration = {
-  name: 'search_gmail_messages',
+  name: TOOL_NAMES.SEARCH_GMAIL,
   description: 'Searches Gmail messages.',
   parameters: {
-    type: 'OBJECT',
+    type: SchemaType.OBJECT,
     properties: {
-      query: { type: 'STRING', description: 'Search query.' },
+      query: { type: SchemaType.STRING, description: 'Search query.' },
     },
     required: ['query'],
   },
 };
 
 export const googleDocsDeclaration: FunctionDeclaration = {
-  name: 'get_google_doc_content',
+  name: TOOL_NAMES.GET_GOOGLE_DOC,
   description: 'Reads a Google Doc.',
   parameters: {
-    type: 'OBJECT',
+    type: SchemaType.OBJECT,
     properties: {
-      documentId: { type: 'STRING', description: 'Doc ID.' }
+      documentId: { type: SchemaType.STRING, description: 'Doc ID.' }
     },
     required: ['documentId'],
   },

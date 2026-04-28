@@ -1,6 +1,6 @@
 import { WeaviateClient } from 'weaviate-client';
-import { IVectorStore } from './vector_store.interface.js';
-import { Memory } from './memory.js';
+import { IVectorStore } from './vector_store.interface';
+import { Memory } from './memory';
 
 export class WeaviateVectorStore implements IVectorStore {
   private client: WeaviateClient;
