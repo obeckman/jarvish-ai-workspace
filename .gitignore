@@ -29,4 +29,5 @@ src/server_v2/weaviate_data/
 *.sln
 *.sw?
 sqlite.db
-sqlite.db*
+sqlite.db-shm
+sqlite.db-wal
