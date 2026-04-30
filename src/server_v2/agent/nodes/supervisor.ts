@@ -95,7 +95,8 @@ export async function supervisorNode(state: AgentStateType) {
   const chat = model.startChat({ history });
   const result = await chat.sendMessage(lastMsg.parts);
   const response = result.response;
-  
+  console.log(`[Agent Graph] Node: Supervisor | Raw response text:`, response.text());
+
   let content = response.text();
   const toolCalls = response.functionCalls();
 

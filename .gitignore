@@ -28,3 +28,5 @@ src/server_v2/weaviate_data/
 *.njsproj
 *.sln
 *.sw?
+sqlite.db
+sqlite.db*

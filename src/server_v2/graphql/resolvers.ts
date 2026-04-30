@@ -68,6 +68,7 @@ export const resolvers = {
         // Map LangChain roles to FE roles
         const rawType = (m._getType?.() || m.type || "").toLowerCase();
         const rawRole = (m.role || m.lc_kwargs?.role || "").toLowerCase();
+        const rawName = (m.name || m.lc_kwargs?.name || "").toLowerCase();
         
         // Determine role with fallback to AGENT
         let role: string = ROLES.AGENT;
@@ -78,7 +79,8 @@ export const resolvers = {
           rawType === 'tool' || 
           rawRole === 'tool' || 
           rawRole === 'reasoning' || 
-          (m.tool_calls && m.tool_calls.length > 0)
+          (m.tool_calls && m.tool_calls.length > 0) ||
+          (rawName && ![NODE_NAMES.REASONING, NODE_NAMES.SUPERVISOR, NODE_NAMES.CLARIFICATION, "clarification_agent", NODE_NAMES.CODER_WORKER, NODE_NAMES.RESEARCH_WORKER, NODE_NAMES.GOOGLE_WORKER].includes(rawName))
         ) {
           role = ROLES.REASONING;
         }
@@ -217,63 +219,58 @@ export const resolvers = {
         const config = sessionId ? { configurable: { thread_id: sessionId } } : {};
 
         // LangGraph's streaming modes allow us to catch different types of data.
-        // We use 'updates' to see node transitions (for status logs)
-        // and 'messages' for the actual streaming tokens.
+        // We use 'updates' to see node transitions (for status logs).
         const stream = await graph.stream(initialState, {
           ...config,
-          streamMode: ["updates", "messages"] as any
+          streamMode: ["updates"] as any
         });
 
         try {
           for await (const [mode, chunk] of (stream as any)) {
             if (mode === "updates") {
-              // Extract status from node metadata
-              const nodeName = Object.keys(chunk)[0];
-              if (!nodeName) continue;
-              
-              const update = chunk[nodeName];
+              for (const [nodeName, update] of Object.entries(chunk as any)) {
+                if (!update) continue;
+                const nodeUpdate = update as any;
 
-              // 1. Yield Status Update
-              yield {
-                agentEvents: {
-                  type: EVENT_TYPES.STATUS,
-                  content: update.metadata?.status || `Entering ${nodeName} phase.`,
-                  stage: update.metadata?.stage,
+                // 1. Yield Status Update
+                if (nodeUpdate.metadata?.status) {
+                  yield {
+                    agentEvents: {
+                      type: EVENT_TYPES.STATUS,
+                      content: nodeUpdate.metadata.status,
+                      stage: nodeUpdate.metadata.stage,
+                    }
+                  };
                 }
-              };
 
-              // 2. Yield Messages
-              if (update.messages && Array.isArray(update.messages)) {
-                for (const msg of update.messages) {
-                  if (msg.content && !msg.tool_calls?.length) {
-                    // If the message comes from a node that isn't the final reasoning node, 
-                    // it's likely an intermediate result (reasoning).
-                    const isFinal = nodeName === NODE_NAMES.REASONING;
-                    
-                    // Ensure content is a string (tool outputs might be objects/arrays)
-                    const stringContent = typeof msg.content === 'string' 
-                      ? msg.content 
-                      : JSON.stringify(msg.content);
-                    
-                    yield {
-                      agentEvents: {
-                        type: isFinal ? EVENT_TYPES.MESSAGE : EVENT_TYPES.REASONING,
-                        content: stringContent,
-                      }
-                    };
+                // 2. Yield Messages
+                if (nodeUpdate.messages && Array.isArray(nodeUpdate.messages)) {
+                  for (const msg of nodeUpdate.messages) {
+                    if (msg.content && !msg.tool_calls?.length) {
+                      // Nodes that produce user-facing final or intermediate answers
+                      const isUserFacingNode = [
+                        NODE_NAMES.REASONING, 
+                        NODE_NAMES.SUPERVISOR, 
+                        NODE_NAMES.CLARIFICATION,
+                        NODE_NAMES.RESEARCH_WORKER,
+                        NODE_NAMES.GOOGLE_WORKER,
+                        NODE_NAMES.CODER_WORKER
+                      ].includes(nodeName as any);
+                      
+                      // Ensure content is a string (tool outputs might be objects/arrays)
+                      const stringContent = typeof msg.content === 'string' 
+                        ? msg.content 
+                        : JSON.stringify(msg.content);
+                      
+                      yield {
+                        agentEvents: {
+                          type: isUserFacingNode ? EVENT_TYPES.MESSAGE : EVENT_TYPES.REASONING,
+                          content: stringContent,
+                        }
+                      };
+                    }
                   }
                 }
-              }
-            } else if (mode === "messages") {
-              // Extract text tokens from the reasoning node (streaming tokens)
-              const [message, metadata] = chunk;
-              if (message.content) {
-                yield {
-                  agentEvents: {
-                    type: EVENT_TYPES.MESSAGE,
-                    content: message.content,
-                  }
-                };
               }
             }
           }

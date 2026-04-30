@@ -56,12 +56,64 @@ export async function coderWorkerNode(state: AgentStateType) {
   const chat = model.startChat({ history });
   const result = await chat.sendMessage(lastMsg.parts);
   const response = result.response;
-  
+  console.log(`[Agent Graph] Node: Coder Worker | Raw response text:`, response.text());
+
+  let content = response.text();
+  const toolCalls = response.functionCalls();
+
+  // --- UI Block Validation ---
+  if (content && !toolCalls?.length) {
+    try {
+      let cleaned = content.trim();
+      if (cleaned.startsWith('```')) {
+        const firstNewline = cleaned.indexOf('\n');
+        if (firstNewline !== -1) cleaned = cleaned.substring(firstNewline + 1);
+        if (cleaned.endsWith('```')) cleaned = cleaned.substring(0, cleaned.length - 3).trim();
+      }
+
+      const firstBracket = cleaned.indexOf('[');
+      const firstBrace = cleaned.indexOf('{');
+      let startIdx = -1;
+      if (firstBracket !== -1 && (firstBrace === -1 || firstBracket < firstBrace)) startIdx = firstBracket;
+      else if (firstBrace !== -1) startIdx = firstBrace;
+
+      if (startIdx !== -1) {
+        const lastBracket = cleaned.lastIndexOf(']');
+        const lastBrace = cleaned.lastIndexOf('}');
+        const endIdx = Math.max(lastBracket, lastBrace);
+
+        if (endIdx > startIdx) {
+          const jsonPotential = cleaned.substring(startIdx, endIdx + 1);
+          // Assuming AgentMessageBlocksSchema and BLOCK_TYPES are available or can be imported.
+          // For now, let's just parse and re-stringify if valid JSON array.
+          // A more robust solution would involve importing AgentMessageBlocksSchema and BLOCK_TYPES
+          // and using safeParse as in supervisorNode.
+          try {
+            const parsed = JSON.parse(jsonPotential);
+            if (Array.isArray(parsed) && parsed.every((block: any) => block.type && typeof block.content === 'string')) {
+              content = JSON.stringify(parsed);
+            } else {
+              content = JSON.stringify([{ type: "text", content }]);
+            }
+          } catch (jsonError) {
+            content = JSON.stringify([{ type: "text", content }]);
+          }
+        }
+      } else {
+        content = JSON.stringify([{ type: "text", content }]);
+      }
+    } catch (e) {
+      if (!content.startsWith('[') && !content.startsWith('{')) {
+        content = JSON.stringify([{ type: "text", content }]);
+      }
+    }
+  }
+
   return {
     messages: [{
       role: ROLES.MODEL,
-      content: response.text(),
-      tool_calls: response.functionCalls(),
+      content: content,
+      tool_calls: toolCalls,
       name: "coder_worker"
     }],
     lastWorker: NODE_NAMES.CODER_WORKER,

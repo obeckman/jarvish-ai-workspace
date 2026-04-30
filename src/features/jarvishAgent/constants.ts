@@ -24,6 +24,7 @@ export const BLOCK_TYPES = {
   ACTION: 'action',
   DATA: 'data',
   DOCUMENT: 'document',
+  DRAFT: 'draft',
 } as const;
 
 export const MESSAGE_ROLES = ROLES;
