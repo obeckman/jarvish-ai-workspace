@@ -36,6 +36,8 @@ export async function archiveNode(state: AgentStateType) {
       });
 
       summary = await summarizeSession(history);
+      if(summary) {
+        
       await db.insert(sessionSummaries).values({
         sessionId: state.sessionId,
         summaryTitle: summary.summaryTitle,
@@ -50,10 +52,10 @@ export async function archiveNode(state: AgentStateType) {
         }
       });
       console.log(`[Agent Graph] Node: Archive | Session summary stored: ${JSON.stringify(summary)}`);
-
+    }
       // 5. Extract Static Facts
       extractedFacts = await extractAndStoreFacts(state.sessionId, history);
-      console.log(`[Agent Graph] Node: Archive | Extracted facts: ${extractedFacts.length}`);
+      //console.log(`[Agent Graph] Node: Archive | Extracted facts: ${extractedFacts.length}`);
 
     } catch (err) {      console.error("[Archive Node Error: Session Summary]", err);
     }
@@ -87,14 +89,37 @@ export async function archiveNode(state: AgentStateType) {
   }
 
 
-  // 2. Index Processed Attachments
-  if (state.processedAttachments && state.processedAttachments.length > 0) {
-    console.log(`[Agent Graph] Node: Archive | Indexing ${state.processedAttachments.length} processed attachments.`);
+  // 2. Index Attachments
+  if (state.attachments && state.attachments.length > 0) {
+    console.log(`[Agent Graph] Node: Archive | Indexing ${state.attachments.length} attachments.`);
     
-    for (const att of state.processedAttachments) {
+    for (const att of state.attachments) {
       try {
-        if (att.extractedText) { // Ensure extractedText exists
-          await addMemory(att.extractedText, {
+        let contentToIndex = "";
+        
+        if (att.mimeType === 'application/pdf') {
+          const buffer = Buffer.from(att.data, 'base64');
+          const parser = new PDFParse({ data: new Uint8Array(buffer) });
+          const result = await parser.getText();
+          contentToIndex = result.text;
+          await parser.destroy();
+        } else if (att.mimeType.startsWith('text/')) {
+          contentToIndex = Buffer.from(att.data, 'base64').toString('utf-8');
+        } else if (att.mimeType.startsWith('image/')) {
+          // Use Gemini to describe the image for indexing
+          const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+          const model = genAI.getGenerativeModel({ model: ARCHIVE_MODEL });
+          const prompt = "Describe this image in detail for a searchable research database. Focus on identifying objects, text, and context.";
+          
+          const result = await model.generateContent([
+            prompt,
+            { inlineData: { data: att.data, mimeType: att.mimeType } }
+          ]);
+          contentToIndex = `[Image Description for ${att.name}]: ${result.response.text()}`;
+        }
+
+        if (contentToIndex) {
+          await addMemory(contentToIndex, {
             type: 'attachment',
             name: att.name,
             mimeType: att.mimeType,
@@ -102,10 +127,10 @@ export async function archiveNode(state: AgentStateType) {
             timestamp: new Date().toISOString()
           });
           indexedAttachments.push(att.name); // Track indexed attachments
-          console.log(`[Agent Graph] Indexed processed attachment: ${att.name}`);
+          console.log(`[Agent Graph] Indexed attachment: ${att.name}`);
         }
       } catch (err) {
-        console.error(`[Archive Node Error: Processed Attachment ${att.name}]`, err);
+        console.error(`[Archive Node Error: Attachment ${att.name}]`, err);
       }
     }
   }

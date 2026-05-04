@@ -2,7 +2,8 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { REASONING_MODEL } from "@/server_v2/agent/models";
 import parse from "partial-json-parser";
 import { addMemory } from "@/server_v2/services/memory/memory.service"; // Import addMemory
-
+import { db } from "@/server_v2/db";
+import { structuredFacts } from "@/server_v2/db/schema";
 /**
  * Extracts static facts about the user from a session history.
  */
@@ -49,7 +50,12 @@ export async function extractAndStoreFacts(sessionId: string, history: { role: s
           category,
           timestamp: new Date().toISOString(),
         });
-        console.log(`[Fact Extraction] Stored fact: "${factText}" (Category: ${category}) in VectorDB.`);
+        await db.insert(structuredFacts).values({
+          sessionId,
+          fact: factText,
+          category,
+        });
+        console.log(`[Fact Extraction] Stored fact: "${factText}" (Category: ${category}) in VectorDB and database.`);
       }
       console.log(`[Fact Extraction] Extracted and stored ${parsedFacts.length} new facts for session ${sessionId} in VectorDB.`);
       return parsedFacts; // Return the extracted facts on success
