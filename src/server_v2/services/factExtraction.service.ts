@@ -1,8 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { REASONING_MODEL } from "@/server_v2/agent/models";
-import { db } from "@/server_v2/db";
-import { structuredFacts } from "@/server_v2/db/schema";
 import parse from "partial-json-parser";
+import { addMemory } from "@/server_v2/services/memory/memory.service"; // Import addMemory
 
 /**
  * Extracts static facts about the user from a session history.
@@ -41,15 +40,18 @@ export async function extractAndStoreFacts(sessionId: string, history: { role: s
     console.log(`[Fact Extraction] Parsed facts:`, parsedFacts);
 
     if (Array.isArray(parsedFacts) && parsedFacts.length > 0) {
-      const inserts = parsedFacts.map((f: any) => ({
-        sessionId,
-        fact: String(f.fact),
-        category: String(f.category || "general"),
-      }));
-      console.log(`[Fact Extraction] Inserting facts into DB:`, inserts);
-
-      await db.insert(structuredFacts).values(inserts);
-      console.log(`[Fact Extraction] Extracted and stored ${inserts.length} new facts for session ${sessionId}. Facts: ${JSON.stringify(inserts)}`);
+      for (const factData of parsedFacts) {
+        const factText = String(factData.fact);
+        const category = String(factData.category || "general");
+        await addMemory(factText, {
+          type: 'structured_fact',
+          sessionId,
+          category,
+          timestamp: new Date().toISOString(),
+        });
+        console.log(`[Fact Extraction] Stored fact: "${factText}" (Category: ${category}) in VectorDB.`);
+      }
+      console.log(`[Fact Extraction] Extracted and stored ${parsedFacts.length} new facts for session ${sessionId} in VectorDB.`);
       return parsedFacts; // Return the extracted facts on success
     }
     return []; // Return empty array if no facts found
