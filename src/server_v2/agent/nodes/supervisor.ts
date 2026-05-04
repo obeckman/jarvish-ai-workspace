@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import parse from "partial-json-parser";
 import { AgentStateType } from "@/server_v2/agent/state";
 import { REASONING_MODEL } from "@/server_v2/agent/models";
@@ -63,17 +63,17 @@ export async function supervisorNode(state: AgentStateType) {
         {
           name: "delegate_to_research_worker",
           description: "Hands off the task to the Research Worker for web search, document analysis, or PDF reading.",
-          parameters: { type: "object", properties: { reason: { type: "string" } } }
+          parameters: { type: SchemaType.OBJECT, properties: { reason: { type: SchemaType.STRING } } }
         },
         {
           name: "delegate_to_google_worker",
           description: "Hands off the task to the Google Worker for Gmail, Calendar, or Google Docs access.",
-          parameters: { type: "object", properties: { reason: { type: "string" } } }
+          parameters: { type: SchemaType.OBJECT, properties: { reason: { type: SchemaType.STRING } } }
         },
         {
           name: "delegate_to_coder_worker",
           description: "Hands off the task to the Coder Worker for codebase analysis, reading local files, or technical implementation.",
-          parameters: { type: "object", properties: { reason: { type: "string" } } }
+          parameters: { type: SchemaType.OBJECT, properties: { reason: { type: SchemaType.STRING } } }
         }
       ]
     }]

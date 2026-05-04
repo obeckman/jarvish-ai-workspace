@@ -1,8 +1,9 @@
 
 import 'dotenv/config';
-import weaviate, { EmbeddedOptions } from 'weaviate-ts-embedded';
+import weaviate, { EmbeddedOptions, EmbeddedClient } from 'weaviate-ts-embedded';
+import { WeaviateClient } from 'weaviate-client';
 import path from 'node:path';
-import { WeaviateVectorStore } from '@/server_v2/services/memory/weaviate.store';
+import { WeaviateVectorStore,  } from '@/server_v2/services/memory/weaviate.store';
 import { setVectorStore } from '@/server_v2/services/memory/memory.service';
 
 // Initialize Weaviate Embedded, lightweight, embedded instance of the Weaviate vector database
@@ -28,7 +29,7 @@ export const runVectorDatabase = async () => {
     await client.embedded.start();
     
     // 2. Setup Vector Store
-    const vectorStore = new WeaviateVectorStore(client);
+    const vectorStore = new WeaviateVectorStore(client  as unknown as WeaviateClient);
     await vectorStore.ensureSchema();
     setVectorStore(vectorStore);
     

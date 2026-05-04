@@ -116,6 +116,7 @@ export const useGoogleAuth = () => {
     authError,
     loginWithGoogle,
     logout,
-    setAuthError
+    setAuthError,
+    checkAndRefreshToken
   };
 };

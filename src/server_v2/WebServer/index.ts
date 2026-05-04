@@ -1,7 +1,5 @@
-import express from 'express';
-// import { createYoga } from 'graphql-yoga';
-// import { schema } from '@/server_v2/graphql/schema';
-import { resolvers } from '@/server_v2/graphql/resolvers';
+
+import express, { Request, Response, Application } from 'express';
 import cors from 'cors';
 import {handleGraphQLRequests} from '@/server_v2/graphql';
 /**
@@ -16,7 +14,7 @@ export function runWebServer() {
   app.use(express.json({ limit: '20mb' }));
 
   // 2. Legacy Support Endpoints
-  app.get('/api/config', (req, res) => {
+  app.get('/api/config', (req: Request, res: Response) => {
     res.json({
       googleClientId: process.env.GOOGLE_CLIENT_ID || ''
     });
