@@ -28,7 +28,7 @@ export const ActionBlockSchema = z.object({
   type: z.literal(BLOCK_TYPES.ACTION),
   actionId: z.string(),
   label: z.string(),
-  payload: z.any().optional(),
+  payload: z.record(z.string(), z.unknown()).optional(),
   disabled: z.boolean().optional(),
   loading: z.boolean().optional(),
 });
@@ -37,7 +37,7 @@ export const DataBlockSchema = z.object({
   type: z.literal(BLOCK_TYPES.DATA),
   displayType: z.enum(['table', 'chart']),
   title: z.string().optional(),
-  data: z.any(),
+  data: z.unknown().describe('Data for rendering, can be any JSON-serializable structure.'),
 });
 
 export const DocumentBlockSchema = z.object({
@@ -57,12 +57,16 @@ export const AgentMessageBlockSchema = z.discriminatedUnion('type', [
 
 export type AgentMessageBlock = z.infer<typeof AgentMessageBlockSchema>;
 
+// --- Message Content Schema ---
+export const MessageContentSchema = z.union([z.string(), z.array(AgentMessageBlockSchema)]);
+export type MessageContent = z.infer<typeof MessageContentSchema>;
+
 // --- Existing Types ---
 
 export interface Message {
   id: string;
   role: MessageRole;
-  content: string; // This will now potentially be a JSON string of AgentMessageBlock[]
+  content: MessageContent; // This will now potentially be a JSON string of AgentMessageBlock[]
   timestamp: number;
 }
 
