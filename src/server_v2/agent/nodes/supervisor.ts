@@ -123,7 +123,9 @@ export async function supervisorNode(state: AgentStateType) {
 
         if (endIdx > startIdx) {
           const jsonPotential = cleaned.substring(startIdx, endIdx + 1);
+          console.log(`[Supervisor Node] Extracted JSON potential:`, jsonPotential);
           const parsed = parse(jsonPotential);
+          console.log(`[Supervisor Node] parsed JSON :`, parsed);
           const blocksArray = Array.isArray(parsed) ? parsed : [parsed];
           const validation = AgentMessageBlocksSchema.safeParse(blocksArray);
           

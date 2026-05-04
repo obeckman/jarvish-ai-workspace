@@ -1,9 +1,6 @@
 import 'dotenv/config';
-import { createApp } from '@/server_v2/app';
-import weaviate, { EmbeddedOptions } from 'weaviate-ts-embedded';
-import path from 'node:path';
-import { WeaviateVectorStore } from '@/server_v2/services/memory/weaviate.store';
-import { setVectorStore } from '@/server_v2/services/memory/memory.service';
+import { runWebServer } from '@/server_v2/WebServer';
+import { runVectorDatabase } from '@/server_v2/VectorDB';
 
 const PORT = process.env.PORT || 3000; // Match old server's port
 
@@ -13,36 +10,14 @@ const PORT = process.env.PORT || 3000; // Match old server's port
  * 2. Injects Dependencies
  * 3. Starts the API Server
  */
-async function bootstrap() {
-  console.log("--- Initializing Jarvish Server v2 (Modular) ---");
-
-  // 1. Initialize Weaviate Embedded
-  const embeddedOptions = new EmbeddedOptions({
-    port: 8080, // Match old server's DB port
-    env: {
-      DEFAULT_VECTORIZER_MODULE: 'none',
-      PERSISTENCE_DATA_PATH: path.join(process.cwd(), 'src', 'server_v2', 'weaviate_data'),
-    },
-  });
-
-  const client = weaviate.client(embeddedOptions, {
-    host: 'localhost:8080',
-    scheme: 'http'
-  });
+async function initializingBEServer() {
+  console.log("--- Initializing BE Server ---");
 
   try {
-    console.log("[Infra] Starting Weaviate...");
-    await client.embedded.start();
-    
-    // 2. Setup Vector Store
-    const vectorStore = new WeaviateVectorStore(client);
-    await vectorStore.ensureSchema();
-    setVectorStore(vectorStore);
-    
-    console.log("[Infra] Database and Schema ready.");
-
     // 3. Start Express
-    const app = createApp();
+    await runVectorDatabase();
+
+    const app = runWebServer();
     app.listen(PORT, () => {
       console.log(`[API] Server is running at http://localhost:${PORT}/graphql`);
     });
@@ -53,4 +28,4 @@ async function bootstrap() {
   }
 }
 
-bootstrap();
+initializingBEServer();

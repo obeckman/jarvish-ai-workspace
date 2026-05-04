@@ -1,14 +1,14 @@
 import express from 'express';
-import { createYoga } from 'graphql-yoga';
-import { schema } from '@/server_v2/graphql/schema';
+// import { createYoga } from 'graphql-yoga';
+// import { schema } from '@/server_v2/graphql/schema';
 import { resolvers } from '@/server_v2/graphql/resolvers';
 import cors from 'cors';
-
+import {handleGraphQLRequests} from '@/server_v2/graphql';
 /**
  * Express Application Assembler
  * Configures the server with GraphQL Yoga and required middlewares.
  */
-export function createApp() {
+export function runWebServer() {
   const app = express();
   
   // 1. Basic Middlewares
@@ -22,15 +22,9 @@ export function createApp() {
     });
   });
 
-  // 3. Configure GraphQL Yoga
-  const yoga = createYoga({
-    schema,
-    // We use Server-Sent Events (SSE) for subscriptions in 2026
-    graphiql: true, // Enable the playground for debugging
-  });
 
   // 4. Bind Yoga to the /graphql endpoint
-  app.use('/graphql', yoga);
+  app.use('/graphql', handleGraphQLRequests());
 
   return app;
 }
