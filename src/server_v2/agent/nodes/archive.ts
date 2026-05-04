@@ -19,6 +19,10 @@ import { STAGES, ROLES } from "@/server_v2/agent/constants";
  * 5. Extract static facts for the structured user profile.
  */
 export async function archiveNode(state: AgentStateType) {
+  let summary: { summaryTitle: string; userMessage: string; aiAnswer: string } | null = null;
+  let extractedFacts: any[] = [];
+  let indexedAttachments: string[] = [];
+
   // 1. Generate Session Summary for UI History (New Requirement)
   if (state.sessionId) {
     console.log(`[Agent Graph] Node: Archive | Generating session summary for ${state.sessionId}`);
@@ -31,7 +35,7 @@ export async function archiveNode(state: AgentStateType) {
         };
       });
 
-      const summary = await summarizeSession(history);
+      summary = await summarizeSession(history);
       await db.insert(sessionSummaries).values({
         sessionId: state.sessionId,
         summaryTitle: summary.summaryTitle,
@@ -45,10 +49,11 @@ export async function archiveNode(state: AgentStateType) {
           aiAnswer: summary.aiAnswer,
         }
       });
-      console.log(`[Agent Graph] Node: Archive | Session summary stored.`);
+      console.log(`[Agent Graph] Node: Archive | Session summary stored: ${JSON.stringify(summary)}`);
 
       // 5. Extract Static Facts
-      await extractAndStoreFacts(state.sessionId, history);
+      extractedFacts = await extractAndStoreFacts(state.sessionId, history);
+      console.log(`[Agent Graph] Node: Archive | Extracted facts: ${extractedFacts.length}`);
 
     } catch (err) {      console.error("[Archive Node Error: Session Summary]", err);
     }
@@ -68,12 +73,13 @@ export async function archiveNode(state: AgentStateType) {
   if (lastUserMessage && lastModelMessage) {
     console.log(`[Agent Graph] Node: Archive | Saving interaction to memory.`);
 
-    const summary = `Conversation Summary [${new Date().toLocaleTimeString()}]:
+    const conversationSummary = `Conversation Summary [${new Date().toLocaleTimeString()}]:
     User: ${lastUserMessage.content}
     Assistant: ${lastModelMessage.content}`;
 
-    await addMemory(summary, { 
+    await addMemory(conversationSummary, { 
       type: 'history', 
+      sessionId: state.sessionId,
       timestamp: new Date().toISOString() 
     }).catch(err => console.error("[Archive Node Error: Summary Archival]", err));
   } else {
@@ -115,8 +121,10 @@ export async function archiveNode(state: AgentStateType) {
             type: 'attachment',
             name: att.name,
             mimeType: att.mimeType,
+            sessionId: state.sessionId,
             timestamp: new Date().toISOString()
           });
+          indexedAttachments.push(att.name); // Track indexed attachments
           console.log(`[Agent Graph] Indexed attachment: ${att.name}`);
         }
       } catch (err) {
@@ -125,16 +133,37 @@ export async function archiveNode(state: AgentStateType) {
     }
   }
 
-  // const finalMessage = {
-  //   id: `msg-${Date.now()}`,
-  //   role: ROLES.MODEL,
-  //   content: JSON.stringify([{ type: "text", content: "Task completed. All relevant information has been processed and archived." }]),
-  //   timestamp: new Date().toISOString(),
-  // };
+  // Add a comprehensive summary of the agent's output and overall interaction to vector store
+  if (state.sessionId && summary) { // Ensure summary is available
+    let overallAgentSummary = `Overall Agent Interaction Summary for Session ${state.sessionId}:\n\n`;
+    overallAgentSummary += `Session Title: ${summary.summaryTitle}\n`;
+    overallAgentSummary += `User Message: ${summary.userMessage}\n`;
+    overallAgentSummary += `AI Answer: ${summary.aiAnswer}\n`;
+
+    if (extractedFacts.length > 0) {
+      overallAgentSummary += `Extracted Facts: ${extractedFacts.map((f: any) => f.fact).join('; ')}\n`;
+    }
+    if (indexedAttachments.length > 0) {
+      overallAgentSummary += `Indexed Attachments: ${indexedAttachments.join(', ')}\n`;
+    }
+    overallAgentSummary += `Full Conversation History:\n${state.messages.map(m => `${m.role}: ${m.content}`).join('\n')}\n`;
+
+    try {
+      await addMemory(overallAgentSummary, {
+        type: 'overall_session_summary',
+        sessionId: state.sessionId,
+        timestamp: new Date().toISOString(),
+      });
+      console.log(`[Agent Graph] Node: Archive | Overall agent interaction summary added to vector store.`);
+    } catch (err) {
+      console.error("[Archive Node Error: Overall Summary Archival]", err);
+    }
+  }
 
   console.log(`[Agent Graph] Node: Archive | State messages before return:`, state.messages.map(m => ({role: m.role, content: m.content ? m.content.substring(0, 50) + '...' : ''})));
   return {
-    messages: state.messages,//[...state.messages, finalMessage],
+    messages: state.messages,
     metadata: { stage: STAGES.FINALIZE, status: "Jarvish has remembered this session and indexed all documents." }
   };
 }
+
