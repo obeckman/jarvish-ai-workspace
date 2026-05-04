@@ -55,7 +55,11 @@ export const AgentMessageBlockSchema = z.discriminatedUnion('type', [
   DocumentBlockSchema,
 ]);
 
+import { AnyBlockComponentProps } from './components/Blocks/blockProps';
+
 export type AgentMessageBlock = z.infer<typeof AgentMessageBlockSchema>;
+
+export { AnyBlockComponentProps };
 
 // --- Message Content Schema ---
 export const MessageContentSchema = z.union([z.string(), z.array(AgentMessageBlockSchema)]);
