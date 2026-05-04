@@ -125,16 +125,16 @@ export async function archiveNode(state: AgentStateType) {
     }
   }
 
-  const finalMessage = {
-    id: `msg-${Date.now()}`,
-    role: ROLES.MODEL,
-    content: JSON.stringify([{ type: "text", content: "Task completed. All relevant information has been processed and archived." }]),
-    timestamp: new Date().toISOString(),
-  };
+  // const finalMessage = {
+  //   id: `msg-${Date.now()}`,
+  //   role: ROLES.MODEL,
+  //   content: JSON.stringify([{ type: "text", content: "Task completed. All relevant information has been processed and archived." }]),
+  //   timestamp: new Date().toISOString(),
+  // };
 
   console.log(`[Agent Graph] Node: Archive | State messages before return:`, state.messages.map(m => ({role: m.role, content: m.content ? m.content.substring(0, 50) + '...' : ''})));
   return {
-    messages: [...state.messages, finalMessage],
+    messages: state.messages,//[...state.messages, finalMessage],
     metadata: { stage: STAGES.FINALIZE, status: "Jarvish has remembered this session and indexed all documents." }
   };
 }

@@ -1,9 +1,9 @@
 import React from 'react';
-import { 
-  Loader2, 
-  BrainCircuit, 
-  User, 
-  Bot, 
+import {
+  Loader2,
+  BrainCircuit,
+  User,
+  Bot,
   AlertCircle,
   FileText,
   ArrowRight,
@@ -89,20 +89,20 @@ export const JarvishChatArea: React.FC<JarvishChatAreaProps> = ({
       } else {
         flushReasoning();
         rendered.push(
-          <ChatMessage 
-            key={m.id} 
-            message={m} 
+          <ChatMessage
+            key={m.id}
+            message={m}
             onAction={async (label) => {
               if (currentSessionId) {
                 await onSendMessage(currentSessionId, label);
               }
-            }} 
+            }}
           />
         );
       }
     });
 
-    flushReasoning();
+    //flushReasoning();
     return rendered;
   };
 
@@ -117,26 +117,26 @@ export const JarvishChatArea: React.FC<JarvishChatAreaProps> = ({
               <div className={styles.summarySection}>
                 <strong>Original Request</strong>
                 <p>{summary.userMessage}</p>
-                <button 
-                  className={styles.copyBtnInline} 
+                <button
+                  className={styles.copyBtnInline}
                   onClick={() => onCopyToInput(summary.userMessage)}
                 >
                   Reuse this query
                 </button>
               </div>
-              
+
               <div className={styles.summarySection} style={{ marginTop: '2rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>
-                    <div style={{ background: 'var(--jarvish-accent)', padding: '6px', borderRadius: '8px', display: 'flex' }}>
-                        <Bot size={16} color="var(--jarvish-bg)" />
-                    </div>
-                    <strong style={{ margin: 0, color: 'var(--jarvish-text-primary)' }}>Synthesized Findings</strong>
+                  <div style={{ background: 'var(--jarvish-accent)', padding: '6px', borderRadius: '8px', display: 'flex' }}>
+                    <Bot size={16} color="var(--jarvish-bg)" />
+                  </div>
+                  <strong style={{ margin: 0, color: 'var(--jarvish-text-primary)' }}>Synthesized Findings</strong>
                 </div>
                 <Markdown content={summary.aiAnswer} />
               </div>
 
-              <button 
-                className={styles.newChatBtn} 
+              <button
+                className={styles.newChatBtn}
                 style={{ marginTop: '2rem', maxWidth: '300px' }}
                 onClick={() => setShowFullConversation(true)}
               >
@@ -152,15 +152,15 @@ export const JarvishChatArea: React.FC<JarvishChatAreaProps> = ({
               </div>
               <h3>No summary yet</h3>
               <p>Start a conversation to generate a research summary, or switch to Chat View to see individual messages.</p>
-              
+
               {status === AGENT_STATUS.THINKING && (
                 <div className={styles.pollingStatus}>
                   <Loader2 size={16} className={styles.spin} />
                   <span>Agent is currently working...</span>
                 </div>
               )}
-              
-              <button 
+
+              <button
                 className={styles.showFullBtnSecondary}
                 onClick={() => setShowFullConversation(true)}
               >
@@ -178,13 +178,13 @@ export const JarvishChatArea: React.FC<JarvishChatAreaProps> = ({
     <div className={styles.messages}>
       {!currentSessionId ? (
         <div className={styles.summaryPlaceholder}>
-           <div className={styles.placeholderCard}>
-              <div style={{ background: 'rgba(56, 189, 248, 0.1)', padding: '20px', borderRadius: '50%', marginBottom: '1rem', display: 'flex' }}>
-                <Bot size={48} color="var(--jarvish-accent)" />
-              </div>
-              <h3>Ready for Research</h3>
-              <p>Select a previous session from the sidebar or start a brand new one to begin your research journey.</p>
-           </div>
+          <div className={styles.placeholderCard}>
+            <div style={{ background: 'rgba(56, 189, 248, 0.1)', padding: '20px', borderRadius: '50%', marginBottom: '1rem', display: 'flex' }}>
+              <Bot size={48} color="var(--jarvish-accent)" />
+            </div>
+            <h3>Ready for Research</h3>
+            <p>Select a previous session from the sidebar or start a brand new one to begin your research journey.</p>
+          </div>
         </div>
       ) : (
         <>
@@ -195,9 +195,7 @@ export const JarvishChatArea: React.FC<JarvishChatAreaProps> = ({
             <div className={cn(styles.stage, { [styles.active]: currentStage === STAGES.FINALIZE, [styles.completed]: currentStage >= STAGES.FINALIZE })} />
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            {renderMessages()}
-          </div>
+
 
           {status === AGENT_STATUS.THINKING && (
             <div className={cn(styles.message, styles.agent)}>
@@ -217,6 +215,10 @@ export const JarvishChatArea: React.FC<JarvishChatAreaProps> = ({
               <p className={styles.messageText}>{errorMessage}</p>
             </div>
           )}
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            {renderMessages()}
+          </div>
         </>
       )}
     </div>
