@@ -97,3 +97,24 @@ export interface Attachment {
   data: string;
   mimeType: string;
 }
+
+// --- GraphQL Response Schemas for useJarvishChat ---
+
+// For GQL_QUERIES.GET_SESSION_HISTORY
+export const SessionHistoryItemSchema = z.object({
+  role: z.string(),
+  content: z.string(), // Backend sends string, will be parsed into MessageContent in frontend
+});
+export const GetSessionHistoryResponseSchema = z.object({
+  getSessionHistory: z.array(SessionHistoryItemSchema),
+});
+
+// For GQL_SUBSCRIPTIONS.AGENT_CHAT (agentEvents field)
+export const AgentEventDataSchema = z.object({
+  type: z.string(), // Corresponds to EVENT_TYPES
+  content: z.string(), // Raw content from SSE, might be JSON string
+  stage: z.number().optional(),
+});
+export const AgentEventsSubscriptionResponseSchema = z.object({
+  agentEvents: AgentEventDataSchema,
+});

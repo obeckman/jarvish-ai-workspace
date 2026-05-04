@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import parse from 'partial-json-parser';
-import { Message, AgentStatus, Attachment } from '@/features/jarvishAgent/types';
+import { z } from 'zod';
+import { Message, AgentStatus, Attachment, GetSessionHistoryResponseSchema, AgentEventsSubscriptionResponseSchema, AgentEventDataSchema, AgentMessageBlockSchema, MessageContent } from '@/features/jarvishAgent/types';
 import { 
   MESSAGE_ROLES, 
   AGENT_STATUS, 
@@ -48,13 +49,33 @@ export const useJarvishChat = (
         })
       });
       const result = await res.json();
-      if (result.data?.getSessionHistory) {
-        const history = result.data.getSessionHistory.map((m: any, i: number) => ({
-          id: `hist-${i}`,
-          role: m.role,
-          content: m.content,
-          timestamp: Date.now()
-        }));
+      // Validate the GraphQL response using Zod
+      const validatedResponse = GetSessionHistoryResponseSchema.parse(result.data);
+      if (validatedResponse.getSessionHistory) {
+        const history = result.data.getSessionHistory.map((m: any, i: number) => {
+          let content: MessageContent = m.content;
+          try {
+            const parsed = parse(m.content);
+            if (Array.isArray(parsed)) {
+              content = parsed.map((block: any) => {
+                try {
+                  return AgentMessageBlockSchema.parse(block);
+                } catch (blockParseError) {
+                  console.warn('Failed to parse historical block, keeping raw:', blockParseError, block);
+                  return block;
+                }
+              });
+            }
+          } catch (e) {
+            // Keep content as string if parsing fails
+          }
+          return {
+            id: `hist-${i}`,
+            role: m.role,
+            content: content,
+            timestamp: Date.now()
+          };
+        });
         setMessages(history.length > 0 ? history : [{
           id: '1',
           role: MESSAGE_ROLES.AGENT,
@@ -128,7 +149,7 @@ export const useJarvishChat = (
             query: input,
             history: messages.map(m => ({ 
               role: m.role === MESSAGE_ROLES.USER ? 'user' : 'assistant', 
-              content: m.content 
+              content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content)
             })).slice(-10),
             attachments: attachments.map(a => ({
               name: a.name,
@@ -166,7 +187,9 @@ export const useJarvishChat = (
 
           try {
             const result = JSON.parse(jsonStr);
-            const data = result.data?.agentEvents;
+            // Validate the SSE event data using Zod
+            const validatedEvent = AgentEventsSubscriptionResponseSchema.parse(result.data);
+            const data = validatedEvent.agentEvents;
             if (!data) continue;
 
             if (data.type === EVENT_TYPES.STATUS) {
@@ -193,24 +216,31 @@ export const useJarvishChat = (
               
               assistantMessageContent += data.content;
               
-              // Attempt to parse partial JSON for preview rendering
-              let displayContent = assistantMessageContent;
+              let newContent: MessageContent = assistantMessageContent;
               try {
-                // partial-json-parser is great for streaming UI blocks
-                const parsed = parse(assistantMessageContent);
-                if (parsed) {
-                  displayContent = JSON.stringify(Array.isArray(parsed) ? parsed : [parsed]);
+                // Attempt to parse the full accumulated content as structured blocks
+                const parsedBlocks = parse(assistantMessageContent);
+                if (Array.isArray(parsedBlocks)) { // If it parses as an array of blocks
+                  // Validate against the schema for robust parsing
+                  newContent = parsedBlocks.map((block: any) => {
+                    try {
+                      return AgentMessageBlockSchema.parse(block);
+                    } catch (blockParseError) {
+                      console.warn('Failed to parse individual block from stream, keeping raw:', blockParseError, block);
+                      return block; // Fallback to raw if individual block parsing fails
+                    }
+                  });
                 }
               } catch (e) {
-                // Still incomplete JSON, fall back to raw content for now
+                // If it's not valid JSON yet, or not an array, keep it as string
               }
 
               setMessages(prev => {
                 const existing = prev.find(m => m.id === assistantMsgId);
                 if (!existing) {
-                  return [...prev, { id: assistantMsgId, role: MESSAGE_ROLES.AGENT, content: displayContent, timestamp: Date.now() }];
+                  return [...prev, { id: assistantMsgId, role: MESSAGE_ROLES.AGENT, content: newContent, timestamp: Date.now() }];
                 }
-                return prev.map(m => m.id === assistantMsgId ? { ...m, content: displayContent } : m);
+                return prev.map(m => m.id === assistantMsgId ? { ...m, content: newContent } : m);
               });
 
               setStatus(AGENT_STATUS.RESPONDING);
