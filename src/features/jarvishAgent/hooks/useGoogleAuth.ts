@@ -11,36 +11,46 @@ export const useGoogleAuth = () => {
 
   // ... (fetchConfig effect)
 
-  const loginWithGoogle = useCallback((isSilent = false) => {
-    setAuthError(null);
-    if (!clientId) return;
+  const loginWithGoogle = useCallback((isSilent = false): Promise<string | null> => {
+    return new Promise((resolve, reject) => {
+      setAuthError(null);
+      if (!clientId) {
+        reject("Google Client ID not set.");
+        return;
+      }
 
-    try {
-      const client = (window as any).google.accounts.oauth2.initTokenClient({
-        client_id: clientId,
-        scope: 'openid profile https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.events.readonly https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/documents.readonly',
-        prompt: isSilent ? 'none' : 'select_account',
-        callback: (tokenResponse: any) => {
-          if (tokenResponse.access_token) {
-            const expiry = Date.now() + (tokenResponse.expires_in * 1000);
-            localStorage.setItem(STORAGE_KEYS.GOOGLE_TOKEN, tokenResponse.access_token);
-            localStorage.setItem('google_token_expires_at', String(expiry));
-            setGoogleToken(tokenResponse.access_token);
-            setExpiresAt(expiry);
-          } else if (tokenResponse.error) {
-            if (isSilent && tokenResponse.error === 'immediate_failed') {
-               // Silent refresh failed, user needs to re-interact
-               setGoogleToken(null);
-            } else {
-              setAuthError(`Google Auth Error: ${tokenResponse.error_description || tokenResponse.error}`);
+      try {
+        const client = (window as any).google.accounts.oauth2.initTokenClient({
+          client_id: clientId,
+          scope: 'openid profile https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.events.readonly https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/documents.readonly',
+          prompt: isSilent ? 'none' : 'select_account',
+          callback: (tokenResponse: any) => {
+            if (tokenResponse.access_token) {
+              const expiry = Date.now() + (tokenResponse.expires_in * 1000);
+              localStorage.setItem(STORAGE_KEYS.GOOGLE_TOKEN, tokenResponse.access_token);
+              localStorage.setItem('google_token_expires_at', String(expiry));
+              setGoogleToken(tokenResponse.access_token);
+              setExpiresAt(expiry);
+              resolve(tokenResponse.access_token);
+            } else if (tokenResponse.error) {
+              if (isSilent && tokenResponse.error === 'immediate_failed') {
+                setGoogleToken(null);
+                resolve(null); // Silent refresh failed, not an error that needs to stop everything
+              } else {
+                const errorMsg = `Google Auth Error: ${tokenResponse.error_description || tokenResponse.error}`;
+                setAuthError(errorMsg);
+                reject(errorMsg);
+              }
             }
-          }
-        },
-      });
-      client.requestAccessToken();
-    } catch (e) {
-      setAuthError(`Failed to initialize Google Login: ${e instanceof Error ? e.message : 'Unknown error'}`);
-    }
+          },
+        });
+        client.requestAccessToken();
+      } catch (e) {
+        const errorMsg = `Failed to initialize Google Login: ${e instanceof Error ? e.message : 'Unknown error'}`;
+        setAuthError(errorMsg);
+        reject(errorMsg);
+      }
+    });
   }, [clientId]);
 
   /**
@@ -57,24 +67,13 @@ export const useGoogleAuth = () => {
     }
 
     console.log('[Auth] Token near expiration, attempting silent refresh...');
-    loginWithGoogle(true);
-    
-    // Wait for the state to update (short polling for simplicity in hook)
-    return new Promise<string | null>((resolve) => {
-      let attempts = 0;
-      const interval = setInterval(() => {
-        const currentToken = localStorage.getItem(STORAGE_KEYS.GOOGLE_TOKEN);
-        const currentExpiry = Number(localStorage.getItem('google_token_expires_at'));
-        if (currentExpiry > Date.now() + buffer) {
-          clearInterval(interval);
-          resolve(currentToken);
-        }
-        if (++attempts > 10) { // 2 seconds timeout
-          clearInterval(interval);
-          resolve(null);
-        }
-      }, 200);
-    });
+    try {
+      const newToken = await loginWithGoogle(true);
+      return newToken;
+    } catch (e) {
+      console.error("[Auth] Silent refresh failed:", e);
+      return null;
+    }
   }, [googleToken, expiresAt, loginWithGoogle]);
 
   const logout = useCallback(() => {
