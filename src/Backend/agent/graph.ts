@@ -13,20 +13,21 @@ import { toolsNode } from "@/Backend/agent/nodes/tools";
 import { archiveNode } from "@/Backend/agent/nodes/archive";
 import { clarificationNode } from "@/Backend/agent/nodes/clarification";
 import { NODE_NAMES, TOOL_CONFIDENCE_THRESHOLD, STAGES } from "@/Backend/agent/constants"; // Import STAGES
+import { AIMessage } from "@langchain/core/messages";
 
 /**
  * Supervisor Router: Decides which specialized worker to call or to finish.
  */
 function supervisorRouter(state: AgentStateType) {
   const lastMessage = state.messages[state.messages.length - 1];
-  
-  if (lastMessage.tool_calls?.length) {
+
+  if (lastMessage instanceof AIMessage && lastMessage.tool_calls?.length) {
     const toolName = lastMessage.tool_calls[0].name;
     if (toolName === 'delegate_to_research_worker') return NODE_NAMES.RESEARCH_WORKER;
     if (toolName === 'delegate_to_google_worker') return NODE_NAMES.GOOGLE_WORKER;
     if (toolName === 'delegate_to_coder_worker') return NODE_NAMES.CODER_WORKER;
   }
-  
+
   return NODE_NAMES.ARCHIVE;
 }
 
@@ -35,50 +36,11 @@ function supervisorRouter(state: AgentStateType) {
  */
 function workerRouter(state: AgentStateType) {
   const lastMessage = state.messages[state.messages.length - 1];
-  
-  if (lastMessage.tool_calls?.length) {
+
+  if (lastMessage instanceof AIMessage && lastMessage.tool_calls?.length) {
     return NODE_NAMES.TOOLS;
   }
-  
-  return NODE_NAMES.SUPERVISOR;
-}
 
-/**
- * Tools Router: Returns to the worker that initiated the tool call.
- */
-function toolsRouter(state: AgentStateType) {
-  if (state.toolConfidence !== null && state.toolConfidence < TOOL_CONFIDENCE_THRESHOLD) {
-    return NODE_NAMES.CLARIFICATION;
-  }
-  return state.lastWorker || NODE_NAMES.SUPERVISOR;
-}
-
-/**
- * Supervisor Router: Decides which specialized worker to call or to finish.
- */
-function supervisorRouter(state: AgentStateType) {
-  const lastMessage = state.messages[state.messages.length - 1];
-  
-  if (lastMessage.tool_calls?.length) {
-    const toolName = lastMessage.tool_calls[0].name;
-    if (toolName === 'delegate_to_research_worker') return NODE_NAMES.RESEARCH_WORKER;
-    if (toolName === 'delegate_to_google_worker') return NODE_NAMES.GOOGLE_WORKER;
-    if (toolName === 'delegate_to_coder_worker') return NODE_NAMES.CODER_WORKER;
-  }
-  
-  return NODE_NAMES.ARCHIVE;
-}
-
-/**
- * Worker Router: Decides whether to execute a tool or return to the supervisor.
- */
-function workerRouter(state: AgentStateType) {
-  const lastMessage = state.messages[state.messages.length - 1];
-  
-  if (lastMessage.tool_calls?.length) {
-    return NODE_NAMES.TOOLS;
-  }
-  
   return NODE_NAMES.SUPERVISOR;
 }
 
@@ -112,7 +74,7 @@ export function createAgentGraph(checkpointer?: BaseCheckpointSaver) {
     .addEdge(START, NODE_NAMES.CONTEXT)
     .addEdge(NODE_NAMES.CONTEXT, NODE_NAMES.PROCESSING)
     .addEdge(NODE_NAMES.PROCESSING, NODE_NAMES.SUPERVISOR)
-    
+
     // Supervisor Routes
     .addConditionalEdges(NODE_NAMES.SUPERVISOR, supervisorRouter, {
       [NODE_NAMES.RESEARCH_WORKER]: NODE_NAMES.RESEARCH_WORKER,
@@ -120,7 +82,7 @@ export function createAgentGraph(checkpointer?: BaseCheckpointSaver) {
       [NODE_NAMES.CODER_WORKER]: NODE_NAMES.CODER_WORKER,
       [NODE_NAMES.ARCHIVE]: NODE_NAMES.ARCHIVE,
     })
-    
+
     // Worker Routes
     .addConditionalEdges(NODE_NAMES.RESEARCH_WORKER, workerRouter, {
       [NODE_NAMES.TOOLS]: NODE_NAMES.TOOLS,
@@ -134,7 +96,7 @@ export function createAgentGraph(checkpointer?: BaseCheckpointSaver) {
       [NODE_NAMES.TOOLS]: NODE_NAMES.TOOLS,
       [NODE_NAMES.SUPERVISOR]: NODE_NAMES.SUPERVISOR,
     })
-    
+
     // Tools return route
     .addConditionalEdges(NODE_NAMES.TOOLS, toolsRouter, {
       [NODE_NAMES.RESEARCH_WORKER]: NODE_NAMES.RESEARCH_WORKER,
@@ -143,10 +105,10 @@ export function createAgentGraph(checkpointer?: BaseCheckpointSaver) {
       [NODE_NAMES.SUPERVISOR]: NODE_NAMES.SUPERVISOR,
       [NODE_NAMES.CLARIFICATION]: NODE_NAMES.CLARIFICATION,
     })
-    
+
     // Clarification goes to archive to wait for user input
     .addEdge(NODE_NAMES.CLARIFICATION, NODE_NAMES.ARCHIVE)
-    
+
     // Finish after archiving
     .addEdge(NODE_NAMES.ARCHIVE, END);
 
