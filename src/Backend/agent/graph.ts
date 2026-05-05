@@ -1,7 +1,8 @@
 import { StateGraph, START, END } from "@langchain/langgraph";
 import { BaseCheckpointSaver } from "@langchain/langgraph-checkpoint";
-import { AgentStateType } from "@/Backend/agent/state"; // AgentState is an interface, not a value
-import { BaseMessage, HumanMessage, AIMessage } from "@langchain/core/messages"; // Import BaseMessage and other message types
+import { AgentState, AgentStateType } from "@/Backend/agent/state"; // AgentState is a value
+import { Memory } from "@/Backend/services/memory/vector_store.interface"; // Memory is needed for graphState
+import { BaseMessage } from "@langchain/core/messages"; // BaseMessage is needed for graphState
 import { contextNode } from "@/Backend/agent/nodes/context";
 import { processingNode } from "@/Backend/agent/nodes/processing";
 import { supervisorNode } from "@/Backend/agent/nodes/supervisor";
@@ -52,66 +53,52 @@ function toolsRouter(state: AgentStateType) {
   return state.lastWorker || NODE_NAMES.SUPERVISOR;
 }
 
-const graphState = {
-  messages: {
-    value: null, // Add 'value' property
-    reducer: (x: BaseMessage[], y: BaseMessage[]) => x.concat(y),
-    default: () => [],
-  },
-  memories: {
-    value: null, // Add 'value' property
-    reducer: (x: Memory[], y: Memory[]) => y, // Always replace with latest retrieval
-    default: () => [],
-  },
-  researchNotes: {
-    value: null, // Add 'value' property
-    reducer: (x: string[], y: string[]) => x.concat(y),
-    default: () => [],
-  },
-  metadata: {
-    value: null, // Add 'value' property
-    reducer: (x: Record<string, any>, y: Record<string, any>) => ({ ...x, ...y }),
-    default: () => ({ stage: STAGES.PREPARE, status: "idle" }),
-  },
-  attachments: {
-    value: null, // Add 'value' property
-    reducer: (x: any[], y: any[]) => y,
-    default: () => [],
-  },
-  processedAttachments: {
-    value: null, // Add 'value' property
-    reducer: (x: any[], y: any[]) => x.concat(y),
-    default: () => [],
-  },
-  googleToken: {
-    value: null, // Add 'value' property
-    reducer: (x: string | null, y: string | null) => y ?? x,
-    default: () => null,
-  },
-  lastWorker: {
-    value: null, // Add 'value' property
-    reducer: (x: string | null, y: string | null) => y ?? x,
-    default: () => null,
-  },
-  toolConfidence: {
-    value: null, // Add 'value' property
-    reducer: (x: number | null, y: number | null) => y ?? x,
-    default: () => null,
-  },
-  sessionId: {
-    value: null, // Add 'value' property
-    reducer: (x: string | null, y: string | null) => y ?? x,
-    default: () => null,
-  },
-};
+/**
+ * Supervisor Router: Decides which specialized worker to call or to finish.
+ */
+function supervisorRouter(state: AgentStateType) {
+  const lastMessage = state.messages[state.messages.length - 1];
+  
+  if (lastMessage.tool_calls?.length) {
+    const toolName = lastMessage.tool_calls[0].name;
+    if (toolName === 'delegate_to_research_worker') return NODE_NAMES.RESEARCH_WORKER;
+    if (toolName === 'delegate_to_google_worker') return NODE_NAMES.GOOGLE_WORKER;
+    if (toolName === 'delegate_to_coder_worker') return NODE_NAMES.CODER_WORKER;
+  }
+  
+  return NODE_NAMES.ARCHIVE;
+}
+
+/**
+ * Worker Router: Decides whether to execute a tool or return to the supervisor.
+ */
+function workerRouter(state: AgentStateType) {
+  const lastMessage = state.messages[state.messages.length - 1];
+  
+  if (lastMessage.tool_calls?.length) {
+    return NODE_NAMES.TOOLS;
+  }
+  
+  return NODE_NAMES.SUPERVISOR;
+}
+
+/**
+ * Tools Router: Returns to the worker that initiated the tool call.
+ */
+function toolsRouter(state: AgentStateType) {
+  if (state.toolConfidence !== null && state.toolConfidence < TOOL_CONFIDENCE_THRESHOLD) {
+    return NODE_NAMES.CLARIFICATION;
+  }
+  return state.lastWorker || NODE_NAMES.SUPERVISOR;
+}
 
 /**
  * Assembler for the Agent Graph.
  * Defines the logical sequence of operations.
  */
 export function createAgentGraph(checkpointer?: BaseCheckpointSaver) {
-  const workflow = new StateGraph<AgentStateType>({ channels: graphState }) // Pass graphState with channels
-    // 1. Add all nodes    .addNode(NODE_NAMES.CONTEXT, contextNode)
+  const workflow = new StateGraph(AgentState) // Pass AgentState Annotation.Root directly to the constructor    // 1. Add all nodes    
+    .addNode(NODE_NAMES.CONTEXT, contextNode)
     .addNode(NODE_NAMES.PROCESSING, processingNode)
     .addNode(NODE_NAMES.SUPERVISOR, supervisorNode)
     .addNode(NODE_NAMES.RESEARCH_WORKER, researchWorkerNode)
