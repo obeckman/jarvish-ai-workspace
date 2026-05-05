@@ -10,7 +10,8 @@ import {
   EVENT_TYPES, 
   UI_STRINGS,
   GQL_QUERIES,
-  STAGES
+  STAGES,
+  BLOCK_TYPES // Add BLOCK_TYPES
 } from '@/features/jarvishAgent/constants';
 
 // --- Reducer Definitions ---
@@ -135,40 +136,41 @@ export const useJarvishChat = (
       const validatedResponse = GetSessionHistoryResponseSchema.parse(result.data);
       if (validatedResponse.getSessionHistory) {
         const history = result.data.getSessionHistory.map((m: any, i: number) => {
-          let content: MessageContent = m.content; // Initialize with original content
-          let didParseSuccessfully = false; // Flag to track successful parsing
+          let rawContentString = String(m.content);
 
-          // Attempt to parse the content first, as it might be a JSON string of an array with a TextBlock
-          let intermediateContent = String(m.content);
+          // Step 1: Attempt to unwrap outermost JSON stringification if present
           try {
-            const outerParsed = parse(intermediateContent);
-            if (Array.isArray(outerParsed) && outerParsed.length === 1 && outerParsed[0].type === BLOCK_TYPES.TEXT && typeof outerParsed[0].content === 'string') {
-              // If it's a single TextBlock wrapped in an outer array, extract its content
-              intermediateContent = outerParsed[0].content;
+            const outerParsed = JSON.parse(rawContentString);
+            // If it's an array with a single object that has a 'content' property,
+            // assume it's the double-stringified format and extract the inner content.
+            if (Array.isArray(outerParsed) && outerParsed.length === 1 && typeof outerParsed[0].content === 'string') {
+              rawContentString = outerParsed[0].content;
             }
           } catch (e) {
-            // Not an outer JSON array, keep original intermediateContent
+            // Not an outer JSON array, keep original rawContentString
           }
-
-          const cleanedContent = intermediateContent
+          
+          // Step 2: Remove markdown code block delimiters from the raw content string
+          const cleanedContent = rawContentString
             .replace(/^```json\s*\n/, '') // Remove leading ```json\n
             .replace(/\n\s*```$/, '')      // Remove trailing ```
             .trim();
           
           console.log('[useJarvishChat - loadSessionHistory] Original Content:', m.content);
-          console.log('[useJarvishChat - loadSessionHistory] Intermediate Content (after outer parse):', intermediateContent);
+          console.log('[useJarvishChat - loadSessionHistory] Intermediate Content (after outer unwrap):', rawContentString); // Log rawContentString after outer unwrap
           console.log('[useJarvishChat - loadSessionHistory] Cleaned Content:', cleanedContent);
 
           try {
-            const parsed = parse(cleanedContent);
+            const parsed = parse(cleanedContent); // Use partial-json-parser for potentially incomplete JSON
             console.log('[useJarvishChat - loadSessionHistory] Parsed Blocks:', parsed);
 
             if (Array.isArray(parsed)) {
               content = parsed.map((block: any) => {
                 try {
+                  // Ensure individual blocks are parsed and cleaned as well
                   let parsedBlock = AgentMessageBlockSchema.parse(block);
-                  // If it's a TextBlock, ensure its content is clean of markdown delimiters
                   if (parsedBlock.type === BLOCK_TYPES.TEXT && typeof parsedBlock.content === 'string') {
+                    // Clean text content within blocks as well
                     parsedBlock = {
                       ...parsedBlock,
                       content: parsedBlock.content
@@ -187,7 +189,10 @@ export const useJarvishChat = (
             }
           } catch (e) {
             console.warn('[useJarvishChat - loadSessionHistory] JSON parse failed for historical message:', e);
-            // The fallback logic will now correctly use the `cleanedContent` declared outside.
+          }
+
+          if (!didParseSuccessfully) {
+              content = cleanedContent; // Always use the cleaned string if parsing failed or didn't produce an array
           }
 
           if (!didParseSuccessfully) {
@@ -343,16 +348,31 @@ export const useJarvishChat = (
               
               let newContent: MessageContent = assistantMessageContent;
               try {
-                // Clean the content from markdown code block delimiters before parsing
-                const cleanedContent = assistantMessageContent
+                let rawContentString = assistantMessageContent; // Start with accumulated content
+
+                // Attempt to unwrap outermost JSON stringification if present (from backend sending `JSON.stringify` twice)
+                try {
+                  const outerParsed = JSON.parse(rawContentString);
+                  if (Array.isArray(outerParsed) && outerParsed.length === 1 && typeof outerParsed[0].content === 'string') {
+                    rawContentString = outerParsed[0].content;
+                  }
+                } catch (e) {
+                  // Not an outermost JSON string, keep as is
+                }
+
+                // Clean the content from markdown code block delimiters from the raw content string
+                const cleanedContent = rawContentString
                   .replace(/^```json\s*\n/, '') // Remove leading ```json\n
                   .replace(/\n\s*```$/, '')      // Remove trailing ```
                   .trim();
 
-                console.log('[useJarvishChat] Cleaned Content:', cleanedContent); // New log
+                console.log('[useJarvishChat - sendMessage SSE] Original Content:', assistantMessageContent); // New log
+                console.log('[useJarvishChat - sendMessage SSE] Intermediate Content (after outer unwrap):', rawContentString); // New log
+                console.log('[useJarvishChat - sendMessage SSE] Cleaned Content:', cleanedContent); // New log
+                
                 // Attempt to parse the full accumulated content as structured blocks
                 const parsedBlocks = parse(cleanedContent); // Parse the cleaned content
-                console.log('[useJarvishChat] Parsed Blocks:', parsedBlocks); // New log
+                console.log('[useJarvishChat - sendMessage SSE] Parsed Blocks:', parsedBlocks); // New log
                 if (Array.isArray(parsedBlocks)) { // If it parses as an array of blocks
                   // Validate against the schema for robust parsing
                   newContent = parsedBlocks.map((block: any) => {
@@ -370,7 +390,7 @@ export const useJarvishChat = (
                       }
                       return parsedBlock;
                     } catch (blockParseError) {
-                      console.warn('[useJarvishChat] Failed to parse individual block from stream, keeping raw:', blockParseError, block);
+                      console.warn('[useJarvishChat - sendMessage SSE] Failed to parse individual block from stream, keeping raw:', blockParseError, block);
                       return block; // Fallback to raw if individual block parsing fails
                     }
                   });
