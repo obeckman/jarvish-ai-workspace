@@ -15,7 +15,7 @@ dist-ssr
 *.skill
 
 # Weaviate persistence data
-src/Backend/weaviate_data/
+src/server_v2/weaviate_data/
 
 # Editor directories and files
 .vscode/*
