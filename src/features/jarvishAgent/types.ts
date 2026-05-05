@@ -122,3 +122,12 @@ export const AgentEventDataSchema = z.object({
 export const AgentEventsSubscriptionResponseSchema = z.object({
   agentEvents: AgentEventDataSchema,
 });
+
+// For GQL_QUERIES.GET_SESSION_SUMMARY
+export const GetSessionSummaryResponseSchema = z.object({
+  getSessionSummary: z.object({
+    summaryTitle: z.string(),
+    userMessage: z.string(),
+    aiAnswer: z.string(),
+  }).nullable(), // It can return null if not yet generated
+});

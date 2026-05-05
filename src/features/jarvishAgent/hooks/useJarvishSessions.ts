@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Session } from '@/features/jarvishAgent/types';
+import { z } from 'zod';
+import { Session, SessionSummary, GetSessionSummaryResponseSchema } from '@/features/jarvishAgent/types';
 import { STORAGE_KEYS, API_ENDPOINTS, GQL_QUERIES, GQL_MUTATIONS, UI_STRINGS } from '@/features/jarvishAgent/constants';
 
 export const useJarvishSessions = (searchTerm: string) => {
@@ -8,6 +9,7 @@ export const useJarvishSessions = (searchTerm: string) => {
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [isFetchingSessions, setIsFetchingSessions] = useState(false);
+  const [isSummaryReady, setIsSummaryReady] = useState(false); // New state to track if summary is ready
   
   const pollingIntervalRef = useRef<any>(null);
 
@@ -41,35 +43,9 @@ export const useJarvishSessions = (searchTerm: string) => {
     }
   }, [offset, searchTerm, isFetchingSessions]);
 
-  const startPollingSummary = useCallback((sessionId: string) => {
-    if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
-    
-    pollingIntervalRef.current = setInterval(async () => {
-      try {
-        const res = await fetch(API_ENDPOINTS.GRAPHQL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            query: GQL_QUERIES.GET_SESSION_SUMMARY,
-            variables: { sessionId }
-          })
-        });
-        const result = await res.json();
-        if (result.data?.getSessionSummary) {
-          setSessions(prev => prev.map(s => 
-            s.id === sessionId ? { ...s, summary: result.data.getSessionSummary } : s
-          ));
-          clearInterval(pollingIntervalRef.current);
-        }
-      } catch (e) {
-        console.error("Polling summary failed", e);
-      }
-    }, 3000);
-  }, []);
-
-  const triggerSummary = useCallback(async (sessionId: string) => {
+  const fetchSummary = useCallback(async (sessionId: string): Promise<SessionSummary | null> => {
     try {
-      await fetch(API_ENDPOINTS.GRAPHQL, {
+      const res = await fetch(API_ENDPOINTS.GRAPHQL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -77,11 +53,55 @@ export const useJarvishSessions = (searchTerm: string) => {
           variables: { sessionId }
         })
       });
-      startPollingSummary(sessionId);
+      const result = await res.json();
+      const validatedResponse = GetSessionSummaryResponseSchema.parse(result.data); // Apply Zod validation
+      
+      if (validatedResponse.getSessionSummary) {
+        const summary = validatedResponse.getSessionSummary;
+        setSessions(prev => prev.map(s => 
+          s.id === sessionId ? { ...s, summary: summary } : s
+        ));
+        return summary;
+      }
     } catch (e) {
-      console.error("Failed to trigger summary:", e);
+      console.error("Fetching summary failed", e);
     }
-  }, [startPollingSummary]);
+    return null;
+  }, []);
+
+  const triggerSummary = useCallback(async (sessionId: string) => {
+    setIsSummaryReady(false); // Reset status when triggering new summary
+    const maxRetries = 5;
+    let retries = 0;
+    let delay = 1000; // 1 second initial delay
+
+    while (retries < maxRetries) {
+      try {
+        // Trigger the backend to generate summary (if not already there)
+        await fetch(API_ENDPOINTS.GRAPHQL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query: GQL_QUERIES.GET_SESSION_SUMMARY,
+            variables: { sessionId }
+          })
+        });
+
+        const summary = await fetchSummary(sessionId);
+        if (summary) {
+          setIsSummaryReady(true);
+          return; // Summary found, exit
+        }
+      } catch (e) {
+        console.error(`Failed to trigger or fetch summary (retry ${retries + 1}/${maxRetries}):`, e);
+      }
+
+      retries++;
+      delay *= 2; // Exponential backoff
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+    console.error(`Failed to get session summary for ${sessionId} after ${maxRetries} retries.`);
+  }, [fetchSummary, setIsSummaryReady]);
 
   const createNewSession = useCallback(async (initialQuery?: string) => {
     const id = `session-${Date.now()}`;
@@ -112,6 +132,17 @@ export const useJarvishSessions = (searchTerm: string) => {
 
   const deleteSession = useCallback(async (id: string) => {
     if (!confirm(UI_STRINGS.DELETE_CONFIRMATION)) return;
+    // Optimistic update - store previous state for rollback
+    const previousSessions = sessions;
+    const previousCurrentSessionId = currentSessionId;
+
+    // Tentatively update UI
+    setSessions(prev => prev.filter(s => s.id !== id));
+    if (currentSessionId === id) {
+      setCurrentSessionId(null);
+      localStorage.removeItem(STORAGE_KEYS.SESSION_ID);
+    }
+
     try {
       await fetch(API_ENDPOINTS.GRAPHQL, {
         method: 'POST',
@@ -121,15 +152,20 @@ export const useJarvishSessions = (searchTerm: string) => {
           variables: { id }
         })
       });
-      setSessions(prev => prev.filter(s => s.id !== id));
-      if (currentSessionId === id) {
-        setCurrentSessionId(null);
-        localStorage.removeItem(STORAGE_KEYS.SESSION_ID);
-      }
+      // If successful, no further action needed as UI is already updated
     } catch (e) {
       console.error('Failed to delete session:', e);
+      // Rollback UI changes on failure
+      setSessions(previousSessions);
+      setCurrentSessionId(previousCurrentSessionId);
+      if (previousCurrentSessionId) {
+        localStorage.setItem(STORAGE_KEYS.SESSION_ID, previousCurrentSessionId);
+      } else {
+        localStorage.removeItem(STORAGE_KEYS.SESSION_ID);
+      }
+      alert(`Failed to delete session: ${e instanceof Error ? e.message : 'Unknown error'}`); // Inform user
     }
-  }, [currentSessionId]);
+  }, [currentSessionId, sessions]);
 
   const updateCurrentSession = useCallback((id: string | null) => {
     setCurrentSessionId(id);
@@ -144,11 +180,7 @@ export const useJarvishSessions = (searchTerm: string) => {
     fetchSessions(true);
   }, [searchTerm]);
 
-  useEffect(() => {
-    return () => {
-      if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
-    };
-  }, []);
+
 
   return {
     sessions,
@@ -160,6 +192,6 @@ export const useJarvishSessions = (searchTerm: string) => {
     createNewSession,
     deleteSession,
     triggerSummary,
-    isPolling: !!pollingIntervalRef.current
+    isSummaryReady
   };
 };
