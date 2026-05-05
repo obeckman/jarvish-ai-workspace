@@ -15,7 +15,7 @@ export const runVectorDatabase = async () => {
     port: 8080, // Match old server's DB port
     env: {
       DEFAULT_VECTORIZER_MODULE: 'none',
-      PERSISTENCE_DATA_PATH: path.join(process.cwd(), 'src', 'server_v2', 'weaviate_data'),
+      PERSISTENCE_DATA_PATH: path.join(process.cwd(), 'src', 'Backend', 'weaviate_data'),
     },
   });
 
