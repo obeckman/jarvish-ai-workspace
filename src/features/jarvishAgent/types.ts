@@ -59,7 +59,7 @@ import { AnyBlockComponentProps } from './components/Blocks/blockProps';
 
 export type AgentMessageBlock = z.infer<typeof AgentMessageBlockSchema>;
 
-export { AnyBlockComponentProps };
+export type { AnyBlockComponentProps };
 
 // --- Message Content Schema ---
 export const MessageContentSchema = z.union([z.string(), z.array(AgentMessageBlockSchema)]);

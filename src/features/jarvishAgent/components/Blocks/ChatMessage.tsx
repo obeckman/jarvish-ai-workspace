@@ -2,9 +2,8 @@ import React from 'react';
 import { User, Bot } from 'lucide-react';
 import cn from 'classnames';
 import styles from '../../jarvish-agent.module.scss';
-import { Message } from '../../types';
-import { MESSAGE_ROLES } from '../../constants';
-import { useStreamingBlocks } from '../../hooks/useStreamingBlocks';
+import { Message, AgentMessageBlock } from '../../types';
+import { MESSAGE_ROLES, BLOCK_TYPES } from '../../constants';
 import { BlockRenderer } from './BlockRenderer';
 import { Markdown } from '@/components/shared/Markdown/Markdown';
 
@@ -14,11 +13,16 @@ interface ChatMessageProps {
 }
 
 export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({ message, onAction }) => {
+  console.log('[ChatMessage] Component rendering for message:', message.id, message.role);
   const isAgent = message.role === MESSAGE_ROLES.AGENT || message.role === MESSAGE_ROLES.MODEL;
   const isUser = message.role === MESSAGE_ROLES.USER;
 
   // Only attempt to parse blocks for agent messages
-  const blocks = useStreamingBlocks(isAgent ? message.content : '');
+  console.log('[ChatMessage] message.content:', message.content); // New log
+  console.log('[ChatMessage] Array.isArray(message.content):', Array.isArray(message.content)); // New log
+  const blocks: AgentMessageBlock[] = Array.isArray(message.content) 
+    ? message.content 
+    : [{ type: BLOCK_TYPES.TEXT, content: message.content as string }];
 
   return (
     <div 

@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useReducer } from 'react';
 import parse from 'partial-json-parser';
 import { z } from 'zod';
 import { Message, AgentStatus, Attachment, GetSessionHistoryResponseSchema, AgentEventsSubscriptionResponseSchema, AgentEventDataSchema, AgentMessageBlockSchema, MessageContent } from '@/features/jarvishAgent/types';
@@ -63,7 +63,7 @@ const initialChatState: ChatState = {
   isReasoningVisible: false,
   lastSentQuery: '',
 };
-
+// todo: action strings should be constants 
 function chatReducer(state: ChatState, action: ChatAction): ChatState {
   switch (action.type) {
     case 'SET_MESSAGES':
@@ -119,6 +119,7 @@ export const useJarvishChat = (
   const readerRef = useRef<ReadableStreamDefaultReader | null>(null);
 
   const loadSessionHistory = useCallback(async (sessionId: string) => {
+    console.log('[useJarvishChat - loadSessionHistory] Function called for session:', sessionId);
     try {
       dispatch({ type: 'SET_STATUS', payload: AGENT_STATUS.THINKING });
       const res = await fetch(API_ENDPOINTS.GRAPHQL, {
@@ -134,22 +135,65 @@ export const useJarvishChat = (
       const validatedResponse = GetSessionHistoryResponseSchema.parse(result.data);
       if (validatedResponse.getSessionHistory) {
         const history = result.data.getSessionHistory.map((m: any, i: number) => {
-          let content: MessageContent = m.content;
+          let content: MessageContent = m.content; // Initialize with original content
+          let didParseSuccessfully = false; // Flag to track successful parsing
+
+          // Attempt to parse the content first, as it might be a JSON string of an array with a TextBlock
+          let intermediateContent = String(m.content);
           try {
-            const parsed = parse(m.content);
+            const outerParsed = parse(intermediateContent);
+            if (Array.isArray(outerParsed) && outerParsed.length === 1 && outerParsed[0].type === BLOCK_TYPES.TEXT && typeof outerParsed[0].content === 'string') {
+              // If it's a single TextBlock wrapped in an outer array, extract its content
+              intermediateContent = outerParsed[0].content;
+            }
+          } catch (e) {
+            // Not an outer JSON array, keep original intermediateContent
+          }
+
+          const cleanedContent = intermediateContent
+            .replace(/^```json\s*\n/, '') // Remove leading ```json\n
+            .replace(/\n\s*```$/, '')      // Remove trailing ```
+            .trim();
+          
+          console.log('[useJarvishChat - loadSessionHistory] Original Content:', m.content);
+          console.log('[useJarvishChat - loadSessionHistory] Intermediate Content (after outer parse):', intermediateContent);
+          console.log('[useJarvishChat - loadSessionHistory] Cleaned Content:', cleanedContent);
+
+          try {
+            const parsed = parse(cleanedContent);
+            console.log('[useJarvishChat - loadSessionHistory] Parsed Blocks:', parsed);
+
             if (Array.isArray(parsed)) {
               content = parsed.map((block: any) => {
                 try {
-                  return AgentMessageBlockSchema.parse(block);
+                  let parsedBlock = AgentMessageBlockSchema.parse(block);
+                  // If it's a TextBlock, ensure its content is clean of markdown delimiters
+                  if (parsedBlock.type === BLOCK_TYPES.TEXT && typeof parsedBlock.content === 'string') {
+                    parsedBlock = {
+                      ...parsedBlock,
+                      content: parsedBlock.content
+                        .replace(/^```json\s*\n/, '') // Remove leading ```json\n
+                        .replace(/\n\s*```$/, '')      // Remove trailing ```
+                        .trim()
+                    };
+                  }
+                  return parsedBlock;
                 } catch (blockParseError) {
-                  console.warn('Failed to parse historical block, keeping raw:', blockParseError, block);
+                  console.warn('[useJarvishChat - loadSessionHistory] Failed to parse individual historical block, keeping raw:', blockParseError, block);
                   return block;
                 }
               });
+              didParseSuccessfully = true;
             }
           } catch (e) {
-            // Keep content as string if parsing fails
+            console.warn('[useJarvishChat - loadSessionHistory] JSON parse failed for historical message:', e);
+            // The fallback logic will now correctly use the `cleanedContent` declared outside.
           }
+
+          if (!didParseSuccessfully) {
+              content = cleanedContent; // Always use the cleaned string if parsing failed or didn't produce an array
+          }
+          
           return {
             id: `hist-${i}`,
             role: m.role,
@@ -169,6 +213,7 @@ export const useJarvishChat = (
       dispatch({ type: 'SET_ERROR_MESSAGE', payload: "Failed to load conversation history." });
     } finally {
       dispatch({ type: 'SET_STATUS', payload: AGENT_STATUS.IDLE });
+    }
   }, [dispatch]);
 
   const cancelRequest = useCallback(() => {
@@ -193,7 +238,7 @@ export const useJarvishChat = (
 
   const sendMessage = useCallback(async (sessionId: string) => {
     if (!state.input.trim() || state.status !== AGENT_STATUS.IDLE) return;
-
+// todo: actions need to be functions thet return the object
     dispatch({ type: 'SET_ERROR_MESSAGE', payload: null });
     dispatch({ type: 'SET_LAST_SENT_QUERY', payload: state.input });
     dispatch({ type: 'SET_STATUS_LOGS', payload: [] });
@@ -298,21 +343,41 @@ export const useJarvishChat = (
               
               let newContent: MessageContent = assistantMessageContent;
               try {
+                // Clean the content from markdown code block delimiters before parsing
+                const cleanedContent = assistantMessageContent
+                  .replace(/^```json\s*\n/, '') // Remove leading ```json\n
+                  .replace(/\n\s*```$/, '')      // Remove trailing ```
+                  .trim();
+
+                console.log('[useJarvishChat] Cleaned Content:', cleanedContent); // New log
                 // Attempt to parse the full accumulated content as structured blocks
-                const parsedBlocks = parse(assistantMessageContent);
+                const parsedBlocks = parse(cleanedContent); // Parse the cleaned content
+                console.log('[useJarvishChat] Parsed Blocks:', parsedBlocks); // New log
                 if (Array.isArray(parsedBlocks)) { // If it parses as an array of blocks
                   // Validate against the schema for robust parsing
                   newContent = parsedBlocks.map((block: any) => {
                     try {
-                      return AgentMessageBlockSchema.parse(block);
+                      let parsedBlock = AgentMessageBlockSchema.parse(block);
+                      // If it's a TextBlock, ensure its content is clean of markdown delimiters
+                      if (parsedBlock.type === BLOCK_TYPES.TEXT && typeof parsedBlock.content === 'string') {
+                        parsedBlock = {
+                          ...parsedBlock,
+                          content: parsedBlock.content
+                            .replace(/^```json\s*\n/, '') // Remove leading ```json\n
+                            .replace(/\n\s*```$/, '')      // Remove trailing ```
+                            .trim()
+                        };
+                      }
+                      return parsedBlock;
                     } catch (blockParseError) {
-                      console.warn('Failed to parse individual block from stream, keeping raw:', blockParseError, block);
+                      console.warn('[useJarvishChat] Failed to parse individual block from stream, keeping raw:', blockParseError, block);
                       return block; // Fallback to raw if individual block parsing fails
                     }
                   });
                 }
               } catch (e) {
                 // If it's not valid JSON yet, or not an array, keep it as string
+                console.error('Failed to parse SSE content as JSON, treating as string:', e, assistantMessageContent);
               }
 
               dispatch({ type: 'UPDATE_LAST_MESSAGE', payload: { id: assistantMsgId, content: newContent } });
