@@ -1,5 +1,4 @@
 import { useState, useCallback, useRef, useEffect, useReducer } from 'react';
-import parse from 'partial-json-parser';
 import { z } from 'zod';
 import { Message, AgentStatus, Attachment, GetSessionHistoryResponseSchema, AgentEventsSubscriptionResponseSchema, AgentEventDataSchema, AgentMessageBlockSchema, MessageContent } from '@/features/jarvishAgent/types';
 import { 
@@ -13,6 +12,7 @@ import {
   STAGES,
   BLOCK_TYPES // Add BLOCK_TYPES
 } from '@/features/jarvishAgent/constants';
+import { parseAgentMessageContent } from '../utils/parser';
 
 // --- Reducer Definitions ---
 
@@ -136,68 +136,7 @@ export const useJarvishChat = (
       const validatedResponse = GetSessionHistoryResponseSchema.parse(result.data);
       if (validatedResponse.getSessionHistory) {
         const history = result.data.getSessionHistory.map((m: any, i: number) => {
-          let rawContentString = String(m.content);
-
-          // Step 1: Attempt to unwrap outermost JSON stringification if present
-          try {
-            const outerParsed = JSON.parse(rawContentString);
-            // If it's an array with a single object that has a 'content' property,
-            // assume it's the double-stringified format and extract the inner content.
-            if (Array.isArray(outerParsed) && outerParsed.length === 1 && typeof outerParsed[0].content === 'string') {
-              rawContentString = outerParsed[0].content;
-            }
-          } catch (e) {
-            // Not an outer JSON array, keep original rawContentString
-          }
-          
-          // Step 2: Remove markdown code block delimiters from the raw content string
-          const cleanedContent = rawContentString
-            .replace(/^```json\s*\n/, '') // Remove leading ```json\n
-            .replace(/\n\s*```$/, '')      // Remove trailing ```
-            .trim();
-          
-          console.log('[useJarvishChat - loadSessionHistory] Original Content:', m.content);
-          console.log('[useJarvishChat - loadSessionHistory] Intermediate Content (after outer unwrap):', rawContentString); // Log rawContentString after outer unwrap
-          console.log('[useJarvishChat - loadSessionHistory] Cleaned Content:', cleanedContent);
-
-          try {
-            const parsed = parse(cleanedContent); // Use partial-json-parser for potentially incomplete JSON
-            console.log('[useJarvishChat - loadSessionHistory] Parsed Blocks:', parsed);
-
-            if (Array.isArray(parsed)) {
-              content = parsed.map((block: any) => {
-                try {
-                  // Ensure individual blocks are parsed and cleaned as well
-                  let parsedBlock = AgentMessageBlockSchema.parse(block);
-                  if (parsedBlock.type === BLOCK_TYPES.TEXT && typeof parsedBlock.content === 'string') {
-                    // Clean text content within blocks as well
-                    parsedBlock = {
-                      ...parsedBlock,
-                      content: parsedBlock.content
-                        .replace(/^```json\s*\n/, '') // Remove leading ```json\n
-                        .replace(/\n\s*```$/, '')      // Remove trailing ```
-                        .trim()
-                    };
-                  }
-                  return parsedBlock;
-                } catch (blockParseError) {
-                  console.warn('[useJarvishChat - loadSessionHistory] Failed to parse individual historical block, keeping raw:', blockParseError, block);
-                  return block;
-                }
-              });
-              didParseSuccessfully = true;
-            }
-          } catch (e) {
-            console.warn('[useJarvishChat - loadSessionHistory] JSON parse failed for historical message:', e);
-          }
-
-          if (!didParseSuccessfully) {
-              content = cleanedContent; // Always use the cleaned string if parsing failed or didn't produce an array
-          }
-
-          if (!didParseSuccessfully) {
-              content = cleanedContent; // Always use the cleaned string if parsing failed or didn't produce an array
-          }
+          const content = parseAgentMessageContent(String(m.content));
           
           return {
             id: `hist-${i}`,
@@ -343,67 +282,13 @@ export const useJarvishChat = (
               } });
             } else if (data.type === EVENT_TYPES.MESSAGE) {
               dispatch({ type: 'SET_STATUS_MESSAGE', payload: null }); 
-              
+
               assistantMessageContent += data.content;
-              
-              let newContent: MessageContent = assistantMessageContent;
-              try {
-                let rawContentString = assistantMessageContent; // Start with accumulated content
-
-                // Attempt to unwrap outermost JSON stringification if present (from backend sending `JSON.stringify` twice)
-                try {
-                  const outerParsed = JSON.parse(rawContentString);
-                  if (Array.isArray(outerParsed) && outerParsed.length === 1 && typeof outerParsed[0].content === 'string') {
-                    rawContentString = outerParsed[0].content;
-                  }
-                } catch (e) {
-                  // Not an outermost JSON string, keep as is
-                }
-
-                // Clean the content from markdown code block delimiters from the raw content string
-                const cleanedContent = rawContentString
-                  .replace(/^```json\s*\n/, '') // Remove leading ```json\n
-                  .replace(/\n\s*```$/, '')      // Remove trailing ```
-                  .trim();
-
-                console.log('[useJarvishChat - sendMessage SSE] Original Content:', assistantMessageContent); // New log
-                console.log('[useJarvishChat - sendMessage SSE] Intermediate Content (after outer unwrap):', rawContentString); // New log
-                console.log('[useJarvishChat - sendMessage SSE] Cleaned Content:', cleanedContent); // New log
-                
-                // Attempt to parse the full accumulated content as structured blocks
-                const parsedBlocks = parse(cleanedContent); // Parse the cleaned content
-                console.log('[useJarvishChat - sendMessage SSE] Parsed Blocks:', parsedBlocks); // New log
-                if (Array.isArray(parsedBlocks)) { // If it parses as an array of blocks
-                  // Validate against the schema for robust parsing
-                  newContent = parsedBlocks.map((block: any) => {
-                    try {
-                      let parsedBlock = AgentMessageBlockSchema.parse(block);
-                      // If it's a TextBlock, ensure its content is clean of markdown delimiters
-                      if (parsedBlock.type === BLOCK_TYPES.TEXT && typeof parsedBlock.content === 'string') {
-                        parsedBlock = {
-                          ...parsedBlock,
-                          content: parsedBlock.content
-                            .replace(/^```json\s*\n/, '') // Remove leading ```json\n
-                            .replace(/\n\s*```$/, '')      // Remove trailing ```
-                            .trim()
-                        };
-                      }
-                      return parsedBlock;
-                    } catch (blockParseError) {
-                      console.warn('[useJarvishChat - sendMessage SSE] Failed to parse individual block from stream, keeping raw:', blockParseError, block);
-                      return block; // Fallback to raw if individual block parsing fails
-                    }
-                  });
-                }
-              } catch (e) {
-                // If it's not valid JSON yet, or not an array, keep it as string
-                console.error('Failed to parse SSE content as JSON, treating as string:', e, assistantMessageContent);
-              }
+              const newContent = parseAgentMessageContent(assistantMessageContent);
 
               dispatch({ type: 'UPDATE_LAST_MESSAGE', payload: { id: assistantMsgId, content: newContent } });
               dispatch({ type: 'SET_STATUS', payload: AGENT_STATUS.RESPONDING });
-            } else if (data.type === EVENT_TYPES.ERROR) {
-              dispatch({ type: 'SET_ERROR_MESSAGE', payload: `Agent Error: ${data.content}` });
+            } else if (data.type === EVENT_TYPES.ERROR) {              dispatch({ type: 'SET_ERROR_MESSAGE', payload: `Agent Error: ${data.content}` });
             }
           } catch (e) {
             console.warn('Failed to parse SSE JSON:', jsonStr);
