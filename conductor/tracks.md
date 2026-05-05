@@ -6,5 +6,5 @@
 ## All Tracks
 | Status | ID | Title | Created | Updated |
 | :--- | :--- | :--- | :--- | :--- |
-| [ ] | gql-codegen_20260505 | GraphQL CodeGen Integration | 2026-05-05 | 2026-05-05 |
+| [x] | gql-codegen_20260505 | GraphQL CodeGen Integration | 2026-05-05 | 2026-05-05 |
 
