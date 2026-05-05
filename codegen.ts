@@ -15,13 +15,12 @@ const config: CodegenConfig = {
         // contextType: '@/Backend/types#MyContext',
       },
     },
-    // Frontend types (Client Preset)
-    'src/features/jarvishAgent/gql/': {
+    // Frontend types (Typed Operations for fetch compatibility)
+    'src/features/jarvishAgent/gql/types.ts': {
       documents: ['src/features/jarvishAgent/**/*.ts', '!src/features/jarvishAgent/gql/**/*'],
-      preset: 'client',
-      plugins: [],
-      presetConfig: {
-        gqlTagName: 'graphql',
+      plugins: ['typescript', 'typescript-operations', 'typed-document-node'],
+      config: {
+        documentMode: 'string', // This makes the generated document nodes strings!
       },
     },
   },
