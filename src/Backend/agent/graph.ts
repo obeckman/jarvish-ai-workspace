@@ -1,6 +1,7 @@
 import { StateGraph, START, END } from "@langchain/langgraph";
 import { BaseCheckpointSaver } from "@langchain/langgraph-checkpoint";
-import { AgentState, AgentStateType } from "@/Backend/agent/state";
+import { AgentStateType } from "@/Backend/agent/state"; // AgentState is an interface, not a value
+import { BaseMessage, HumanMessage, AIMessage } from "@langchain/core/messages"; // Import BaseMessage and other message types
 import { contextNode } from "@/Backend/agent/nodes/context";
 import { processingNode } from "@/Backend/agent/nodes/processing";
 import { supervisorNode } from "@/Backend/agent/nodes/supervisor";
@@ -12,57 +13,35 @@ import { archiveNode } from "@/Backend/agent/nodes/archive";
 import { clarificationNode } from "@/Backend/agent/nodes/clarification";
 import { NODE_NAMES, TOOL_CONFIDENCE_THRESHOLD, STAGES } from "@/Backend/agent/constants"; // Import STAGES
 
-// Define the state schema for LangGraph
-const graphState = {
-  messages: {
-    reducer: (x: any[], y: any[]) => x.concat(y),
-    default: () => [],
-  },
-  memories: {
-    reducer: (x: any[], y: any[]) => y, // Always replace with latest retrieval
-    default: () => [],
-  },
-  researchNotes: {
-    reducer: (x: string[], y: string[]) => x.concat(y),
-    default: () => [],
-  },
-  metadata: {
-    reducer: (x: Record<string, any>, y: Record<string, any>) => ({ ...x, ...y }),
-    default: () => ({ stage: STAGES.PREPARE, status: "idle" }),
-  },
-  attachments: {
-    reducer: (x: any[], y: any[]) => y,
-    default: () => [],
-  },
-  processedAttachments: {
-    reducer: (x: any[], y: any[]) => x.concat(y),
-    default: () => [],
-  },
-  googleToken: {
-    reducer: (x: string | null, y: string | null) => y ?? x,
-    default: () => null,
-  },
-  lastWorker: {
-    reducer: (x: string | null, y: string | null) => y ?? x,
-    default: () => null,
-  },
-  toolConfidence: {
-    reducer: (x: number | null, y: number | null) => y ?? x,
-    default: () => null,
-  },
-  sessionId: {
-    reducer: (x: string | null, y: string | null) => y ?? x,
-    default: () => null,
-  },
-};
-
 /**
  * Assembler for the Agent Graph.
  * Defines the logical sequence of operations.
  */
 export function createAgentGraph(checkpointer?: BaseCheckpointSaver) {
-  const workflow = new StateGraph(graphState as any) // Cast to any temporarily to bypass strict typing
-    // 1. Add all nodes
+  const workflow = new StateGraph<AgentStateType>() // Now uses the interface as type parameter
+    // Add reducers for each state property
+    .addReducer("messages", (x: BaseMessage[], y: BaseMessage[]) => x.concat(y))
+    .addReducer("memories", (x: Memory[], y: Memory[]) => y)
+    .addReducer("researchNotes", (x: string[], y: string[]) => x.concat(y))
+    .addReducer("metadata", (x: Record<string, any>, y: Record<string, any>) => ({ ...x, ...y }))
+    .addReducer("attachments", (x: any[], y: any[]) => y)
+    .addReducer("processedAttachments", (x: any[], y: any[]) => x.concat(y))
+    .addReducer("googleToken", (x: string | null, y: string | null) => y ?? x)
+    .addReducer("lastWorker", (x: string | null, y: string | null) => y ?? x)
+    .addReducer("toolConfidence", (x: number | null, y: number | null) => y ?? x)
+    .addReducer("sessionId", (x: string | null, y: string | null) => y ?? x)
+
+    // Set initial default values
+    .set("messages", () => [])
+    .set("memories", () => [])
+    .set("researchNotes", () => [])
+    .set("metadata", () => ({ stage: STAGES.PREPARE, status: "idle" }))
+    .set("attachments", () => [])
+    .set("processedAttachments", () => [])
+    .set("googleToken", () => null)
+    .set("lastWorker", () => null)
+    .set("toolConfidence", () => null)
+    .set("sessionId", () => null)    // 1. Add all nodes
     .addNode(NODE_NAMES.CONTEXT, contextNode)
     .addNode(NODE_NAMES.PROCESSING, processingNode)
     .addNode(NODE_NAMES.SUPERVISOR, supervisorNode)

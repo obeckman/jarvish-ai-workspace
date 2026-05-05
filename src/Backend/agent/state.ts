@@ -1,3 +1,4 @@
+import { BaseMessage } from "@langchain/core/messages";
 import { Memory } from "@/Backend/services/memory/vector_store.interface";
 import { STAGES } from "@/Backend/agent/constants";
 
@@ -9,7 +10,7 @@ export interface AgentState {
   /**
    * The core conversation history (User and Assistant turns).
    */
-  messages: any[]; // Changed from Annotation<any[]>
+  messages: BaseMessage[]; // Changed from Annotation<any[]>
   memories: Memory[]; // Changed from Annotation<Memory[]>
   researchNotes: string[]; // Changed from Annotation<string[]>
   metadata: Record<string, any>; // Changed from Annotation<Record<string, any>>
