@@ -13,6 +13,45 @@ import { archiveNode } from "@/Backend/agent/nodes/archive";
 import { clarificationNode } from "@/Backend/agent/nodes/clarification";
 import { NODE_NAMES, TOOL_CONFIDENCE_THRESHOLD, STAGES } from "@/Backend/agent/constants"; // Import STAGES
 
+/**
+ * Supervisor Router: Decides which specialized worker to call or to finish.
+ */
+function supervisorRouter(state: AgentStateType) {
+  const lastMessage = state.messages[state.messages.length - 1];
+  
+  if (lastMessage.tool_calls?.length) {
+    const toolName = lastMessage.tool_calls[0].name;
+    if (toolName === 'delegate_to_research_worker') return NODE_NAMES.RESEARCH_WORKER;
+    if (toolName === 'delegate_to_google_worker') return NODE_NAMES.GOOGLE_WORKER;
+    if (toolName === 'delegate_to_coder_worker') return NODE_NAMES.CODER_WORKER;
+  }
+  
+  return NODE_NAMES.ARCHIVE;
+}
+
+/**
+ * Worker Router: Decides whether to execute a tool or return to the supervisor.
+ */
+function workerRouter(state: AgentStateType) {
+  const lastMessage = state.messages[state.messages.length - 1];
+  
+  if (lastMessage.tool_calls?.length) {
+    return NODE_NAMES.TOOLS;
+  }
+  
+  return NODE_NAMES.SUPERVISOR;
+}
+
+/**
+ * Tools Router: Returns to the worker that initiated the tool call.
+ */
+function toolsRouter(state: AgentStateType) {
+  if (state.toolConfidence !== null && state.toolConfidence < TOOL_CONFIDENCE_THRESHOLD) {
+    return NODE_NAMES.CLARIFICATION;
+  }
+  return state.lastWorker || NODE_NAMES.SUPERVISOR;
+}
+
 const graphState = {
   messages: {
     value: null, // Add 'value' property
