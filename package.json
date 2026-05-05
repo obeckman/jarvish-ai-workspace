@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "server": "tsx src/Backend/index.ts",
-    "start": "concurrently \"npm run server\" \"npm run dev\"",
+    "codegen": "graphql-codegen --config codegen.ts",
+    "codegen:watch": "graphql-codegen --config codegen.ts --watch",
+    "start": "concurrently \"npm run server\" \"npm run dev\" \"npm run codegen:watch\"",
     "restart": "lsof -ti:3000,5173,8080 | xargs kill -9 || true && npm start",
     "build": "vite build",
     "lint": "eslint .",
@@ -48,6 +50,11 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@graphql-codegen/cli": "^7.0.0",
+    "@graphql-codegen/client-preset": "^6.0.0",
+    "@graphql-codegen/typescript": "^6.0.0",
+    "@graphql-codegen/typescript-operations": "^6.0.0",
+    "@graphql-codegen/typescript-resolvers": "^6.0.0",
     "@types/better-sqlite3": "^7.6.13",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",

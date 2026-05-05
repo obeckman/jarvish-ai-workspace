@@ -4,6 +4,7 @@
  */
 
 import { ROLES, EVENT_TYPES, STAGES } from '@/shared/jarvish.constants';
+import { graphql } from './gql';
 
 export { EVENT_TYPES, STAGES };
 
@@ -52,50 +53,50 @@ export const UI_STRINGS = {
 } as const;
 
 export const GQL_QUERIES = {
-  GET_SESSIONS: `
-    query($limit: Int, $offset: Int, $search: String) { 
+  GET_SESSIONS: graphql(`
+    query GetSessions($limit: Int, $offset: Int, $search: String) { 
       getSessions(limit: $limit, offset: $offset, search: $search) { 
         id title createdAt updatedAt summary { summaryTitle userMessage aiAnswer } 
       } 
     }
-  `,
-  GET_SESSION_HISTORY: `
-    query($sessionId: String!) { 
+  `),
+  GET_SESSION_HISTORY: graphql(`
+    query GetSessionHistory($sessionId: String!) { 
       getSessionHistory(sessionId: $sessionId) { role content } 
     }
-  `,
-  GET_SESSION_SUMMARY: `
-    query($sessionId: String!) { 
+  `),
+  GET_SESSION_SUMMARY: graphql(`
+    query GetSessionSummary($sessionId: String!) { 
       getSessionSummary(sessionId: $sessionId) { summaryTitle userMessage aiAnswer } 
     }
-  `,
-  GET_STRUCTURED_FACTS: `
-    query {
+  `),
+  GET_STRUCTURED_FACTS: graphql(`
+    query GetStructuredFacts {
       getStructuredFacts { id fact category confidence createdAt }
     }
-  `,
+  `),
 } as const;
 
 export const GQL_MUTATIONS = {
-  CREATE_SESSION: `
-    mutation($id: String!, $title: String!, $initialQuery: String) { 
+  CREATE_SESSION: graphql(`
+    mutation CreateSession($id: String!, $title: String!, $initialQuery: String) { 
       createSession(id: $id, title: $title, initialQuery: $initialQuery) { id title } 
     }
-  `,
-  DELETE_SESSION: `
-    mutation($id: String!) { 
+  `),
+  DELETE_SESSION: graphql(`
+    mutation DeleteSession($id: String!) { 
       deleteSession(id: $id) 
     }
-  `,
-  DELETE_STRUCTURED_FACT: `
-    mutation($id: String!) {
+  `),
+  DELETE_STRUCTURED_FACT: graphql(`
+    mutation DeleteStructuredFact($id: String!) {
       deleteStructuredFact(id: $id)
     }
-  `,
+  `),
 } as const;
 
 export const GQL_SUBSCRIPTIONS = {
-  AGENT_CHAT: `
+  AGENT_CHAT: graphql(`
     subscription AgentChat($query: String!, $history: [MessageInput!]!, $attachments: [AttachmentInput!], $sessionId: String) {
       agentEvents(query: $query, history: $history, attachments: $attachments, sessionId: $sessionId) {
         type
@@ -103,5 +104,5 @@ export const GQL_SUBSCRIPTIONS = {
         stage
       }
     }
-  `,
+  `),
 } as const;

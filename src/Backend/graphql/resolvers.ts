@@ -7,8 +7,7 @@ import { summarizeSession } from '@/Backend/services/summarization.service';
 import { generateTitle } from '@/Backend/services/titling.service';
 import { extractAndStoreFacts } from '@/Backend/services/factExtraction.service';
 import { EVENT_TYPES, NODE_NAMES, ROLES, STAGES } from '@/Backend/agent/constants';
-
-// ... (rest of imports)
+import { Resolvers, Message, Session, StructuredFact } from './__generated__/resolvers-types';
 
 // Global checkpointer instance
 const checkpointer = new SqliteSaver(sqlite);
@@ -17,12 +16,15 @@ const checkpointer = new SqliteSaver(sqlite);
  * GraphQL Resolvers
  * Maps the GraphQL operations to the underlying LangGraph logic.
  */
-export const resolvers = {
+export const resolvers: Resolvers = {
   Query: {
     status: () => "Backend graphQL is healthy",
-    getSessions: async (_: any, { limit = 10, offset = 0, search }: { limit?: number, offset?: number, search?: string }) => {
+    getSessions: async (_: any, { limit = 10, offset = 0, search }: { limit?: number | null, offset?: number | null, search?: string | null }) => {
       let results;
       
+      const safeLimit = limit ?? 10;
+      const safeOffset = offset ?? 0;
+
       if (search) {
         const searchTerm = `%${search}%`;
         // Join with summaries to search in all relevant text fields
@@ -42,13 +44,13 @@ export const resolvers = {
             like(sessionSummaries.aiAnswer, searchTerm)
           )
         )
-        .limit(limit)
-        .offset(offset)
+        .limit(safeLimit)
+        .offset(safeOffset)
         .orderBy(desc(sessions.updatedAt));
       } else {
         results = await db.select().from(sessions)
-          .limit(limit)
-          .offset(offset)
+          .limit(safeLimit)
+          .offset(safeOffset)
           .orderBy(desc(sessions.updatedAt));
       }
 
@@ -56,7 +58,7 @@ export const resolvers = {
         ...s,
         createdAt: s.createdAt instanceof Date ? s.createdAt.toISOString() : String(s.createdAt),
         updatedAt: s.updatedAt instanceof Date ? s.updatedAt.toISOString() : String(s.updatedAt)
-      }));
+      })) as Session[];
     },
     getSessionHistory: async (_: any, { sessionId }: { sessionId: string }) => {
       const graph = createAgentGraph(checkpointer);
@@ -64,7 +66,7 @@ export const resolvers = {
 
       if (!state || !state.values.messages) return [];
       
-      return state.values.messages.map((m: any) => {
+      return state.values.messages.map((m: any): Message => {
         // Map LangChain roles to FE roles
         const rawType = (m._getType?.() || m.type || "").toLowerCase();
         const rawRole = (m.role || m.lc_kwargs?.role || "").toLowerCase();
@@ -109,21 +111,13 @@ export const resolvers = {
         };
       }
 
-      // If missing, we return null to FE, which will show "Generating..." message.
-      // But wait, the user said "BE will create the missing message using AI".
-      // We can trigger it asynchronously or just do it here if it's not too slow.
-      // Let's do it here for simplicity of "on-demand" generation, or trigger and return null.
-      
-      // Let's trigger it and return null for now, or just implement it here.
-      // The user said "if missing return missing and UX show some informative message, BE will create... then BE push or/ FE pulling".
-      
-      // I'll implement a background generation and return null.
+      // Implement background generation as requested
       (async () => {
         try {
-          const history = await resolvers.Query.getSessionHistory(null, { sessionId });
-          if (history.length === 0) return;
+          const history = await resolvers.Query!.getSessionHistory!({}, { sessionId }, {} as any, {} as any);
+          if (!history || (history as any).length === 0) return;
 
-          const summary = await summarizeSession(history);
+          const summary = await summarizeSession(history as any);
           await db.insert(sessionSummaries).values({
             sessionId,
             summaryTitle: summary.summaryTitle,
@@ -148,8 +142,9 @@ export const resolvers = {
       const results = await db.select().from(structuredFacts).orderBy(desc(structuredFacts.createdAt));
       return results.map(f => ({
         ...f,
+        sessionId: f.sessionId || null,
         createdAt: f.createdAt instanceof Date ? f.createdAt.toISOString() : String(f.createdAt)
-      }));
+      })) as StructuredFact[];
     }
   },
 
@@ -169,7 +164,7 @@ export const resolvers = {
       // Mutations can be used for non-streaming background tasks
       return "Research task acknowledged";
     },
-    createSession: async (_: any, { id, title, initialQuery }: { id: string, title?: string, initialQuery?: string }) => {
+    createSession: async (_: any, { id, title, initialQuery }: { id: string, title?: string | null, initialQuery?: string | null }) => {
       let finalTitle = title || "New Research";
       
       if (initialQuery) {
@@ -181,11 +176,10 @@ export const resolvers = {
         title: finalTitle,
       });
       const [newSession] = await db.select().from(sessions).where(eq(sessions.id, id));
-      return newSession;
+      return newSession as Session;
     },
     deleteSession: async (_: any, { id }: { id: string }) => {
       await db.delete(sessions).where(eq(sessions.id, id));
-      // Note: In a full implementation, we'd also delete checkpoints from SqliteSaver's tables
       return true;
     },
     deleteStructuredFact: async (_: any, { id }: { id: string }) => {
@@ -196,10 +190,6 @@ export const resolvers = {
 
   Subscription: {
     agentEvents: {
-      /**
-       * The 'subscribe' generator function is where the magic happens.
-       * We run the LangGraph and yield events as they come in.
-       */
       subscribe: async function* (_: any, { query, history = [], attachments = [], sessionId }: any, context: any) {
         const graph = createAgentGraph(checkpointer);
         const googleToken = context.request.headers.get('x-google-token');
@@ -218,8 +208,6 @@ export const resolvers = {
 
         const config = sessionId ? { configurable: { thread_id: sessionId } } : {};
 
-        // LangGraph's streaming modes allow us to catch different types of data.
-        // We use 'updates' to see node transitions (for status logs).
         const stream = await graph.stream(initialState, {
           ...config,
           streamMode: ["updates"] as any
@@ -236,7 +224,7 @@ export const resolvers = {
                 if (nodeUpdate.metadata?.status) {
                   yield {
                     agentEvents: {
-                      type: EVENT_TYPES.STATUS,
+                      type: 'STATUS',
                       content: nodeUpdate.metadata.status,
                       stage: nodeUpdate.metadata.stage,
                     }
@@ -247,7 +235,6 @@ export const resolvers = {
                 if (nodeUpdate.messages && Array.isArray(nodeUpdate.messages)) {
                   for (const msg of nodeUpdate.messages) {
                     if (msg.content && !msg.tool_calls?.length) {
-                      // Nodes that produce user-facing final or intermediate answers
                       const isUserFacingNode = [
                         NODE_NAMES.REASONING, 
                         NODE_NAMES.SUPERVISOR, 
@@ -257,14 +244,13 @@ export const resolvers = {
                         NODE_NAMES.CODER_WORKER
                       ].includes(nodeName as any);
                       
-                      // Ensure content is a string (tool outputs might be objects/arrays)
                       const stringContent = typeof msg.content === 'string' 
                         ? msg.content 
                         : JSON.stringify(msg.content);
                       
                       yield {
                         agentEvents: {
-                          type: isUserFacingNode ? EVENT_TYPES.MESSAGE : EVENT_TYPES.REASONING,
+                          type: isUserFacingNode ? 'MESSAGE' : 'REASONING',
                           content: stringContent,
                         }
                       };
@@ -277,7 +263,7 @@ export const resolvers = {
         } catch (error: any) {
           yield {
             agentEvents: {
-              type: EVENT_TYPES.ERROR,
+              type: 'ERROR',
               content: error.message || "Unknown graph execution error",
             }
           };
@@ -286,3 +272,4 @@ export const resolvers = {
     }
   }
 };
+
