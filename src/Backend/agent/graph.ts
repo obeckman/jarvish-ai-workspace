@@ -10,53 +10,58 @@ import { coderWorkerNode } from "@/Backend/agent/nodes/workers/coder";
 import { toolsNode } from "@/Backend/agent/nodes/tools";
 import { archiveNode } from "@/Backend/agent/nodes/archive";
 import { clarificationNode } from "@/Backend/agent/nodes/clarification";
-import { NODE_NAMES, TOOL_CONFIDENCE_THRESHOLD } from "@/Backend/agent/constants";
+import { NODE_NAMES, TOOL_CONFIDENCE_THRESHOLD, STAGES } from "@/Backend/agent/constants"; // Import STAGES
 
-/**
- * Supervisor Router: Decides which specialized worker to call or to finish.
- */
-function supervisorRouter(state: AgentStateType) {
-  const lastMessage = state.messages[state.messages.length - 1];
-  
-  if (lastMessage.tool_calls?.length) {
-    const toolName = lastMessage.tool_calls[0].name;
-    if (toolName === 'delegate_to_research_worker') return NODE_NAMES.RESEARCH_WORKER;
-    if (toolName === 'delegate_to_google_worker') return NODE_NAMES.GOOGLE_WORKER;
-    if (toolName === 'delegate_to_coder_worker') return NODE_NAMES.CODER_WORKER;
-  }
-  
-  return NODE_NAMES.ARCHIVE;
-}
-
-/**
- * Worker Router: Decides whether to execute a tool or return to the supervisor.
- */
-function workerRouter(state: AgentStateType) {
-  const lastMessage = state.messages[state.messages.length - 1];
-  
-  if (lastMessage.tool_calls?.length) {
-    return NODE_NAMES.TOOLS;
-  }
-  
-  return NODE_NAMES.SUPERVISOR;
-}
-
-/**
- * Tools Router: Returns to the worker that initiated the tool call.
- */
-function toolsRouter(state: AgentStateType) {
-  if (state.toolConfidence !== null && state.toolConfidence < TOOL_CONFIDENCE_THRESHOLD) {
-    return NODE_NAMES.CLARIFICATION;
-  }
-  return state.lastWorker || NODE_NAMES.SUPERVISOR;
-}
+// Define the state schema for LangGraph
+const graphState = {
+  messages: {
+    reducer: (x: any[], y: any[]) => x.concat(y),
+    default: () => [],
+  },
+  memories: {
+    reducer: (x: any[], y: any[]) => y, // Always replace with latest retrieval
+    default: () => [],
+  },
+  researchNotes: {
+    reducer: (x: string[], y: string[]) => x.concat(y),
+    default: () => [],
+  },
+  metadata: {
+    reducer: (x: Record<string, any>, y: Record<string, any>) => ({ ...x, ...y }),
+    default: () => ({ stage: STAGES.PREPARE, status: "idle" }),
+  },
+  attachments: {
+    reducer: (x: any[], y: any[]) => y,
+    default: () => [],
+  },
+  processedAttachments: {
+    reducer: (x: any[], y: any[]) => x.concat(y),
+    default: () => [],
+  },
+  googleToken: {
+    reducer: (x: string | null, y: string | null) => y ?? x,
+    default: () => null,
+  },
+  lastWorker: {
+    reducer: (x: string | null, y: string | null) => y ?? x,
+    default: () => null,
+  },
+  toolConfidence: {
+    reducer: (x: number | null, y: number | null) => y ?? x,
+    default: () => null,
+  },
+  sessionId: {
+    reducer: (x: string | null, y: string | null) => y ?? x,
+    default: () => null,
+  },
+};
 
 /**
  * Assembler for the Agent Graph.
  * Defines the logical sequence of operations.
  */
 export function createAgentGraph(checkpointer?: BaseCheckpointSaver) {
-  const workflow = new StateGraph(AgentState)
+  const workflow = new StateGraph(graphState as any) // Cast to any temporarily to bypass strict typing
     // 1. Add all nodes
     .addNode(NODE_NAMES.CONTEXT, contextNode)
     .addNode(NODE_NAMES.PROCESSING, processingNode)
