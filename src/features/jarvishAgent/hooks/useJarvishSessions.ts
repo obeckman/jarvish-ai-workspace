@@ -1,7 +1,8 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { z } from 'zod';
-import { Session, SessionSummary, GetSessionSummaryResponseSchema } from '@/features/jarvishAgent/types';
+import { GetSessionSummaryResponseSchema } from '@/features/jarvishAgent/types';
 import { STORAGE_KEYS, API_ENDPOINTS, GQL_QUERIES, GQL_MUTATIONS, UI_STRINGS } from '@/features/jarvishAgent/constants';
+import { Session, GetSessionsQuery, GetSessionsQueryVariables, GetSessionsDocument } from '../gql'
 
 export const useJarvishSessions = (searchTerm: string) => {
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -10,27 +11,31 @@ export const useJarvishSessions = (searchTerm: string) => {
   const [hasMore, setHasMore] = useState(true);
   const [isFetchingSessions, setIsFetchingSessions] = useState(false);
   const [isSummaryReady, setIsSummaryReady] = useState(false); // New state to track if summary is ready
-  
+
   const pollingIntervalRef = useRef<any>(null);
 
   const fetchSessions = useCallback(async (reset = false) => {
     if (isFetchingSessions) return;
     setIsFetchingSessions(true);
-    
+
     const newOffset = reset ? 0 : offset;
     const limit = 10;
-    
+
     try {
       const res = await fetch(API_ENDPOINTS.GRAPHQL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          query: GQL_QUERIES.GET_SESSIONS,
-          variables: { limit, offset: newOffset, search: searchTerm || null }
+          query: GetSessionsDocument,
+          variables: {
+            limit,
+            offset: newOffset,
+            search: searchTerm || null
+          } as GetSessionsQueryVariables
         })
       });
-      const result = await res.json();
-      if (result.data?.getSessions) {
+      const result: { data: GetSessionsQuery } = await res.json();
+      if (result.data.getSessions) {
         const fetched = result.data.getSessions;
         setSessions(prev => reset ? fetched : [...prev, ...fetched]);
         setOffset(newOffset + fetched.length);
@@ -43,7 +48,7 @@ export const useJarvishSessions = (searchTerm: string) => {
     }
   }, [offset, searchTerm, isFetchingSessions]);
 
-  const fetchSummary = useCallback(async (sessionId: string): Promise<SessionSummary | null> => {
+  const fetchSummary = useCallback(async (sessionId: string) => {
     try {
       const res = await fetch(API_ENDPOINTS.GRAPHQL, {
         method: 'POST',
@@ -55,10 +60,10 @@ export const useJarvishSessions = (searchTerm: string) => {
       });
       const result = await res.json();
       const validatedResponse = GetSessionSummaryResponseSchema.parse(result.data); // Apply Zod validation
-      
+
       if (validatedResponse.getSessionSummary) {
         const summary = validatedResponse.getSessionSummary;
-        setSessions(prev => prev.map(s => 
+        setSessions(prev => prev.map(s =>
           s.id === sessionId ? { ...s, summary: summary } : s
         ));
         return summary;
@@ -105,10 +110,10 @@ export const useJarvishSessions = (searchTerm: string) => {
 
   const createNewSession = useCallback(async (initialQuery?: string) => {
     const id = `session-${Date.now()}`;
-    const title = initialQuery 
+    const title = initialQuery
       ? (initialQuery.substring(0, 30) + (initialQuery.length > 30 ? '...' : ''))
       : 'New Research';
-      
+
     try {
       const res = await fetch(API_ENDPOINTS.GRAPHQL, {
         method: 'POST',
