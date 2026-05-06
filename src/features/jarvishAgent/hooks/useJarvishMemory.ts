@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
-import { StructuredFact } from '@/features/jarvishAgent/types';
+import { StructuredFact, GetStructuredFactsResponseSchema } from '@/features/jarvishAgent/types';
 import { API_ENDPOINTS, GQL_QUERIES, GQL_MUTATIONS } from '@/features/jarvishAgent/constants';
+import { DeleteStructuredFactMutationVariables } from '../gql';
 
 export const useJarvishMemory = () => {
   const [facts, setFacts] = useState<StructuredFact[]>([]);
@@ -15,8 +16,10 @@ export const useJarvishMemory = () => {
         body: JSON.stringify({ query: GQL_QUERIES.GET_STRUCTURED_FACTS })
       });
       const result = await res.json();
-      if (result.data?.getStructuredFacts) {
-        setFacts(result.data.getStructuredFacts);
+      
+      const validatedResponse = GetStructuredFactsResponseSchema.parse(result.data);
+      if (validatedResponse.getStructuredFacts) {
+        setFacts(validatedResponse.getStructuredFacts as StructuredFact[]);
       }
     } catch (e) {
       console.error('Failed to fetch structured facts:', e);
@@ -32,7 +35,7 @@ export const useJarvishMemory = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           query: GQL_MUTATIONS.DELETE_STRUCTURED_FACT,
-          variables: { id }
+          variables: { id } as DeleteStructuredFactMutationVariables
         })
       });
       setFacts(prev => prev.filter(f => f.id !== id));

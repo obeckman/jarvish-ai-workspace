@@ -107,12 +107,12 @@ export const JarvishSidebar: React.FC<JarvishSidebarProps> = ({
               [styles.collapsedItem]: isCollapsed,
               [styles.compactItem]: isCompact && !isCollapsed
             })}
-            title={isCollapsed ? (s.summary?.summaryTitle || s.title) : undefined}
+            title={isCollapsed ? ((s.summary && s.summary.summaryTitle) || s.title) : undefined}
           >
             <div className={styles.sessionItemHeader}>
               {!isCollapsed ? (
                 <>
-                  <span className={styles.sessionTitle}>{s.summary?.summaryTitle || s.title}</span>
+                  <span className={styles.sessionTitle}>{(s.summary && s.summary.summaryTitle) || s.title}</span>
                   <button 
                     className={styles.removeBtn} 
                     onClick={(e) => {

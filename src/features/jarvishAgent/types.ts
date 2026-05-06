@@ -1,9 +1,15 @@
 import { z } from 'zod';
 import { AGENT_STATUS, MESSAGE_ROLES, BLOCK_TYPES } from '@/features/jarvishAgent/constants';
+import * as GQL from './gql/graphql';
 
 export type AgentStatus = typeof AGENT_STATUS[keyof typeof AGENT_STATUS];
 export type MessageRole = typeof MESSAGE_ROLES[keyof typeof MESSAGE_ROLES];
 export type BlockType = typeof BLOCK_TYPES[keyof typeof BLOCK_TYPES];
+
+// Re-export generated fragment types with null-to-undefined conversion or just as they are
+export type Session = GQL.SessionFieldsFragment;
+export type StructuredFact = GQL.FactFieldsFragment;
+export type SessionSummary = NonNullable<GQL.SessionFieldsFragment['summary']>;
 
 // --- Block Schemas ---
 
@@ -46,6 +52,12 @@ export const DocumentBlockSchema = z.object({
   content: z.string(), // Live draft content
 });
 
+export const DraftBlockSchema = z.object({
+  type: z.literal(BLOCK_TYPES.DRAFT),
+  title: z.string().optional(),
+  content: z.string(),
+});
+
 export const AgentMessageBlockSchema = z.discriminatedUnion('type', [
   TextBlockSchema,
   CodeBlockSchema,
@@ -53,6 +65,7 @@ export const AgentMessageBlockSchema = z.discriminatedUnion('type', [
   ActionBlockSchema,
   DataBlockSchema,
   DocumentBlockSchema,
+  DraftBlockSchema,
 ]);
 
 import { AnyBlockComponentProps } from './components/Blocks/blockProps';
@@ -65,35 +78,13 @@ export type { AnyBlockComponentProps };
 export const MessageContentSchema = z.union([z.string(), z.array(AgentMessageBlockSchema)]);
 export type MessageContent = z.infer<typeof MessageContentSchema>;
 
-// --- Existing Types ---
+// --- Application Types ---
 
 export interface Message {
   id: string;
   role: MessageRole;
-  content: MessageContent; // This will now potentially be a JSON string of AgentMessageBlock[]
+  content: MessageContent; 
   timestamp: number;
-}
-
-export interface StructuredFact {
-  id: string;
-  fact: string;
-  category: string;
-  confidence: number;
-  createdAt: string;
-}
-
-export interface SessionSummary {
-  summaryTitle: string;
-  userMessage: string;
-  aiAnswer: string;
-}
-
-export interface Session {
-  id: string;
-  title: string;
-  createdAt: string;
-  updatedAt: string;
-  summary?: SessionSummary;
 }
 
 export interface Attachment {
@@ -102,7 +93,7 @@ export interface Attachment {
   mimeType: string;
 }
 
-// --- GraphQL Response Schemas for useJarvishChat ---
+// --- GraphQL Response Schemas ---
 
 // For GQL_QUERIES.GET_SESSION_HISTORY
 export const SessionHistoryItemSchema = z.object({
@@ -129,5 +120,18 @@ export const GetSessionSummaryResponseSchema = z.object({
     summaryTitle: z.string(),
     userMessage: z.string(),
     aiAnswer: z.string(),
+    createdAt: z.string(),
+    sessionId: z.string(),
   }).nullable(), // It can return null if not yet generated
+});
+
+// For GQL_QUERIES.GET_STRUCTURED_FACTS
+export const GetStructuredFactsResponseSchema = z.object({
+  getStructuredFacts: z.array(z.object({
+    id: z.string(),
+    fact: z.string(),
+    category: z.string(),
+    confidence: z.number(),
+    createdAt: z.string(),
+  })),
 });

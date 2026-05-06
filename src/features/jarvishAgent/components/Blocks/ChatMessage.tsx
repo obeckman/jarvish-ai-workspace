@@ -13,13 +13,9 @@ interface ChatMessageProps {
 }
 
 export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({ message, onAction }) => {
-  console.log('[ChatMessage] Component rendering for message:', message.id, message.role);
-  const isAgent = message.role === MESSAGE_ROLES.AGENT || message.role === MESSAGE_ROLES.MODEL;
-  const isUser = message.role === MESSAGE_ROLES.USER;
+  const isAgent = message.role === MESSAGE_ROLES.AGENT || message.role === MESSAGE_ROLES.MODEL || (message.role as string) === 'assistant';
+  const isUser = message.role === MESSAGE_ROLES.USER || (message.role as string) === 'user';
 
-  // Only attempt to parse blocks for agent messages
-  console.log('[ChatMessage] message.content:', message.content); // New log
-  console.log('[ChatMessage] Array.isArray(message.content):', Array.isArray(message.content)); // New log
   const blocks: AgentMessageBlock[] = Array.isArray(message.content) 
     ? message.content 
     : [{ type: BLOCK_TYPES.TEXT, content: message.content as string }];
@@ -42,7 +38,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({ message, on
         {isAgent ? (
           <BlockRenderer blocks={blocks} onAction={onAction} />
         ) : (
-          <Markdown content={message.content} className={styles.messageText} />
+          <Markdown content={typeof message.content === 'string' ? message.content : JSON.stringify(message.content)} className={styles.messageText} />
         )}
       </div>
     </div>

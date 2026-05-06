@@ -1,6 +1,12 @@
-import { useState, useCallback, useRef, useEffect, useReducer } from 'react';
-import { z } from 'zod';
-import { Message, AgentStatus, Attachment, GetSessionHistoryResponseSchema, AgentEventsSubscriptionResponseSchema, AgentEventDataSchema, AgentMessageBlockSchema, MessageContent } from '@/features/jarvishAgent/types';
+import { useCallback, useRef, useReducer } from 'react';
+import { 
+  Message, 
+  AgentStatus, 
+  Attachment, 
+  GetSessionHistoryResponseSchema, 
+  AgentEventsSubscriptionResponseSchema, 
+  MessageContent 
+} from '@/features/jarvishAgent/types';
 import { 
   MESSAGE_ROLES, 
   AGENT_STATUS, 
@@ -9,10 +15,13 @@ import {
   EVENT_TYPES, 
   UI_STRINGS,
   GQL_QUERIES,
-  STAGES,
-  BLOCK_TYPES // Add BLOCK_TYPES
+  STAGES
 } from '@/features/jarvishAgent/constants';
 import { parseAgentMessageContent } from '../utils/parser';
+import { 
+  AgentChatSubscriptionVariables, 
+  GetSessionHistoryQueryVariables 
+} from '../gql';
 
 // --- Reducer Definitions ---
 
@@ -37,11 +46,11 @@ type ChatAction =
   | { type: 'SET_STATUS'; payload: AgentStatus }
   | { type: 'SET_STATUS_MESSAGE'; payload: string | null }
   | { type: 'ADD_STATUS_LOG'; payload: string }
-  | { type: 'SET_STATUS_LOGS'; payload: string[] } // New: Set all status logs
+  | { type: 'SET_STATUS_LOGS'; payload: string[] }
   | { type: 'SET_CURRENT_STAGE'; payload: number }
   | { type: 'SET_ATTACHMENTS'; payload: Attachment[] }
   | { type: 'ADD_ATTACHMENT'; payload: Attachment }
-  | { type: 'REMOVE_ATTACHMENT'; payload: number } // payload is index
+  | { type: 'REMOVE_ATTACHMENT'; payload: number }
   | { type: 'SET_ERROR_MESSAGE'; payload: string | null }
   | { type: 'SET_REASONING_VISIBLE'; payload: boolean }
   | { type: 'SET_LAST_SENT_QUERY'; payload: string }
@@ -64,7 +73,7 @@ const initialChatState: ChatState = {
   isReasoningVisible: false,
   lastSentQuery: '',
 };
-// todo: action strings should be constants 
+
 function chatReducer(state: ChatState, action: ChatAction): ChatState {
   switch (action.type) {
     case 'SET_MESSAGES':
@@ -120,7 +129,6 @@ export const useJarvishChat = (
   const readerRef = useRef<ReadableStreamDefaultReader | null>(null);
 
   const loadSessionHistory = useCallback(async (sessionId: string) => {
-    console.log('[useJarvishChat - loadSessionHistory] Function called for session:', sessionId);
     try {
       dispatch({ type: 'SET_STATUS', payload: AGENT_STATUS.THINKING });
       const res = await fetch(API_ENDPOINTS.GRAPHQL, {
@@ -128,14 +136,13 @@ export const useJarvishChat = (
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           query: GQL_QUERIES.GET_SESSION_HISTORY,
-          variables: { sessionId }
+          variables: { sessionId } as GetSessionHistoryQueryVariables
         })
       });
       const result = await res.json();
-      // Validate the GraphQL response using Zod
       const validatedResponse = GetSessionHistoryResponseSchema.parse(result.data);
       if (validatedResponse.getSessionHistory) {
-        const history = result.data.getSessionHistory.map((m: any, i: number) => {
+        const history = validatedResponse.getSessionHistory.map((m, i: number) => {
           const content = parseAgentMessageContent(String(m.content));
           
           return {
@@ -143,7 +150,7 @@ export const useJarvishChat = (
             role: m.role,
             content: content,
             timestamp: Date.now()
-          };
+          } as Message;
         });
         dispatch({ type: 'SET_MESSAGES', payload: history.length > 0 ? history : [{
           id: '1',
@@ -158,7 +165,7 @@ export const useJarvishChat = (
     } finally {
       dispatch({ type: 'SET_STATUS', payload: AGENT_STATUS.IDLE });
     }
-  }, [dispatch]);
+  }, []);
 
   const cancelRequest = useCallback(() => {
     if (readerRef.current) {
@@ -178,18 +185,26 @@ export const useJarvishChat = (
       dispatch({ type: 'SET_ATTACHMENTS', payload: [] }); 
       setTimeout(() => dispatch({ type: 'SET_STATUS_MESSAGE', payload: null }), 3000);
     }
-  }, [dispatch, state.currentStage, state.lastSentQuery, state.statusLogs]);
+  }, [state.currentStage, state.lastSentQuery, state.statusLogs]);
 
-  const sendMessage = useCallback(async (sessionId: string) => {
-    if (!state.input.trim() || state.status !== AGENT_STATUS.IDLE) return;
-// todo: actions need to be functions thet return the object
+  const sendMessage = useCallback(async (sessionId: string, overrideQuery?: string) => {
+    const queryToSend = overrideQuery || state.input;
+    if (!queryToSend.trim() || state.status !== AGENT_STATUS.IDLE) return;
+
     dispatch({ type: 'SET_ERROR_MESSAGE', payload: null });
-    dispatch({ type: 'SET_LAST_SENT_QUERY', payload: state.input });
+    dispatch({ type: 'SET_LAST_SENT_QUERY', payload: queryToSend });
     dispatch({ type: 'SET_STATUS_LOGS', payload: [] });
     dispatch({ type: 'SET_REASONING_VISIBLE', payload: true });
-    const userMsg: Message = { id: Date.now().toString(), role: MESSAGE_ROLES.USER, content: state.input, timestamp: Date.now() };
+    
+    const userMsg: Message = { 
+      id: Date.now().toString(), 
+      role: MESSAGE_ROLES.USER, 
+      content: queryToSend, 
+      timestamp: Date.now() 
+    };
+    
     dispatch({ type: 'ADD_MESSAGE', payload: userMsg });
-    dispatch({ type: 'SET_INPUT', payload: '' });
+    if (!overrideQuery) dispatch({ type: 'SET_INPUT', payload: '' });
     dispatch({ type: 'SET_STATUS', payload: AGENT_STATUS.THINKING });
     dispatch({ type: 'SET_CURRENT_STAGE', payload: STAGES.PREPARE });
 
@@ -215,7 +230,7 @@ export const useJarvishChat = (
         body: JSON.stringify({
           query: GQL_SUBSCRIPTIONS.AGENT_CHAT,
           variables: {
-            query: state.input,
+            query: queryToSend,
             history: state.messages.map(m => ({ 
               role: m.role === MESSAGE_ROLES.USER ? 'user' : 'assistant', 
               content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content)
@@ -226,7 +241,7 @@ export const useJarvishChat = (
               mimeType: a.mimeType
             })),
             sessionId
-          }
+          } as AgentChatSubscriptionVariables
         }),
       });
 
@@ -256,7 +271,6 @@ export const useJarvishChat = (
 
           try {
             const result = JSON.parse(jsonStr);
-            // Validate the SSE event data using Zod
             const validatedEvent = AgentEventsSubscriptionResponseSchema.parse(result.data);
             const data = validatedEvent.agentEvents;
             if (!data) continue;
@@ -288,7 +302,8 @@ export const useJarvishChat = (
 
               dispatch({ type: 'UPDATE_LAST_MESSAGE', payload: { id: assistantMsgId, content: newContent } });
               dispatch({ type: 'SET_STATUS', payload: AGENT_STATUS.RESPONDING });
-            } else if (data.type === EVENT_TYPES.ERROR) {              dispatch({ type: 'SET_ERROR_MESSAGE', payload: `Agent Error: ${data.content}` });
+            } else if (data.type === EVENT_TYPES.ERROR) {
+              dispatch({ type: 'SET_ERROR_MESSAGE', payload: `Agent Error: ${data.content}` });
             }
           } catch (e) {
             console.warn('Failed to parse SSE JSON:', jsonStr);
@@ -305,13 +320,10 @@ export const useJarvishChat = (
       if (error.name === 'AbortError') return;
       dispatch({ type: 'SET_STATUS', payload: AGENT_STATUS.ERROR });
       dispatch({ type: 'SET_ERROR_MESSAGE', payload: error instanceof Error ? error.message : 'An unexpected error occurred' });
-      // We don't have a direct equivalent for setMessages(prev => prev.filter(m => m.content !== ''));
-      // This part might need a specific action if removing empty messages is a regular operation.
-      // For now, I will omit it as it filters only empty messages.
     } finally {
       abortControllerRef.current = null;
     }
-  }, [dispatch, googleToken, state.input, state.messages, state.attachments, state.status]);
+  }, [googleToken, state.input, state.messages, state.attachments, state.status, checkAndRefreshToken]);
 
   const addAttachment = useCallback((file: File) => {
     if (file.size > 10 * 1024 * 1024) {
@@ -329,18 +341,17 @@ export const useJarvishChat = (
       } });
     };
     reader.readAsDataURL(file);
-  }, [dispatch]);
+  }, []);
 
   const removeAttachment = useCallback((index: number) => {
     dispatch({ type: 'REMOVE_ATTACHMENT', payload: index });
-  }, [dispatch]);
+  }, []);
 
   const clearMessages = useCallback(() => {
     dispatch({ type: 'RESET_CHAT' });
-  }, [dispatch]);
+  }, []);
 
   return {
-    // State values
     messages: state.messages,
     input: state.input,
     status: state.status,
@@ -350,11 +361,10 @@ export const useJarvishChat = (
     attachments: state.attachments,
     errorMessage: state.errorMessage,
     isReasoningVisible: state.isReasoningVisible,
-    lastSentQuery: state.lastSentQuery, // Expose lastSentQuery
+    lastSentQuery: state.lastSentQuery,
 
-    // Actions (or functions that dispatch actions)
     setInput: (value: string) => dispatch({ type: 'SET_INPUT', payload: value }),
-    setMessages: (newMessages: Message[]) => dispatch({ type: 'SET_MESSAGES', payload: newMessages }), // For loadSessionHistory's initial set
+    setMessages: (newMessages: Message[]) => dispatch({ type: 'SET_MESSAGES', payload: newMessages }),
     setErrorMessage: (message: string | null) => dispatch({ type: 'SET_ERROR_MESSAGE', payload: message }),
     setIsReasoningVisible: (value: boolean) => dispatch({ type: 'SET_REASONING_VISIBLE', payload: value }),
 

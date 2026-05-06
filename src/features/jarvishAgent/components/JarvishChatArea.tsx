@@ -2,7 +2,6 @@ import React from 'react';
 import {
   Loader2,
   BrainCircuit,
-  User,
   Bot,
   AlertCircle,
   FileText,
@@ -72,7 +71,7 @@ export const JarvishChatArea: React.FC<JarvishChatAreaProps> = ({
                 {currentReasoningGroup.map((rm) => (
                   <div key={rm.id} className={styles.reasoningStep}>
                     <div className={styles.dot} />
-                    <Markdown content={rm.content} />
+                    <Markdown content={typeof rm.content === 'string' ? rm.content : JSON.stringify(rm.content)} />
                   </div>
                 ))}
               </div>
@@ -102,7 +101,7 @@ export const JarvishChatArea: React.FC<JarvishChatAreaProps> = ({
       }
     });
 
-    //flushReasoning();
+    flushReasoning(); // Ensure last reasoning group is flushed
     return rendered;
   };
 

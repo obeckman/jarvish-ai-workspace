@@ -4,7 +4,7 @@
  */
 
 import { ROLES, EVENT_TYPES, STAGES } from '@/shared/jarvish.constants';
-import { graphql } from './gql'
+import { graphql } from './gql';
 
 export { EVENT_TYPES, STAGES };
 
@@ -52,18 +52,38 @@ export const UI_STRINGS = {
   STATUS_EXECUTING: 'Executing Task...',
 } as const;
 
-export const GQL_QUERIES = {
-  // GET_SESSIONS: GQL.GetSessionsDocument,
-  // GET_SESSION_HISTORY: GQL.GetSessionHistoryDocument,
-  // GET_SESSION_SUMMARY: GQL.GetSessionSummaryDocument,
-  // GET_STRUCTURED_FACTS: GQL.GetStructuredFactsDocument,
+export const GQL_FRAGMENTS = {
+  SESSION: graphql(`
+    fragment SessionFields on Session {
+      id
+      title
+      createdAt
+      updatedAt
+      summary {
+        summaryTitle
+        userMessage
+        aiAnswer
+        createdAt
+        sessionId
+      }
+    }
+  `),
+  FACT: graphql(`
+    fragment FactFields on StructuredFact {
+      id
+      fact
+      category
+      confidence
+      createdAt
+    }
+  `),
+};
 
+export const GQL_QUERIES = {
   GET_SESSIONS: graphql(`    
     query GetSessions($limit: Int, $offset: Int, $search: String) {       
       getSessions(limit: $limit, offset: $offset, search: $search) {         
-        id title createdAt updatedAt summary { 
-          summaryTitle userMessage aiAnswer createdAt sessionId 
-        }       
+        ...SessionFields
       }     
     }  
   `),  
@@ -84,7 +104,7 @@ export const GQL_QUERIES = {
   GET_STRUCTURED_FACTS: graphql(`    
     query GetStructuredFacts {      
       getStructuredFacts { 
-        id fact category confidence createdAt 
+        ...FactFields
       }     
     }  
   `),
@@ -106,7 +126,6 @@ export const GQL_MUTATIONS = {
       deleteStructuredFact(id: $id)
     }
   `),
-
 } as const;
 
 export const GQL_SUBSCRIPTIONS = {
@@ -120,4 +139,3 @@ export const GQL_SUBSCRIPTIONS = {
     }
   `),
 } as const;
-

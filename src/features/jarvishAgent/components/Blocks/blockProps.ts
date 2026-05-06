@@ -29,7 +29,7 @@ export interface ActionBlockComponentProps {
   type: typeof BLOCK_TYPES.ACTION;
   actionId: string;
   label: string;
-  payload?: z.infer<typeof ActionBlockSchema>['payload']; // Use Zod's inferred type
+  payload?: z.infer<typeof ActionBlockSchema>['payload']; 
   disabled?: boolean;
   loading?: boolean;
   onAction?: (label: string) => void;
@@ -39,7 +39,7 @@ export interface DataBlockComponentProps {
   type: typeof BLOCK_TYPES.DATA;
   displayType: 'table' | 'chart';
   title?: string;
-  data: z.infer<typeof DataBlockSchema>['data']; // Use Zod's inferred type
+  data: z.infer<typeof DataBlockSchema>['data']; 
   onAction?: (label: string) => void;
 }
 
@@ -47,8 +47,14 @@ export interface DocumentBlockComponentProps {
   type: typeof BLOCK_TYPES.DOCUMENT;
   title?: string;
   content: string;
-  onClick?: () => void; // DraftBlock has onClick, map DocumentBlock to it
-  onAction?: (label: string) => void; // General prop for all blocks
+  onAction?: (label: string) => void;
+}
+
+export interface DraftBlockComponentProps {
+  type: typeof BLOCK_TYPES.DRAFT;
+  title?: string;
+  content: string;
+  onAction?: (label: string) => void;
 }
 
 // Union type of all possible component props
@@ -58,4 +64,5 @@ export type AnyBlockComponentProps =
   | ReasoningBlockComponentProps
   | ActionBlockComponentProps
   | DataBlockComponentProps
-  | DocumentBlockComponentProps;
+  | DocumentBlockComponentProps
+  | DraftBlockComponentProps;

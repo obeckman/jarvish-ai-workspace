@@ -1,8 +1,8 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { z } from 'zod';
-import { GetSessionSummaryResponseSchema } from '@/features/jarvishAgent/types';
+import { useState, useCallback, useEffect } from 'react';
+import { GetSessionSummaryResponseSchema, Session } from '@/features/jarvishAgent/types';
 import { STORAGE_KEYS, API_ENDPOINTS, GQL_QUERIES, GQL_MUTATIONS, UI_STRINGS } from '@/features/jarvishAgent/constants';
-import { Session, GetSessionsQuery, GetSessionsQueryVariables, GetSessionsDocument } from '../gql'
+import { GetSessionsQuery, GetSessionsQueryVariables } from '../gql'
+
 
 export const useJarvishSessions = (searchTerm: string) => {
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -10,9 +10,7 @@ export const useJarvishSessions = (searchTerm: string) => {
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [isFetchingSessions, setIsFetchingSessions] = useState(false);
-  const [isSummaryReady, setIsSummaryReady] = useState(false); // New state to track if summary is ready
-
-  const pollingIntervalRef = useRef<any>(null);
+  const [isPolling, setIsPolling] = useState(false);
 
   const fetchSessions = useCallback(async (reset = false) => {
     if (isFetchingSessions) return;
@@ -26,7 +24,7 @@ export const useJarvishSessions = (searchTerm: string) => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          query: GetSessionsDocument,
+          query: GQL_QUERIES.GET_SESSIONS,
           variables: {
             limit,
             offset: newOffset,
@@ -37,7 +35,7 @@ export const useJarvishSessions = (searchTerm: string) => {
       const result: { data: GetSessionsQuery } = await res.json();
       if (result.data.getSessions) {
         const fetched = result.data.getSessions;
-        setSessions(prev => reset ? fetched : [...prev, ...fetched]);
+        setSessions(prev => reset ? (fetched as Session[]) : [...prev, ...(fetched as Session[])]);
         setOffset(newOffset + fetched.length);
         setHasMore(fetched.length === limit);
       }
@@ -59,7 +57,7 @@ export const useJarvishSessions = (searchTerm: string) => {
         })
       });
       const result = await res.json();
-      const validatedResponse = GetSessionSummaryResponseSchema.parse(result.data); // Apply Zod validation
+      const validatedResponse = GetSessionSummaryResponseSchema.parse(result.data);
 
       if (validatedResponse.getSessionSummary) {
         const summary = validatedResponse.getSessionSummary;
@@ -74,15 +72,14 @@ export const useJarvishSessions = (searchTerm: string) => {
     return null;
   }, []);
 
-  const triggerSummary = useCallback(async (sessionId: string) => {
-    setIsSummaryReady(false); // Reset status when triggering new summary
+  const triggerSummary = useCallback(async (sessionId: string, _e?: React.MouseEvent) => {
+    setIsPolling(true);
     const maxRetries = 5;
     let retries = 0;
-    let delay = 1000; // 1 second initial delay
+    let delay = 1000;
 
     while (retries < maxRetries) {
       try {
-        // Trigger the backend to generate summary (if not already there)
         await fetch(API_ENDPOINTS.GRAPHQL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -94,19 +91,20 @@ export const useJarvishSessions = (searchTerm: string) => {
 
         const summary = await fetchSummary(sessionId);
         if (summary) {
-          setIsSummaryReady(true);
-          return; // Summary found, exit
+          setIsPolling(false);
+          return;
         }
       } catch (e) {
         console.error(`Failed to trigger or fetch summary (retry ${retries + 1}/${maxRetries}):`, e);
       }
 
       retries++;
-      delay *= 2; // Exponential backoff
+      delay *= 2;
       await new Promise(resolve => setTimeout(resolve, delay));
     }
+    setIsPolling(false);
     console.error(`Failed to get session summary for ${sessionId} after ${maxRetries} retries.`);
-  }, [fetchSummary, setIsSummaryReady]);
+  }, [fetchSummary]);
 
   const createNewSession = useCallback(async (initialQuery?: string) => {
     const id = `session-${Date.now()}`;
@@ -125,7 +123,7 @@ export const useJarvishSessions = (searchTerm: string) => {
       });
       const result = await res.json();
       if (result.data?.createSession) {
-        const newSession = result.data.createSession;
+        const newSession = result.data.createSession as Session;
         setSessions(prev => [newSession, ...prev]);
         return newSession.id;
       }
@@ -135,13 +133,11 @@ export const useJarvishSessions = (searchTerm: string) => {
     return null;
   }, []);
 
-  const deleteSession = useCallback(async (id: string) => {
+  const deleteSession = useCallback(async (id: string, _e?: React.MouseEvent) => {
     if (!confirm(UI_STRINGS.DELETE_CONFIRMATION)) return;
-    // Optimistic update - store previous state for rollback
     const previousSessions = sessions;
     const previousCurrentSessionId = currentSessionId;
 
-    // Tentatively update UI
     setSessions(prev => prev.filter(s => s.id !== id));
     if (currentSessionId === id) {
       setCurrentSessionId(null);
@@ -157,10 +153,8 @@ export const useJarvishSessions = (searchTerm: string) => {
           variables: { id }
         })
       });
-      // If successful, no further action needed as UI is already updated
     } catch (e) {
       console.error('Failed to delete session:', e);
-      // Rollback UI changes on failure
       setSessions(previousSessions);
       setCurrentSessionId(previousCurrentSessionId);
       if (previousCurrentSessionId) {
@@ -168,7 +162,7 @@ export const useJarvishSessions = (searchTerm: string) => {
       } else {
         localStorage.removeItem(STORAGE_KEYS.SESSION_ID);
       }
-      alert(`Failed to delete session: ${e instanceof Error ? e.message : 'Unknown error'}`); // Inform user
+      alert(`Failed to delete session: ${e instanceof Error ? e.message : 'Unknown error'}`);
     }
   }, [currentSessionId, sessions]);
 
@@ -183,9 +177,7 @@ export const useJarvishSessions = (searchTerm: string) => {
 
   useEffect(() => {
     fetchSessions(true);
-  }, [searchTerm]);
-
-
+  }, [searchTerm, fetchSessions]);
 
   return {
     sessions,
@@ -197,6 +189,6 @@ export const useJarvishSessions = (searchTerm: string) => {
     createNewSession,
     deleteSession,
     triggerSummary,
-    isSummaryReady
+    isPolling
   };
 };

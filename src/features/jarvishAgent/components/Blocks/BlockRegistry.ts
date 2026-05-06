@@ -9,12 +9,14 @@ import { DraftBlock } from './DraftBlock';
 const CodeBlock = React.lazy(() => import('./CodeBlock').then(m => ({ default: m.CodeBlock })));
 const ActionBlock = React.lazy(() => import('./ActionBlock').then(m => ({ default: m.ActionBlock })));
 const DataBlock = React.lazy(() => import('./DataBlock').then(m => ({ default: m.DataBlock })));
+const DocumentBlock = DraftBlock; // Re-use DraftBlock for DocumentBlock for now
 
-export const BLOCK_COMPONENTS: Record<string, React.ComponentType<AnyBlockComponentProps>> = {
+export const BLOCK_COMPONENTS: Record<string, React.ComponentType<any>> = {
   [BLOCK_TYPES.TEXT]: TextBlock,
   [BLOCK_TYPES.REASONING]: ReasoningBlock,
   [BLOCK_TYPES.CODE]: CodeBlock,
   [BLOCK_TYPES.ACTION]: ActionBlock,
   [BLOCK_TYPES.DATA]: DataBlock,
+  [BLOCK_TYPES.DOCUMENT]: DocumentBlock,
   [BLOCK_TYPES.DRAFT]: DraftBlock,
 };

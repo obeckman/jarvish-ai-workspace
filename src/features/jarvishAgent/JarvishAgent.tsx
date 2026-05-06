@@ -14,6 +14,9 @@ import { JarvishChatInput } from './components/JarvishChatInput';
 import { JarvishMemoryPanel } from './components/JarvishMemoryPanel';
 import { GhostWriterPanel } from './components/GhostWriterPanel';
 
+// Types
+import { MessageRole } from './types';
+
 export const JarvishAgent: React.FC = () => {
   // Global/UI State not tied to a single domain
   const [searchTerm, setSearchTerm] = useState('');
@@ -75,17 +78,23 @@ export const JarvishAgent: React.FC = () => {
   const latestDraft = React.useMemo(() => {
     for (let i = messages.length - 1; i >= 0; i--) {
       const msg = messages[i];
-      if (msg.role === 'MODEL' || msg.role === 'AGENT') {
-        try {
-          const content = msg.content.trim();
-          if (content.startsWith('[') || content.startsWith('{')) {
-            const blocks = JSON.parse(content);
-            const draftBlock = Array.isArray(blocks) 
-              ? blocks.find((b: any) => b.type === 'draft')
-              : (blocks.type === 'draft' ? blocks : null);
-            if (draftBlock) return draftBlock;
-          }
-        } catch (e) { /* Not JSON */ }
+      if (msg.role === 'MODEL' || msg.role === 'AGENT' || (msg.role as string) === 'assistant') {
+        // If content is an array of blocks, find the draft block
+        if (Array.isArray(msg.content)) {
+          const draftBlock = msg.content.find(b => b.type === 'draft');
+          if (draftBlock) return draftBlock;
+        } else if (typeof msg.content === 'string') {
+          try {
+            const content = msg.content.trim();
+            if (content.startsWith('[') || content.startsWith('{')) {
+              const blocks = JSON.parse(content);
+              const draftBlock = Array.isArray(blocks) 
+                ? blocks.find((b: any) => b.type === 'draft')
+                : (blocks.type === 'draft' ? blocks : null);
+              if (draftBlock) return draftBlock;
+            }
+          } catch (e) { /* Not JSON */ }
+        }
       }
     }
     return null;

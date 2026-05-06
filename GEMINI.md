@@ -73,6 +73,12 @@ Performance is a first-class citizen. Unnecessary re-renders and memory allocati
 *   **Zod/Validation:** Use schemas for data entering the system (API responses, local storage) to ensure runtime type safety.
 *   **Discriminated Unions:** Use them for complex states (e.g., `Loading | Success | Error`).
 
+### 3.1 Frontend/Backend Communication (GraphQL + Zod)
+*   **Codegen:** We use `@graphql-codegen/client-preset` for the frontend. Do not manually create `types.ts` files for GraphQL operations.
+*   **Constants:** All GraphQL operations (Queries, Mutations, Subscriptions) MUST be defined in the feature's `constants.ts` file wrapped in the `graphql()` helper to ensure they are plucked by codegen.
+*   **Shared Types:** Use GraphQL Fragments (e.g., `fragment SessionFields on Session`) to generate named canonical interfaces. Re-export these from the feature's `types.ts` file.
+*   **Runtime Validation:** Every GraphQL response in hooks MUST be validated at the edge using Zod schemas (e.g., `GetSessionSummaryResponseSchema.parse(result.data)`) before the data enters the application state.
+
 ## 4. Coding Standards
 
 *   **Separation of Concerns:** Business logic belongs in hooks or services, NOT in the JSX render body. JSX should be a declarative representation of the UI.
