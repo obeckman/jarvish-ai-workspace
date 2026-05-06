@@ -5,8 +5,7 @@ import { desc, eq, like, or } from 'drizzle-orm';
 import { SqliteSaver } from "@langchain/langgraph-checkpoint-sqlite";
 import { summarizeSession } from '@/Backend/services/summarization.service';
 import { generateTitle } from '@/Backend/services/titling.service';
-import { extractAndStoreFacts } from '@/Backend/services/factExtraction.service';
-import { EVENT_TYPES, NODE_NAMES, ROLES, STAGES } from '@/Backend/agent/constants';
+import { NODE_NAMES, ROLES, STAGES } from '@/Backend/agent/constants';
 import { Resolvers, Message, Session, StructuredFact } from './__generated__/resolvers-types';
 
 // Global checkpointer instance
@@ -60,6 +59,7 @@ export const resolvers: Resolvers = {
         updatedAt: s.updatedAt instanceof Date ? s.updatedAt.toISOString() : String(s.updatedAt)
       })) as Session[];
     },
+    
     getSessionHistory: async (_: any, { sessionId }: { sessionId: string }) => {
       const graph = createAgentGraph(checkpointer);
       const state = await graph.getState({ configurable: { thread_id: sessionId } });
@@ -207,6 +207,16 @@ export const resolvers: Resolvers = {
         };
 
         const config = sessionId ? { configurable: { thread_id: sessionId } } : {};
+
+        if (sessionId) {
+          try {
+            await db.update(sessions)
+              .set({ updatedAt: new Date() })
+              .where(eq(sessions.id, sessionId));
+          } catch (e) {
+            console.error("Failed to update session updatedAt", e);
+          }
+        }
 
         const stream = await graph.stream(initialState, {
           ...config,
