@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { GetSessionSummaryResponseSchema, Session } from '@/features/jarvishAgent/types';
 import { STORAGE_KEYS, API_ENDPOINTS, GQL_QUERIES, GQL_MUTATIONS, UI_STRINGS } from '@/features/jarvishAgent/constants';
 import { GetSessionsQuery, GetSessionsQueryVariables } from '../gql'
@@ -12,11 +12,15 @@ export const useJarvishSessions = (searchTerm: string) => {
   const [isFetchingSessions, setIsFetchingSessions] = useState(false);
   const [isPolling, setIsPolling] = useState(false);
 
+  const isFetchingRef = useRef(false);
+  const offsetRef = useRef(0);
+
   const fetchSessions = useCallback(async (reset = false) => {
-    if (isFetchingSessions) return;
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
     setIsFetchingSessions(true);
 
-    const newOffset = reset ? 0 : offset;
+    const newOffset = reset ? 0 : offsetRef.current;
     const limit = 10;
 
     try {
@@ -36,15 +40,20 @@ export const useJarvishSessions = (searchTerm: string) => {
       if (result.data.getSessions) {
         const fetched = result.data.getSessions;
         setSessions(prev => reset ? (fetched as Session[]) : [...prev, ...(fetched as Session[])]);
-        setOffset(newOffset + fetched.length);
+        
+        const nextOffset = newOffset + fetched.length;
+        offsetRef.current = nextOffset;
+        setOffset(nextOffset);
+        
         setHasMore(fetched.length === limit);
       }
     } catch (e) {
       console.error('Failed to fetch sessions:', e);
     } finally {
+      isFetchingRef.current = false;
       setIsFetchingSessions(false);
     }
-  }, [offset, searchTerm, isFetchingSessions]);
+  }, [searchTerm]);
 
   const fetchSummary = useCallback(async (sessionId: string) => {
     try {
