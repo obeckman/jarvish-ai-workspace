@@ -21,11 +21,10 @@ import {DynamicFormDemo} from './features/DynamicForm/DynamicFormDemo'
 import {GameApp} from './features/TW/game-app'
 import {AskAgent} from './features/AskAgent/AskAgent'
 import {RickAndMorty} from './features/RickAndMorty'
-import { JarvishAgent, ContextAwareAgent } from './features/jarvishAgent'
+import { JarvishAgent } from './features/jarvishAgent'
 import {NormalizationOfUsersAndGroups} from './features/NormalizationOfUsersAndGroups/NormalizationOfUsersAndGroups'
 const TabVariant = {
   NONE: 'none',
-  ContextAwareAgent: 'ContextAwareAgent',
   JarvishAgent: 'JarvishAgent',
   FileSystemTreeDemo: 'FileSystemTreeDemo',
   CreateLocalStoreTester: 'CreateLocalStoreTester',
