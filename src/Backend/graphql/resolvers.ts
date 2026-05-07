@@ -7,9 +7,30 @@ import { summarizeSession } from '@/Backend/services/summarization.service';
 import { generateTitle } from '@/Backend/services/titling.service';
 import { NODE_NAMES, ROLES, STAGES } from '@/Backend/agent/constants';
 import { Resolvers, Message, Session, StructuredFact } from './__generated__/resolvers-types';
+import { HumanMessage, AIMessage, ToolMessage, BaseMessage } from "@langchain/core/messages";
+import { getMessageRole, getMessageType } from '@/Backend/agent/nodes/utils';
 
 // Global checkpointer instance
 const checkpointer = new SqliteSaver(sqlite);
+
+/**
+ * Maps raw message objects to LangChain message instances.
+ */
+function mapInputToLangChainMessages(history: { role: string, content: string }[] = []): BaseMessage[] {
+  return history.map(h => {
+    const role = (h.role || "").toLowerCase();
+    if (role === ROLES.USER.toLowerCase() || role === 'human') {
+      return new HumanMessage({ content: h.content });
+    }
+    if (role === ROLES.AGENT.toLowerCase() || role === ROLES.ASSISTANT.toLowerCase() || role === ROLES.MODEL.toLowerCase() || role === 'ai') {
+      return new AIMessage({ content: h.content });
+    }
+    if (role === ROLES.TOOL.toLowerCase() || role === 'function') {
+      return new ToolMessage({ content: h.content, tool_call_id: "imported" });
+    }
+    return new HumanMessage({ content: h.content }); // Fallback
+  });
+}
 
 /**
  * GraphQL Resolvers
@@ -68,8 +89,8 @@ export const resolvers: Resolvers = {
       
       return state.values.messages.map((m: any): Message => {
         // Map LangChain roles to FE roles
-        const rawType = (m._getType?.() || m.type || "").toLowerCase();
-        const rawRole = (m.role || m.lc_kwargs?.role || "").toLowerCase();
+        const rawType = getMessageType(m);
+        const rawRole = getMessageRole(m);
         const rawName = (m.name || m.lc_kwargs?.name || "").toLowerCase();
         
         // Determine role with fallback to AGENT
@@ -81,6 +102,7 @@ export const resolvers: Resolvers = {
           rawType === 'tool' || 
           rawRole === 'tool' || 
           rawRole === 'reasoning' || 
+          rawType === 'function' ||
           (m.tool_calls && m.tool_calls.length > 0) ||
           (rawName && ![NODE_NAMES.REASONING, NODE_NAMES.SUPERVISOR, NODE_NAMES.CLARIFICATION, "clarification_agent", NODE_NAMES.CODER_WORKER, NODE_NAMES.RESEARCH_WORKER, NODE_NAMES.GOOGLE_WORKER].includes(rawName))
         ) {
@@ -114,7 +136,11 @@ export const resolvers: Resolvers = {
       // Implement background generation as requested
       (async () => {
         try {
-          const history = await resolvers.Query!.getSessionHistory!({}, { sessionId }, {} as any, {} as any);
+          const historyResolver = resolvers.Query!.getSessionHistory;
+          const history = typeof historyResolver === 'function' 
+            ? await historyResolver({}, { sessionId }, {} as any, {} as any)
+            : await (historyResolver as any).resolve({}, { sessionId }, {} as any, {} as any);
+
           if (!history || (history as any).length === 0) return;
 
           const summary = await summarizeSession(history as any);
@@ -176,7 +202,11 @@ export const resolvers: Resolvers = {
         title: finalTitle,
       });
       const [newSession] = await db.select().from(sessions).where(eq(sessions.id, id));
-      return newSession as Session;
+      return {
+        ...newSession,
+        createdAt: newSession.createdAt.toISOString(),
+        updatedAt: newSession.updatedAt.toISOString()
+      } as unknown as Session;
     },
     deleteSession: async (_: any, { id }: { id: string }) => {
       await db.delete(sessions).where(eq(sessions.id, id));
@@ -197,8 +227,8 @@ export const resolvers: Resolvers = {
         // Initial state for the graph
         const initialState = {
           messages: [
-            ...history.map((h: any) => ({ role: h.role, content: h.content })),
-            { role: ROLES.USER, content: query }
+            ...mapInputToLangChainMessages(history),
+            new HumanMessage({ content: query })
           ],
           attachments,
           googleToken,
@@ -278,7 +308,8 @@ export const resolvers: Resolvers = {
             }
           };
         }
-      }
+      },
+      resolve: (payload: any) => payload.agentEvents
     }
   }
 };

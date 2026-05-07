@@ -5,6 +5,7 @@ import { REASONING_MODEL } from "@/Backend/agent/models";
 import { ROLES, NODE_NAMES, STAGES } from "@/Backend/agent/constants";
 import { AgentMessageBlocksSchema, BLOCK_TYPES } from "@/Backend/agent/schema";
 import { mapStateToGeminiHistory, GEMINI_ROLES } from "./utils";
+import { AIMessage } from "@langchain/core/messages";
 
 /**
  * Node: Supervisor
@@ -144,12 +145,11 @@ export async function supervisorNode(state: AgentStateType) {
   }
 
   return {
-    messages: [{
-      role: ROLES.MODEL,
+    messages: [new AIMessage({
       content: content,
       tool_calls: toolCalls,
       name: "supervisor"
-    }],
+    })],
     metadata: { stage: STAGES.SYNTHESIZE, status: "Supervisor is orchestrating..." }
   };
 }

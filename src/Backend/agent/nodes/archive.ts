@@ -8,6 +8,7 @@ import { extractAndStoreFacts } from "@/Backend/services/factExtraction.service"
 import { db } from "@/Backend/db/index";
 import { sessionSummaries } from "@/Backend/db/schema";
 import { STAGES, ROLES } from "@/Backend/agent/constants";
+import { getMessageRole, getMessageType } from "./utils";
 
 /**
  * Node: Memory Archiving
@@ -28,10 +29,11 @@ export async function archiveNode(state: AgentStateType) {
     console.log(`[Agent Graph] Node: Archive | Generating session summary for ${state.sessionId}`);
     try {
       const history = state.messages.map(m => {
-        const role = (m.role || "").toLowerCase();
+        const role = getMessageRole(m);
+        const content = typeof m.content === 'string' ? m.content : JSON.stringify(m.content);
         return {
-          role: role === ROLES.USER.toLowerCase() || role === ROLES.HUMAN.toLowerCase() ? 'user' : 'assistant',
-          content: m.content
+          role: (role === ROLES.USER.toLowerCase() || role === ROLES.HUMAN.toLowerCase() || role === 'human') ? 'user' : 'assistant',
+          content: content
         };
       });
 
@@ -63,21 +65,24 @@ export async function archiveNode(state: AgentStateType) {
 
   // 2. Archive Conversation Summary to Vector Store
   const lastUserMessage = state.messages.findLast(m => {
-    const r = (m.role || "").toLowerCase();
-    return r === ROLES.USER.toLowerCase() || r === ROLES.HUMAN.toLowerCase();
+    const r = getMessageRole(m);
+    return r === ROLES.USER.toLowerCase() || r === ROLES.HUMAN.toLowerCase() || r === 'human';
   });
   
   const lastModelMessage = state.messages.findLast(m => {
-    const r = (m.role || "").toLowerCase();
-    return r === ROLES.ASSISTANT.toLowerCase() || r === ROLES.AGENT.toLowerCase() || r === ROLES.MODEL.toLowerCase() || r === 'ai';
+    const r = getMessageRole(m);
+    return r === ROLES.ASSISTANT.toLowerCase() || r === ROLES.AGENT.toLowerCase() || r === ROLES.MODEL.toLowerCase() || r === 'ai' || r === 'assistant';
   });
 
   if (lastUserMessage && lastModelMessage) {
     console.log(`[Agent Graph] Node: Archive | Saving interaction to memory.`);
 
+    const userContent = typeof lastUserMessage.content === 'string' ? lastUserMessage.content : JSON.stringify(lastUserMessage.content);
+    const modelContent = typeof lastModelMessage.content === 'string' ? lastModelMessage.content : JSON.stringify(lastModelMessage.content);
+
     const conversationSummary = `Conversation Summary [${new Date().toLocaleTimeString()}]:
-    User: ${lastUserMessage.content}
-    Assistant: ${lastModelMessage.content}`;
+    User: ${userContent}
+    Assistant: ${modelContent}`;
 
     await addMemory(conversationSummary, { 
       type: 'history', 
@@ -85,7 +90,8 @@ export async function archiveNode(state: AgentStateType) {
       timestamp: new Date().toISOString() 
     }).catch(err => console.error("[Archive Node Error: Summary Archival]", err));
   } else {
-    console.log(`[Agent Graph] Node: Archive | Interaction skipped (missing User or Model message). Roles present: ${state.messages.map(m => m.role).join(', ')}`);
+    const roles = state.messages.map(m => getMessageRole(m));
+    console.log(`[Agent Graph] Node: Archive | Interaction skipped (missing User or Model message). Roles present: ${roles.join(', ')}`);
   }
 
 
@@ -148,7 +154,11 @@ export async function archiveNode(state: AgentStateType) {
     if (indexedAttachments.length > 0) {
       overallAgentSummary += `Indexed Attachments: ${indexedAttachments.join(', ')}\n`;
     }
-    overallAgentSummary += `Full Conversation History:\n${state.messages.map(m => `${m.role}: ${m.content}`).join('\n')}\n`;
+    overallAgentSummary += `Full Conversation History:\n${state.messages.map(m => {
+      const r = getMessageRole(m);
+      const c = typeof m.content === 'string' ? m.content : JSON.stringify(m.content);
+      return `${r}: ${c}`;
+    }).join('\n')}\n`;
 
     try {
       await addMemory(overallAgentSummary, {
@@ -162,7 +172,11 @@ export async function archiveNode(state: AgentStateType) {
     }
   }
 
-  console.log(`[Agent Graph] Node: Archive | State messages before return:`, state.messages.map(m => ({role: m.role, content: m.content ? m.content.substring(0, 50) + '...' : ''})));
+  console.log(`[Agent Graph] Node: Archive | State messages before return:`, state.messages.map(m => {
+    const r = getMessageRole(m);
+    const c = typeof m.content === 'string' ? m.content : JSON.stringify(m.content);
+    return {role: r, content: c ? c.substring(0, 50) + '...' : ''};
+  }));
   return {
     messages: state.messages,
     metadata: { stage: STAGES.FINALIZE, status: "Jarvish has remembered this session and indexed all documents." }

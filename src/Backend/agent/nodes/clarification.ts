@@ -3,6 +3,7 @@ import { AgentStateType } from "@/Backend/agent/state";
 import { REASONING_MODEL } from "@/Backend/agent/models";
 import { ROLES, STAGES } from "@/Backend/agent/constants";
 import { mapStateToGeminiHistory } from "./utils";
+import { AIMessage } from "@langchain/core/messages";
 
 /**
  * Node: Clarification
@@ -49,11 +50,10 @@ export async function clarificationNode(state: AgentStateType) {
   }
 
   return {
-    messages: [{
-      role: ROLES.MODEL,
+    messages: [new AIMessage({
       content: content,
       name: "clarification_agent"
-    }],
+    })],
     metadata: { stage: STAGES.SYNTHESIZE, status: "Awaiting user clarification..." },
     toolConfidence: null // Reset for the next run
   };

@@ -1,4 +1,4 @@
-import { Annotation } from "@langchain/langgraph"; // Reintroduce Annotation import
+import { Annotation, messagesStateReducer } from "@langchain/langgraph"; // Reintroduce Annotation import
 import { Memory } from "@/Backend/services/memory/vector_store.interface";
 import { STAGES } from "@/Backend/agent/constants";
 import { BaseMessage } from "@langchain/core/messages"; // Keep BaseMessage import
@@ -12,7 +12,7 @@ export const AgentState = Annotation.Root({ // Reintroduce Annotation.Root
    * The core conversation history (User and Assistant turns).
    */
   messages: Annotation<BaseMessage[]>({ // Use Annotation for each property with correct type
-    reducer: (x, y) => x.concat(y),
+    reducer: messagesStateReducer,
     default: () => [],
   }),
 

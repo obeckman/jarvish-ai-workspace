@@ -3,6 +3,7 @@ import { AgentStateType } from "@/Backend/agent/state";
 import { REASONING_MODEL } from "@/Backend/agent/models";
 import { ROLES, TOOL_NAMES, STAGES, NODE_NAMES } from "@/Backend/agent/constants";
 import { mapStateToGeminiHistory } from "../utils";
+import { AIMessage } from "@langchain/core/messages";
 import { 
   googleCalendarDeclaration,
   gmailSearchDeclaration,
@@ -106,12 +107,11 @@ export async function googleWorkerNode(state: AgentStateType) {
   }
 
   return {
-    messages: [{
-      role: ROLES.MODEL,
+    messages: [new AIMessage({
       content: content,
       tool_calls: toolCalls,
       name: "google_worker"
-    }],
+    })],
     lastWorker: NODE_NAMES.GOOGLE_WORKER,
     metadata: { stage: STAGES.RESEARCH, status: "Google Worker is searching..." }
   };

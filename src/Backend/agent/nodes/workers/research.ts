@@ -3,6 +3,7 @@ import { AgentStateType } from "@/Backend/agent/state";
 import { REASONING_MODEL } from "@/Backend/agent/models";
 import { ROLES, TOOL_NAMES, STAGES, NODE_NAMES } from "@/Backend/agent/constants";
 import { mapStateToGeminiHistory } from "../utils";
+import { AIMessage } from "@langchain/core/messages";
 import { 
   webSearchDeclaration, 
   fetchWebPageDeclaration, 
@@ -64,12 +65,11 @@ export async function researchWorkerNode(state: AgentStateType) {
   const response = result.response;
   
   return {
-    messages: [{
-      role: ROLES.MODEL,
+    messages: [new AIMessage({
       content: response.text(),
       tool_calls: response.functionCalls(),
       name: "research_worker"
-    }],
+    })],
     lastWorker: NODE_NAMES.RESEARCH_WORKER,
     metadata: { stage: STAGES.RESEARCH, status: "Research Worker is investigating..." }
   };

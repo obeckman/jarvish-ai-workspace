@@ -8,6 +8,7 @@ import { readPdf } from "../../services/tools/pdf.service";
 import { readFile, writeFile } from "../../services/tools/file.service";
 import { addMemory, forgetMemory } from "../../services/memory/memory.service";
 import { listCalendarEvents, searchGmailMessages, getGoogleDocContent, updateGoogleDoc } from "../../services/tools/google.service";
+import { ToolMessage } from "@langchain/core/messages";
 
 /**
  * Node: Tool Execution
@@ -18,7 +19,7 @@ import { listCalendarEvents, searchGmailMessages, getGoogleDocContent, updateGoo
  */
 export async function toolsNode(state: AgentStateType) {
   const lastMessage = state.messages[state.messages.length - 1];
-  const toolCalls = lastMessage.tool_calls || [];
+  const toolCalls = (lastMessage as any).tool_calls || [];
   
   console.log(`[Agent Graph] Node: Tools | Executing ${toolCalls.length} tools.`);
 
@@ -84,12 +85,11 @@ export async function toolsNode(state: AgentStateType) {
       minimumConfidence = confidence;
     }
 
-    results.push({
-      role: ROLES.TOOL,
+    results.push(new ToolMessage({
       name: call.name,
-      content: output,
+      content: typeof output === 'string' ? output : JSON.stringify(output),
       tool_call_id: call.id,
-    });
+    }));
     const safeOutput = typeof output === 'string' 
       ? output 
       : (JSON.stringify(output) || '');

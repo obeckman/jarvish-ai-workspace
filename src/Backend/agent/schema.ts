@@ -46,7 +46,7 @@ export const DraftBlockSchema = z.object({
   type: z.literal(BLOCK_TYPES.DRAFT),
   title: z.string().optional(),
   content: z.string(),
-  metadata: z.record(z.any()).optional(),
+  metadata: z.record(z.string(), z.any()).optional(),
 });
 
 export const AgentMessageBlockSchema = z.discriminatedUnion('type', [

@@ -2,7 +2,7 @@ import { WeaviateClient } from 'weaviate-client';
 import { IVectorStore, Memory } from '@/Backend/services/memory/vector_store.interface';
 
 /**
- * Weaviate Implementation of the Vector Store.
+ * Weaviate Implementation of the Vector Store using Client v3 (Collections API).
  * Handles schema creation, data insertion, and semantic search.
  */
 export class WeaviateVectorStore implements IVectorStore {
@@ -14,45 +14,31 @@ export class WeaviateVectorStore implements IVectorStore {
   }
 
   /**
-   * Checks if the 'Memory' class exists in Weaviate, creating it if not.
+   * Checks if the 'Memory' collection exists in Weaviate, creating it if not.
    */
   async ensureSchema(): Promise<void> {
-    console.log(`[Weaviate] Ensuring schema for class: ${this.className}...`);
+    console.log(`[Weaviate] Ensuring schema for collection: ${this.className}...`);
     try {
-      const schema = await this.client.schema.getter().do();
-      const classExists = schema.classes?.some((c) => c.class === this.className);
+      const exists = await this.client.collections.exists(this.className);
 
-      if (!classExists) {
-        console.log(`[Weaviate] Creating class: ${this.className}`);
-        try {
-          await this.client.schema
-            .classCreator()
-            .withClass({
-              class: this.className,
-              description: 'Agent memories and interactions',
-              vectorizer: 'none', // We provide vectors manually via Gemini Embeddings
-              properties: [
-                {
-                  name: 'text',
-                  dataType: ['text'],
-                  description: 'The content of the memory',
-                },
-                {
-                  name: 'metadata',
-                  dataType: ['text'], // Metadata is stored as a JSON string for flexibility
-                  description: 'JSON stringified metadata',
-                },
-              ],
-            })
-            .do();
-        } catch (innerError: any) {
-          // If another process created it in the meantime, ignore
-          if (innerError.message?.includes('already exists')) {
-            console.log(`[Weaviate] Class ${this.className} was created by another process.`);
-            return;
-          }
-          throw innerError;
-        }
+      if (!exists) {
+        console.log(`[Weaviate] Creating collection: ${this.className}`);
+        await this.client.collections.create({
+          name: this.className,
+          properties: [
+            {
+              name: 'text',
+              dataType: 'text',
+              description: 'The content of the memory',
+            },
+            {
+              name: 'metadata',
+              dataType: 'text', // Metadata is stored as a JSON string for flexibility
+              description: 'JSON stringified metadata',
+            },
+          ],
+          // In v3, we provide vectors manually, so we don't need a default vectorizer module
+        });
       }
     } catch (error) {
       console.error('[Weaviate Schema Error]', error);
@@ -65,15 +51,14 @@ export class WeaviateVectorStore implements IVectorStore {
    */
   async add(text: string, embedding: number[], metadata: Record<string, any>): Promise<void> {
     try {
-      await this.client.data
-        .creator()
-        .withClassName(this.className)
-        .withProperties({
+      const collection = this.client.collections.get(this.className);
+      await collection.data.insert({
+        properties: {
           text,
           metadata: JSON.stringify(metadata),
-        })
-        .withVector(embedding)
-        .do();
+        },
+        vectors: embedding,
+      });
     } catch (error) {
       console.error('[Weaviate Add Error]', error);
       throw error;
@@ -85,23 +70,17 @@ export class WeaviateVectorStore implements IVectorStore {
    */
   async search(queryEmbedding: number[], topK: number): Promise<Memory[]> {
     try {
-      const result = await this.client.graphql
-        .get()
-        .withClassName(this.className)
-        .withFields('text metadata _additional { distance id }')
-        .withNearVector({
-          vector: queryEmbedding,
-        })
-        .withLimit(topK)
-        .do();
-
-      const objects = result.data?.Get?.[this.className] || [];
+      const collection = this.client.collections.get(this.className);
+      const result = await collection.query.nearVector(queryEmbedding, {
+        limit: topK,
+        returnMetadata: ['distance'],
+      });
       
-      return objects.map((obj: any) => ({
-        id: obj._additional.id,
-        text: obj.text,
-        score: 1 - (obj._additional.distance || 0),
-        metadata: obj.metadata ? JSON.parse(obj.metadata) : {},
+      return result.objects.map((obj: any) => ({
+        id: obj.uuid,
+        text: String(obj.properties.text || ""),
+        score: 1 - (obj.metadata?.distance || 0),
+        metadata: obj.properties.metadata ? JSON.parse(String(obj.properties.metadata)) : {},
       }));
     } catch (error) {
       console.error('[Weaviate Search Error]', error);
@@ -114,11 +93,8 @@ export class WeaviateVectorStore implements IVectorStore {
    */
   async delete(id: string): Promise<void> {
     try {
-      await this.client.data
-        .deleter()
-        .withClassName(this.className)
-        .withId(id)
-        .do();
+      const collection = this.client.collections.get(this.className);
+      await collection.data.deleteById(id);
     } catch (error) {
       console.error('[Weaviate Delete Error]', error);
       throw error;

@@ -4,6 +4,7 @@ import { PROCESSING_MODEL } from "@/Backend/agent/models";
 import { ROLES, STAGES, TOOL_NAMES } from "@/Backend/agent/constants";
 import { searchWeb } from "../../services/tools/search.service";
 import { readFile } from "../../services/tools/file.service";
+import { AIMessage } from "@langchain/core/messages";
 
 /**
  * Node: Attachment & Shadow Tooling Processing
@@ -87,10 +88,10 @@ export async function processingNode(state: AgentStateType) {
   return {
     processedAttachments: processedResults,
     researchNotes: shadowResults,
-    messages: [{
-      role: ROLES.REASONING,
-      content: `Background processing complete. ${processedResults.length} files processed. ${shadowResults.length} shadow tools executed.`
-    }],
+    messages: [new AIMessage({
+      content: `Background processing complete. ${processedResults.length} files processed. ${shadowResults.length} shadow tools executed.`,
+      name: ROLES.REASONING
+    })],
     metadata: { 
       stage: STAGES.RESEARCH, 
       status: `Background analysis finished.` 
