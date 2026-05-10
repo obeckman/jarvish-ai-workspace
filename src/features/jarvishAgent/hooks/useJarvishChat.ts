@@ -61,12 +61,7 @@ type ChatAction =
   | { type: 'RESET_CHAT' };
 
 const initialChatState: ChatState = {
-  messages: [{
-    id: '1',
-    role: ROLES.AGENT,
-    content: UI_STRINGS.INITIAL_GREETING,
-    timestamp: Date.now(),
-  }],
+  messages: [],
   input: UI_STRINGS.DEFAULT_INPUT,
   status: AGENT_STATUS.IDLE,
   statusMessage: null,
@@ -159,12 +154,7 @@ export const useJarvishChat = (
             timestamp: Date.now()
           } as Message;
         });
-        dispatch({ type: 'SET_MESSAGES', payload: history.length > 0 ? history : [{
-          id: '1',
-          role: ROLES.AGENT,
-          content: UI_STRINGS.INITIAL_GREETING,
-          timestamp: Date.now(),
-        }] });
+        dispatch({ type: 'SET_MESSAGES', payload: history.length > 0 ? history : [] });
       }
     } catch (e) {
       console.error('Failed to load history:', e);

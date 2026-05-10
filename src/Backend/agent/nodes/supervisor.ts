@@ -2,7 +2,7 @@ import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import parse from "partial-json-parser";
 import { AgentStateType } from "@/Backend/agent/state";
 import { REASONING_MODEL } from "@/Backend/agent/models";
-import { STAGES, BLOCK_TYPES, ROLES } from "@/shared/jarvish.constants";;
+import { STAGES, BLOCK_TYPES, ROLES, NODE_NAMES } from "@/shared/jarvish.constants";;
 import { AgentMessageBlocksSchema} from "@/Backend/agent/schema";
 import { mapStateToGeminiHistory } from "./utils";
 import { AIMessage } from "@langchain/core/messages";
@@ -16,6 +16,14 @@ import { HumanMessage, ToolMessage, BaseMessage } from "@langchain/core/messages
  */
 export async function supervisorNode(state: AgentStateType) {
   try{
+    const lastMessage = state.messages[state.messages.length - 1];
+    const lastMessageName = (lastMessage as any).name;
+
+    // If the last message is from a worker, it's the final answer for this turn.
+    if (lastMessageName === NODE_NAMES.CODER_WORKER || lastMessageName === NODE_NAMES.RESEARCH_WORKER || lastMessageName === NODE_NAMES.GOOGLE_WORKER) {
+      console.log(`[Agent Graph] Node: Supervisor | Worker response detected. Ending turn.`);
+      return {}; // Return empty object to avoid re-broadcasting the message.
+    }
   //console.log(`[Agent Graph] Node: Supervisor | State messages param:`, state.messages);
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
   
