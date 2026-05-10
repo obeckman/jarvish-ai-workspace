@@ -72,9 +72,9 @@ export const BLOCK_TYPES = {
 
 // Gemini API specific role strings
 export const GEMINI_ROLES = {
-  USER: 'USER',
-  MODEL: 'MODEL',
-  FUNCTION: 'FUNCTION',
+  USER: 'user',
+  MODEL: 'model',
+  FUNCTION: 'function',
 } as const;
 
 export const AGENT_STATUS = {
