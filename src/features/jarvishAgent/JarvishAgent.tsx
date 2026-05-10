@@ -13,7 +13,7 @@ import { JarvishChatArea } from './components/JarvishChatArea';
 import { JarvishChatInput } from './components/JarvishChatInput';
 import { JarvishMemoryPanel } from './components/JarvishMemoryPanel';
 import { GhostWriterPanel } from './components/GhostWriterPanel';
-
+import {BLOCK_TYPES, ROLES} from '@/shared/jarvish.constants.ts'
 // Types
 import { MessageRole } from './types';
 
@@ -78,10 +78,10 @@ export const JarvishAgent: React.FC = () => {
   const latestDraft = React.useMemo(() => {
     for (let i = messages.length - 1; i >= 0; i--) {
       const msg = messages[i];
-      if (msg.role === 'MODEL' || msg.role === 'AGENT' || (msg.role as string) === 'assistant') {
+      if (msg.role === ROLES.MODEL || msg.role === ROLES.AGENT || msg.role === ROLES.ASSISTANT) {
         // If content is an array of blocks, find the draft block
         if (Array.isArray(msg.content)) {
-          const draftBlock = msg.content.find(b => b.type === 'draft');
+          const draftBlock = msg.content.find(b => b.type ===  BLOCK_TYPES.DRAFT);
           if (draftBlock) return draftBlock;
         } else if (typeof msg.content === 'string') {
           try {
@@ -89,8 +89,8 @@ export const JarvishAgent: React.FC = () => {
             if (content.startsWith('[') || content.startsWith('{')) {
               const blocks = JSON.parse(content);
               const draftBlock = Array.isArray(blocks) 
-                ? blocks.find((b: any) => b.type === 'draft')
-                : (blocks.type === 'draft' ? blocks : null);
+                ? blocks.find((b: any) => b.type === BLOCK_TYPES.DRAFT)
+                : (blocks.type === BLOCK_TYPES.DRAFT ? blocks : null);
               if (draftBlock) return draftBlock;
             }
           } catch (e) { /* Not JSON */ }

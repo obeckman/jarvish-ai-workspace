@@ -11,9 +11,8 @@ import {
 } from 'lucide-react';
 import cn from 'classnames';
 import styles from '@/features/jarvishAgent/jarvish-agent.module.scss';
-import { Message, Session, AgentStatus } from '@/features/jarvishAgent/types';
-import { MESSAGE_ROLES, AGENT_STATUS, STAGES } from '@/features/jarvishAgent/constants';
-
+import { Message, Session } from '@/features/jarvishAgent/types';
+import { ROLES ,AGENT_STATUS, STAGES, AgentStatus} from '@/shared/jarvish.constants';
 import { ChatMessage } from './Blocks/ChatMessage';
 import { Markdown } from '@/components/shared/Markdown/Markdown';
 
@@ -83,7 +82,8 @@ export const JarvishChatArea: React.FC<JarvishChatAreaProps> = ({
     };
 
     messages.forEach((m) => {
-      if (m.role === MESSAGE_ROLES.REASONING) {
+      console.log(`[JarvishChatArea] Rendering message:`, m);
+      if (m.role === ROLES.REASONING) {
         currentReasoningGroup.push(m);
       } else {
         flushReasoning();

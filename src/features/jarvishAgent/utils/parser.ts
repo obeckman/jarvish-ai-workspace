@@ -1,6 +1,6 @@
 import parse from 'partial-json-parser';
 import { AgentMessageBlock, AgentMessageBlockSchema } from '../types';
-import { BLOCK_TYPES } from '../constants';
+import {BLOCK_TYPES} from '@/shared/jarvish.constants';
 
 /**
  * Robustly parses agent message content which might be:

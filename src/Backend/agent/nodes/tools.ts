@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { AgentStateType } from "../state";
 import { TOOL_EXECUTION_MODEL } from "../models";
-import { ROLES, STAGES, TOOL_NAMES } from "../constants";
+import { ROLES, STAGES, TOOL_NAMES } from "@/shared/jarvish.constants";;
 import { searchWeb } from "../../services/tools/search.service";
 import { fetchWebPage } from "../../services/tools/web.service";
 import { readPdf } from "../../services/tools/pdf.service";
@@ -18,6 +18,7 @@ import { ToolMessage } from "@langchain/core/messages";
  * 3. Accumulate results into the 'researchNotes' state.
  */
 export async function toolsNode(state: AgentStateType) {
+  console.log(`[Agent Graph] Node: Tools | State messages param:`, state.messages);
   const lastMessage = state.messages[state.messages.length - 1];
   const toolCalls = (lastMessage as any).tool_calls || [];
   
@@ -31,6 +32,7 @@ export async function toolsNode(state: AgentStateType) {
   for (const call of toolCalls) {
     let output: any;
     let confidence = 100;
+    console.log(`[Agent Graph] Node: Tools | Executing tool: ${call.name}`);
     try {
       if (call.name === TOOL_NAMES.WEB_SEARCH) {
         output = await searchWeb(call.args);

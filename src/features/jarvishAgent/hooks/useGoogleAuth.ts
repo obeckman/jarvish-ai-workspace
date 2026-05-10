@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { STORAGE_KEYS, API_ENDPOINTS } from '@/features/jarvishAgent/constants';
+import { STORAGE_KEYS } from "@/shared/jarvish.constants";
 
 export const useGoogleAuth = () => {
   const [googleToken, setGoogleToken] = useState<string | null>(localStorage.getItem(STORAGE_KEYS.GOOGLE_TOKEN));

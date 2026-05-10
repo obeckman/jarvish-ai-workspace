@@ -1,6 +1,6 @@
 import { Annotation, messagesStateReducer } from "@langchain/langgraph"; // Reintroduce Annotation import
 import { Memory } from "@/Backend/services/memory/vector_store.interface";
-import { STAGES } from "@/Backend/agent/constants";
+import { STAGES } from "@/shared/jarvish.constants";
 import { BaseMessage } from "@langchain/core/messages"; // Keep BaseMessage import
 
 /**

@@ -5,7 +5,7 @@ import { desc, eq, like, or } from 'drizzle-orm';
 import { SqliteSaver } from "@langchain/langgraph-checkpoint-sqlite";
 import { summarizeSession } from '@/Backend/services/summarization.service';
 import { generateTitle } from '@/Backend/services/titling.service';
-import { NODE_NAMES, ROLES, STAGES } from '@/Backend/agent/constants';
+import { NODE_NAMES, ROLES, STAGES,EVENT_TYPES } from '@/shared/jarvish.constants.ts';
 import { Resolvers, Message, Session, StructuredFact } from './__generated__/resolvers-types';
 import { HumanMessage, AIMessage, ToolMessage, BaseMessage } from "@langchain/core/messages";
 import { getMessageRole, getMessageType } from '@/Backend/agent/nodes/utils';
@@ -19,13 +19,14 @@ const checkpointer = new SqliteSaver(sqlite);
 function mapInputToLangChainMessages(history: { role: string, content: string }[] = []): BaseMessage[] {
   return history.map(h => {
     const role = (h.role || "").toLowerCase();
-    if (role === ROLES.USER.toLowerCase() || role === 'human') {
+    if (role === ROLES.USER) {
       return new HumanMessage({ content: h.content });
     }
-    if (role === ROLES.AGENT.toLowerCase() || role === ROLES.ASSISTANT.toLowerCase() || role === ROLES.MODEL.toLowerCase() || role === 'ai') {
+    
+    if (role === ROLES.AGENT || role === ROLES.ASSISTANT || role === ROLES.MODEL) {
       return new AIMessage({ content: h.content });
     }
-    if (role === ROLES.TOOL.toLowerCase() || role === 'function') {
+    if (role === ROLES.TOOL || role === ROLES.FUNCTION) {
       return new ToolMessage({ content: h.content, tool_call_id: "imported" });
     }
     return new HumanMessage({ content: h.content }); // Fallback
@@ -95,16 +96,25 @@ export const resolvers: Resolvers = {
         
         // Determine role with fallback to AGENT
         let role: string = ROLES.AGENT;
-        
-        if (rawType === 'human' || rawRole === 'user' || rawRole === 'human') {
+        console.log("Mapping message:", { rawType, rawRole, rawName, content: m.content });
+        if (rawType === ROLES.HUMAN || rawRole === ROLES.USER) {
           role = ROLES.USER;
         } else if (
-          rawType === 'tool' || 
-          rawRole === 'tool' || 
-          rawRole === 'reasoning' || 
-          rawType === 'function' ||
+          rawType === ROLES.TOOL || 
+          rawRole === ROLES.REASONING || 
+          rawType === ROLES.FUNCTION ||
           (m.tool_calls && m.tool_calls.length > 0) ||
-          (rawName && ![NODE_NAMES.REASONING, NODE_NAMES.SUPERVISOR, NODE_NAMES.CLARIFICATION, "clarification_agent", NODE_NAMES.CODER_WORKER, NODE_NAMES.RESEARCH_WORKER, NODE_NAMES.GOOGLE_WORKER].includes(rawName))
+          (rawName && !
+            [
+              NODE_NAMES.REASONING, 
+              NODE_NAMES.SUPERVISOR, 
+              NODE_NAMES.CLARIFICATION, 
+              //fix me oren
+              "clarification_agent", 
+              NODE_NAMES.CODER_WORKER, 
+              NODE_NAMES.RESEARCH_WORKER, 
+              NODE_NAMES.GOOGLE_WORKER
+            ].includes(rawName))
         ) {
           role = ROLES.REASONING;
         }
@@ -116,13 +126,19 @@ export const resolvers: Resolvers = {
         } else if (typeof content !== 'string') {
           content = content ? JSON.stringify(content) : "";
         }
-
+        const isUserFacingNode = [
+                        NODE_NAMES.SUPERVISOR, 
+                        NODE_NAMES.CLARIFICATION,
+                      ].includes(rawName as any);
+       
         return {
+          type: isUserFacingNode ? EVENT_TYPES.MESSAGE : EVENT_TYPES.REASONING,
           role,
-          content: content || (role === (ROLES.REASONING as string) ? "Processing research step..." : "")
+          content: content || (role === ROLES.REASONING ? "Processing research step..." : "")
         };
       });
     },
+
     getSessionSummary: async (_: any, { sessionId }: { sessionId: string }) => {
       const [existing] = await db.select().from(sessionSummaries).where(eq(sessionSummaries.sessionId, sessionId));
       
@@ -164,6 +180,7 @@ export const resolvers: Resolvers = {
 
       return null;
     },
+
     getStructuredFacts: async () => {
       const results = await db.select().from(structuredFacts).orderBy(desc(structuredFacts.createdAt));
       return results.map(f => ({
@@ -264,7 +281,7 @@ export const resolvers: Resolvers = {
                 if (nodeUpdate.metadata?.status) {
                   yield {
                     agentEvents: {
-                      type: 'STATUS',
+                      type:  EVENT_TYPES.STATUS,
                       content: nodeUpdate.metadata.status,
                       stage: nodeUpdate.metadata.stage,
                     }
@@ -290,7 +307,7 @@ export const resolvers: Resolvers = {
                       
                       yield {
                         agentEvents: {
-                          type: isUserFacingNode ? 'MESSAGE' : 'REASONING',
+                          type: isUserFacingNode ? EVENT_TYPES.MESSAGE : EVENT_TYPES.REASONING,
                           content: stringContent,
                         }
                       };
@@ -303,7 +320,7 @@ export const resolvers: Resolvers = {
         } catch (error: any) {
           yield {
             agentEvents: {
-              type: 'ERROR',
+              type: EVENT_TYPES.ERROR,
               content: error.message || "Unknown graph execution error",
             }
           };

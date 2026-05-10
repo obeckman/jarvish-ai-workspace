@@ -7,7 +7,7 @@ import { summarizeSession } from "@/Backend/services/summarization.service";
 import { extractAndStoreFacts } from "@/Backend/services/factExtraction.service";
 import { db } from "@/Backend/db/index";
 import { sessionSummaries } from "@/Backend/db/schema";
-import { STAGES, ROLES } from "@/Backend/agent/constants";
+import { STAGES, ROLES } from "@/shared/jarvish.constants";
 import { getMessageRole, getMessageType } from "./utils";
 
 /**
@@ -20,6 +20,7 @@ import { getMessageRole, getMessageType } from "./utils";
  * 5. Extract static facts for the structured user profile.
  */
 export async function archiveNode(state: AgentStateType) {
+  console.log(`[Agent Graph] Node: Archive | State messages param:`, state.messages);
   let summary: { summaryTitle: string; userMessage: string; aiAnswer: string } | null = null;
   let extractedFacts: any[] = [];
   let indexedAttachments: string[] = [];
@@ -32,7 +33,7 @@ export async function archiveNode(state: AgentStateType) {
         const role = getMessageRole(m);
         const content = typeof m.content === 'string' ? m.content : JSON.stringify(m.content);
         return {
-          role: (role === ROLES.USER.toLowerCase() || role === ROLES.HUMAN.toLowerCase() || role === 'human') ? 'user' : 'assistant',
+          role: (role === ROLES.USER || role === ROLES.HUMAN ) ? ROLES.USER : ROLES.ASSISTANT,
           content: content
         };
       });
@@ -66,12 +67,12 @@ export async function archiveNode(state: AgentStateType) {
   // 2. Archive Conversation Summary to Vector Store
   const lastUserMessage = state.messages.findLast(m => {
     const r = getMessageRole(m);
-    return r === ROLES.USER.toLowerCase() || r === ROLES.HUMAN.toLowerCase() || r === 'human';
+    return r === ROLES.USER || r === ROLES.HUMAN ;
   });
   
   const lastModelMessage = state.messages.findLast(m => {
     const r = getMessageRole(m);
-    return r === ROLES.ASSISTANT.toLowerCase() || r === ROLES.AGENT.toLowerCase() || r === ROLES.MODEL.toLowerCase() || r === 'ai' || r === 'assistant';
+    return r === ROLES.ASSISTANT || r === ROLES.AGENT || r === ROLES.MODEL  ;
   });
 
   if (lastUserMessage && lastModelMessage) {
@@ -172,13 +173,14 @@ export async function archiveNode(state: AgentStateType) {
     }
   }
 
-  console.log(`[Agent Graph] Node: Archive | State messages before return:`, state.messages.map(m => {
-    const r = getMessageRole(m);
-    const c = typeof m.content === 'string' ? m.content : JSON.stringify(m.content);
-    return {role: r, content: c ? c.substring(0, 50) + '...' : ''};
-  }));
+  // console.log(`[Agent Graph] Node: Archive | State messages before return:`, state.messages.map(m => {
+  //   const r = getMessageRole(m);
+  //   const c = typeof m.content === 'string' ? m.content : JSON.stringify(m.content);
+  //   return {role: r, content: c ? c.substring(0, 50) + '...' : ''};
+  // }));
+  
   return {
-    messages: state.messages,
+    //messages: state.messages,
     metadata: { stage: STAGES.FINALIZE, status: "Jarvish has remembered this session and indexed all documents." }
   };
 }

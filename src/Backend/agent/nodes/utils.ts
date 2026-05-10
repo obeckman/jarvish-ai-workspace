@@ -1,13 +1,8 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { AgentStateType } from "@/Backend/agent/state";
-import { ROLES } from "@/Backend/agent/constants";
+import { ROLES, GEMINI_ROLES } from "@/shared/jarvish.constants";
 
-// Gemini API specific role strings
-export const GEMINI_ROLES = {
-  USER: 'user',
-  MODEL: 'model',
-  FUNCTION: 'function',
-} as const;
+
 
 /**
  * Safely extracts the role from a message (BaseMessage or raw object).
@@ -33,16 +28,16 @@ export function mapStateToGeminiHistory(state: AgentStateType) {
     .filter(m => {
       const r = getMessageRole(m);
       // Filter out UI-only roles that the LLM shouldn't see
-      return r !== ROLES.REASONING.toLowerCase();
+      return r !== ROLES.REASONING;
     })
     .map(m => {
       const r = getMessageRole(m);
       const t = getMessageType(m);
 
       let role: string = GEMINI_ROLES.MODEL; 
-      if (r === ROLES.USER.toLowerCase() || r === ROLES.HUMAN.toLowerCase() || t === 'human') {
+      if (r === ROLES.USER || r === ROLES.HUMAN ) {
         role = GEMINI_ROLES.USER;
-      } else if (r === ROLES.TOOL.toLowerCase() || r === ROLES.FUNCTION.toLowerCase() || t === 'tool' || t === 'function') {
+      } else if (r === ROLES.TOOL || r === ROLES.FUNCTION) {
         role = GEMINI_ROLES.FUNCTION;
       }
 
@@ -86,7 +81,7 @@ export function mapStateToGeminiHistory(state: AgentStateType) {
     })
     .filter(m => m.parts.length > 0);
 
-  // Gemini Requirement: History must start with a 'user' message.
+  // Gemini Requirement: History must start with a 'USER' message.
   const firstUserIndex = history.findIndex(m => m.role === GEMINI_ROLES.USER);
   if (firstUserIndex !== -1) {
     history = history.slice(firstUserIndex);

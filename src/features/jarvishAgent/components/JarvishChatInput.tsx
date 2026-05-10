@@ -11,8 +11,9 @@ import {
 } from 'lucide-react';
 import cn from 'classnames';
 import styles from '@/features/jarvishAgent/jarvish-agent.module.scss';
-import { Attachment, AgentStatus } from '@/features/jarvishAgent/types';
-import { AGENT_STATUS } from '@/features/jarvishAgent/constants';
+import { Attachment } from '@/features/jarvishAgent/types';
+
+import { ROLES ,AGENT_STATUS, STAGES, AgentStatus} from '@/shared/jarvish.constants';
 import { useAutoExpand } from '../hooks/useAutoExpand';
 
 interface JarvishChatInputProps {

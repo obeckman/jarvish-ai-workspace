@@ -4,7 +4,7 @@
  * We follow the Gemini Function Declaration schema.
  */
 
-import { TOOL_NAMES } from "../constants";
+import { TOOL_NAMES } from "@/shared/jarvish.constants";
 
 export const queryAttachmentsDeclaration = {
   name: TOOL_NAMES.QUERY_ATTACHMENTS,

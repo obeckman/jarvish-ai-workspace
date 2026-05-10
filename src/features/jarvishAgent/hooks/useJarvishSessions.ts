@@ -1,7 +1,8 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { GetSessionSummaryResponseSchema, Session } from '@/features/jarvishAgent/types';
-import { STORAGE_KEYS, API_ENDPOINTS, GQL_QUERIES, GQL_MUTATIONS, UI_STRINGS } from '@/features/jarvishAgent/constants';
-import { GetSessionsQuery, GetSessionsQueryVariables } from '../gql'
+import { STORAGE_KEYS, API_ENDPOINTS } from "@/shared/jarvish.constants";
+import {GQL_QUERIES, GQL_MUTATIONS, UI_STRINGS} from '@/features/jarvishAgent/constants'
+import { GetSessionsQuery, GetSessionsQueryVariables } from '../gql/graphql'
 
 
 export const useJarvishSessions = (searchTerm: string) => {

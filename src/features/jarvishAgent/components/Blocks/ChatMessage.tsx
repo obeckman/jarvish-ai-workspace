@@ -3,9 +3,10 @@ import { User, Bot } from 'lucide-react';
 import cn from 'classnames';
 import styles from '../../jarvish-agent.module.scss';
 import { Message, AgentMessageBlock } from '../../types';
-import { MESSAGE_ROLES, BLOCK_TYPES } from '../../constants';
+import { ROLES, BLOCK_TYPES } from '@/shared/jarvish.constants';;
 import { BlockRenderer } from './BlockRenderer';
 import { Markdown } from '@/components/shared/Markdown/Markdown';
+
 
 interface ChatMessageProps {
   message: Message;
@@ -13,8 +14,10 @@ interface ChatMessageProps {
 }
 
 export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({ message, onAction }) => {
-  const isAgent = message.role === MESSAGE_ROLES.AGENT || message.role === MESSAGE_ROLES.MODEL || (message.role as string) === 'assistant';
-  const isUser = message.role === MESSAGE_ROLES.USER || (message.role as string) === 'user';
+  const isAgent = message.role === ROLES.AGENT || 
+                  message.role === ROLES.MODEL || 
+                  message.role === ROLES.ASSISTANT;
+  const isUser = message.role === ROLES.USER || message.role === ROLES.HUMAN;
 
   const blocks: AgentMessageBlock[] = Array.isArray(message.content) 
     ? message.content 

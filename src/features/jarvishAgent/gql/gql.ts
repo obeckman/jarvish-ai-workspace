@@ -18,7 +18,7 @@ type Documents = {
     "\n    fragment SessionFields on Session {\n      id\n      title\n      createdAt\n      updatedAt\n      summary {\n        summaryTitle\n        userMessage\n        aiAnswer\n        createdAt\n        sessionId\n      }\n    }\n  ": typeof types.SessionFieldsFragmentDoc,
     "\n    fragment FactFields on StructuredFact {\n      id\n      fact\n      category\n      confidence\n      createdAt\n    }\n  ": typeof types.FactFieldsFragmentDoc,
     "    \n    query GetSessions($limit: Int, $offset: Int, $search: String) {       \n      getSessions(limit: $limit, offset: $offset, search: $search) {         \n        ...SessionFields\n      }     \n    }  \n  ": typeof types.GetSessionsDocument,
-    "    \n    query GetSessionHistory($sessionId: String!) {       \n      getSessionHistory(sessionId: $sessionId) { \n        role content \n      }     \n    }  \n  ": typeof types.GetSessionHistoryDocument,
+    "    \n    query GetSessionHistory($sessionId: String!) {       \n      getSessionHistory(sessionId: $sessionId) { \n        type role content \n      }     \n    }  \n  ": typeof types.GetSessionHistoryDocument,
     "    \n    query GetSessionSummary($sessionId: String!) {       \n      getSessionSummary(sessionId: $sessionId) { \n        summaryTitle userMessage aiAnswer createdAt sessionId \n      }     \n    }  \n  ": typeof types.GetSessionSummaryDocument,
     "    \n    query GetStructuredFacts {      \n      getStructuredFacts { \n        ...FactFields\n      }     \n    }  \n  ": typeof types.GetStructuredFactsDocument,
     "\n    mutation CreateSession($id: String!, $title: String!, $initialQuery: String) { \n      createSession(id: $id, title: $title, initialQuery: $initialQuery) { id title } \n    }\n  ": typeof types.CreateSessionDocument,
@@ -30,7 +30,7 @@ const documents: Documents = {
     "\n    fragment SessionFields on Session {\n      id\n      title\n      createdAt\n      updatedAt\n      summary {\n        summaryTitle\n        userMessage\n        aiAnswer\n        createdAt\n        sessionId\n      }\n    }\n  ": types.SessionFieldsFragmentDoc,
     "\n    fragment FactFields on StructuredFact {\n      id\n      fact\n      category\n      confidence\n      createdAt\n    }\n  ": types.FactFieldsFragmentDoc,
     "    \n    query GetSessions($limit: Int, $offset: Int, $search: String) {       \n      getSessions(limit: $limit, offset: $offset, search: $search) {         \n        ...SessionFields\n      }     \n    }  \n  ": types.GetSessionsDocument,
-    "    \n    query GetSessionHistory($sessionId: String!) {       \n      getSessionHistory(sessionId: $sessionId) { \n        role content \n      }     \n    }  \n  ": types.GetSessionHistoryDocument,
+    "    \n    query GetSessionHistory($sessionId: String!) {       \n      getSessionHistory(sessionId: $sessionId) { \n        type role content \n      }     \n    }  \n  ": types.GetSessionHistoryDocument,
     "    \n    query GetSessionSummary($sessionId: String!) {       \n      getSessionSummary(sessionId: $sessionId) { \n        summaryTitle userMessage aiAnswer createdAt sessionId \n      }     \n    }  \n  ": types.GetSessionSummaryDocument,
     "    \n    query GetStructuredFacts {      \n      getStructuredFacts { \n        ...FactFields\n      }     \n    }  \n  ": types.GetStructuredFactsDocument,
     "\n    mutation CreateSession($id: String!, $title: String!, $initialQuery: String) { \n      createSession(id: $id, title: $title, initialQuery: $initialQuery) { id title } \n    }\n  ": types.CreateSessionDocument,
@@ -54,7 +54,7 @@ export function graphql(source: "    \n    query GetSessions($limit: Int, $offse
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "    \n    query GetSessionHistory($sessionId: String!) {       \n      getSessionHistory(sessionId: $sessionId) { \n        role content \n      }     \n    }  \n  "): typeof import('./graphql').GetSessionHistoryDocument;
+export function graphql(source: "    \n    query GetSessionHistory($sessionId: String!) {       \n      getSessionHistory(sessionId: $sessionId) { \n        type role content \n      }     \n    }  \n  "): typeof import('./graphql').GetSessionHistoryDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

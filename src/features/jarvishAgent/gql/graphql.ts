@@ -40,7 +40,7 @@ export type GetSessionHistoryQueryVariables = Exact<{
 }>;
 
 
-export type GetSessionHistoryQuery = { getSessionHistory: Array<{ role: string, content: string }> };
+export type GetSessionHistoryQuery = { getSessionHistory: Array<{ type: string, role: string, content: string }> };
 
 export type GetSessionSummaryQueryVariables = Exact<{
   sessionId: string;
@@ -151,6 +151,7 @@ export const GetSessionsDocument = new TypedDocumentString(`
 export const GetSessionHistoryDocument = new TypedDocumentString(`
     query GetSessionHistory($sessionId: String!) {
   getSessionHistory(sessionId: $sessionId) {
+    type
     role
     content
   }

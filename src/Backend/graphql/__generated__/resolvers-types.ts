@@ -38,6 +38,7 @@ export type Message = {
   __typename?: 'Message';
   content: Scalars['String']['output'];
   role: Scalars['String']['output'];
+  type: Scalars['String']['output'];
 };
 
 export type MessageInput = {
@@ -275,6 +276,7 @@ export interface JsonScalarConfig extends GraphQLScalarTypeConfig<ResolversTypes
 export type MessageResolvers<ContextType = any, ParentType extends ResolversParentTypes['Message'] = ResolversParentTypes['Message']> = ResolversObject<{
   content?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   role?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  type?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
 }>;
 
 export type MutationResolvers<ContextType = any, ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation']> = ResolversObject<{

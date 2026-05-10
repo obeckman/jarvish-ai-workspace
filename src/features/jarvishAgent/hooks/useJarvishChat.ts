@@ -1,27 +1,31 @@
 import { useCallback, useRef, useReducer } from 'react';
 import { 
   Message, 
-  AgentStatus, 
   Attachment, 
   GetSessionHistoryResponseSchema, 
   AgentEventsSubscriptionResponseSchema, 
   MessageContent 
 } from '@/features/jarvishAgent/types';
 import { 
-  MESSAGE_ROLES, 
-  AGENT_STATUS, 
-  API_ENDPOINTS, 
+  
   GQL_SUBSCRIPTIONS, 
   EVENT_TYPES, 
   UI_STRINGS,
   GQL_QUERIES,
   STAGES
 } from '@/features/jarvishAgent/constants';
+import {
+  ROLES, 
+  AGENT_STATUS, 
+  API_ENDPOINTS ,
+  AgentStatus
+} from '@/shared/jarvish.constants.ts'
+
 import { parseAgentMessageContent } from '../utils/parser';
 import { 
   AgentChatSubscriptionVariables, 
   GetSessionHistoryQueryVariables 
-} from '../gql';
+} from '../gql/graphql';
 
 // --- Reducer Definitions ---
 
@@ -59,7 +63,7 @@ type ChatAction =
 const initialChatState: ChatState = {
   messages: [{
     id: '1',
-    role: MESSAGE_ROLES.AGENT,
+    role: ROLES.AGENT,
     content: UI_STRINGS.INITIAL_GREETING,
     timestamp: Date.now(),
   }],
@@ -143,6 +147,7 @@ export const useJarvishChat = (
       const validatedResponse = GetSessionHistoryResponseSchema.parse(result.data);
       if (validatedResponse.getSessionHistory) {
         const history = validatedResponse.getSessionHistory.map((m, i: number) => {
+         // to do - current qwery is only "role" "content" not alligned with 
           const content = parseAgentMessageContent(String(m.content));
           
           return {
@@ -154,7 +159,7 @@ export const useJarvishChat = (
         });
         dispatch({ type: 'SET_MESSAGES', payload: history.length > 0 ? history : [{
           id: '1',
-          role: MESSAGE_ROLES.AGENT,
+          role: ROLES.AGENT,
           content: UI_STRINGS.INITIAL_GREETING,
           timestamp: Date.now(),
         }] });
@@ -198,7 +203,7 @@ export const useJarvishChat = (
     
     const userMsg: Message = { 
       id: Date.now().toString(), 
-      role: MESSAGE_ROLES.USER, 
+      role: ROLES.USER, 
       content: queryToSend, 
       timestamp: Date.now() 
     };
@@ -232,7 +237,7 @@ export const useJarvishChat = (
           variables: {
             query: queryToSend,
             history: state.messages.map(m => ({ 
-              role: m.role === MESSAGE_ROLES.USER ? 'user' : 'assistant', 
+              role: m.role === ROLES.USER ? ROLES.USER : ROLES.ASSISTANT, 
               content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content)
             })).slice(-10),
             attachments: state.attachments.map(a => ({
@@ -251,7 +256,6 @@ export const useJarvishChat = (
       const reader = response.body.getReader();
       readerRef.current = reader; 
       const decoder = new TextDecoder();
-      let assistantMessageContent = '';
       
       const assistantMsgId = (Date.now() + 1).toString();
 
@@ -279,28 +283,25 @@ export const useJarvishChat = (
               dispatch({ type: 'SET_STATUS_MESSAGE', payload: data.content });
               dispatch({ type: 'ADD_STATUS_LOG', payload: data.content });
               
-              dispatch({ type: 'ADD_MESSAGE', payload: {
-                id: `reason-${Date.now()}-${Math.random()}`,
-                role: MESSAGE_ROLES.REASONING,
-                content: data.content,
-                timestamp: Date.now()
-              } });
-
-              if (data.stage !== undefined) dispatch({ type: 'SET_CURRENT_STAGE', payload: data.stage });
+              if (data.stage) {
+                dispatch({ type: 'SET_CURRENT_STAGE', payload: data.stage });
+              }
             } else if (data.type === EVENT_TYPES.REASONING) {
               dispatch({ type: 'ADD_MESSAGE', payload: {
                 id: `reason-content-${Date.now()}-${Math.random()}`,
-                role: MESSAGE_ROLES.REASONING,
+                role: ROLES.REASONING,
                 content: data.content,
                 timestamp: Date.now()
               } });
             } else if (data.type === EVENT_TYPES.MESSAGE) {
-              dispatch({ type: 'SET_STATUS_MESSAGE', payload: null }); 
-
-              assistantMessageContent += data.content;
-              const newContent = parseAgentMessageContent(assistantMessageContent);
-
-              dispatch({ type: 'UPDATE_LAST_MESSAGE', payload: { id: assistantMsgId, content: newContent } });
+              const newContent = parseAgentMessageContent(data.content);
+               dispatch({ type: 'ADD_MESSAGE', payload: {
+                id: assistantMsgId,
+                role: ROLES.AGENT,
+                content: newContent,
+                timestamp: Date.now()
+              } });
+              
               dispatch({ type: 'SET_STATUS', payload: AGENT_STATUS.RESPONDING });
             } else if (data.type === EVENT_TYPES.ERROR) {
               dispatch({ type: 'SET_ERROR_MESSAGE', payload: `Agent Error: ${data.content}` });

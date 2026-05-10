@@ -1,5 +1,5 @@
 import React from 'react';
-import { BLOCK_TYPES } from '../../constants';
+import { BLOCK_TYPES } from '@/shared/jarvish.constants';
 import { AnyBlockComponentProps } from './blockProps';
 import { TextBlock } from './TextBlock';
 import { ReasoningBlock } from './ReasoningBlock';

@@ -31,7 +31,7 @@ export const STAGES = {
 
 export const NODE_NAMES = {
   CONTEXT: 'context',
-  REASONING: 'reasoning', // Legacy / Main
+  REASONING: 'REASONING', // Legacy / Main
   SUPERVISOR: 'supervisor',
   RESEARCH_WORKER: 'research_worker',
   GOOGLE_WORKER: 'google_worker',
@@ -59,3 +59,42 @@ export const TOOL_NAMES = {
   UPDATE_GOOGLE_DOC: 'update_google_doc',
   CHECK_INVENTORY: 'check_inventory',
 } as const;
+
+export const BLOCK_TYPES = {
+  TEXT: 'TEXT',
+  CODE: 'CODE',
+  REASONING: 'REASONING',
+  ACTION: 'ACTION',
+  DATA: 'DATA',
+  DOCUMENT: 'DOCUMENT',
+  DRAFT: 'DRAFT',
+} as const;
+
+// Gemini API specific role strings
+export const GEMINI_ROLES = {
+  USER: 'USER',
+  MODEL: 'MODEL',
+  FUNCTION: 'FUNCTION',
+} as const;
+
+export const AGENT_STATUS = {
+  IDLE: 'IDLE',
+  THINKING: 'THINKING',
+  RESPONDING: 'RESPONDING',
+  ERROR: 'ERROR',
+} as const;
+
+export const STORAGE_KEYS = {
+  GOOGLE_TOKEN: 'google_access_token',
+  SESSION_ID: 'jarvish_session_id',
+} as const;
+
+export const API_ENDPOINTS = {
+  GRAPHQL: '/graphql',
+  CONFIG: '/api/config',
+} as const;
+
+export type AgentStatus = typeof AGENT_STATUS[keyof typeof AGENT_STATUS];
+export type MessageRole = typeof ROLES[keyof typeof ROLES];
+export type BlockType = typeof BLOCK_TYPES[keyof typeof BLOCK_TYPES];
+export type EventType = typeof EVENT_TYPES[keyof typeof EVENT_TYPES];

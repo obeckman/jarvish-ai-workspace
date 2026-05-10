@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { AgentStateType } from "@/Backend/agent/state";
 import { REASONING_MODEL } from "@/Backend/agent/models";
-import { ROLES, TOOL_NAMES, STAGES, NODE_NAMES } from "@/Backend/agent/constants";
+import { ROLES, TOOL_NAMES, STAGES, NODE_NAMES } from "@/shared/jarvish.constants";;
 import { mapStateToGeminiHistory } from "../utils";
 import { AIMessage } from "@langchain/core/messages";
 import { 

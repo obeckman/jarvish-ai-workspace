@@ -12,7 +12,7 @@ import { coderWorkerNode } from "@/Backend/agent/nodes/workers/coder";
 import { toolsNode } from "@/Backend/agent/nodes/tools";
 import { archiveNode } from "@/Backend/agent/nodes/archive";
 import { clarificationNode } from "@/Backend/agent/nodes/clarification";
-import { NODE_NAMES, TOOL_CONFIDENCE_THRESHOLD, STAGES } from "@/Backend/agent/constants"; // Import STAGES
+import { NODE_NAMES, TOOL_CONFIDENCE_THRESHOLD, STAGES } from "@/shared/jarvish.constants";; // Import STAGES
 import { AIMessage } from "@langchain/core/messages";
 
 /**

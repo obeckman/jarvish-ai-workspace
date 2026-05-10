@@ -3,43 +3,35 @@
  * Following the "Zero Magic Strings" policy.
  */
 
-import { ROLES, EVENT_TYPES, STAGES } from '@/shared/jarvish.constants';
+import { EVENT_TYPES, STAGES } from '@/shared/jarvish.constants';
 import { graphql } from './gql';
 
 export { EVENT_TYPES, STAGES };
 
-export const STORAGE_KEYS = {
-  GOOGLE_TOKEN: 'google_access_token',
-  SESSION_ID: 'jarvish_session_id',
-} as const;
 
-export const API_ENDPOINTS = {
-  GRAPHQL: '/graphql',
-  CONFIG: '/api/config',
-} as const;
+//fix me oren - considre src/shared/jarvish.constants.ts
+// export const BLOCK_TYPES = {
+//   TEXT: 'TEXT',
+//   CODE: 'CODE',
+//   REASONING: 'REASONING',
+//   ACTION: 'ACTION',
+//   DATA: 'DATA',
+//   DOCUMENT: 'DOCUMENT',
+//   DRAFT: 'DRAFT',
+// } as const;
 
-export const BLOCK_TYPES = {
-  TEXT: 'text',
-  CODE: 'code',
-  REASONING: 'reasoning',
-  ACTION: 'action',
-  DATA: 'data',
-  DOCUMENT: 'document',
-  DRAFT: 'draft',
-} as const;
+//export const MESSAGE_ROLES = ROLES;
 
-export const MESSAGE_ROLES = ROLES;
-
-export const AGENT_STATUS = {
-  IDLE: 'idle',
-  THINKING: 'thinking',
-  RESPONDING: 'responding',
-  ERROR: 'error',
-} as const;
+// export const AGENT_STATUS = {
+//   IDLE: 'IDLE',
+//   THINKING: 'THINKING',
+//   RESPONDING: 'RESPONDING',
+//   ERROR: 'ERROR',
+// } as const;
 
 export const UI_STRINGS = {
   INITIAL_GREETING: 'Hello! I am Jarvish, your personal agent. How can I help you today?',
-  DEFAULT_INPUT: 'תמשיך את המחקר על זכיות הבניה של המבנים הטמפלרים בנחלה שלי',
+  DEFAULT_INPUT: 'whats the date',
   NEW_RESEARCH_PREFIX: 'New Research',
   DELETE_CONFIRMATION: 'Are you sure you want to delete this session?',
   FILE_LARGE_ERROR: 'File too large. Max 10MB per file.',
@@ -90,7 +82,7 @@ export const GQL_QUERIES = {
   GET_SESSION_HISTORY: graphql(`    
     query GetSessionHistory($sessionId: String!) {       
       getSessionHistory(sessionId: $sessionId) { 
-        role content 
+        type role content 
       }     
     }  
   `),  

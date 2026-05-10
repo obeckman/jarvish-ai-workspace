@@ -1,7 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
 import { StructuredFact, GetStructuredFactsResponseSchema } from '@/features/jarvishAgent/types';
-import { API_ENDPOINTS, GQL_QUERIES, GQL_MUTATIONS } from '@/features/jarvishAgent/constants';
-import { DeleteStructuredFactMutationVariables } from '../gql';
+import { GQL_QUERIES, GQL_MUTATIONS } from '@/features/jarvishAgent/constants';
+import {API_ENDPOINTS} from '@/shared/jarvish.constants';
+import { DeleteStructuredFactMutationVariables } from '../gql/graphql';
 
 export const useJarvishMemory = () => {
   const [facts, setFacts] = useState<StructuredFact[]>([]);

@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { REASONING_MODEL } from "@/Backend/agent/models";
+import { ROLES } from "@/shared/jarvish.constants";
 
 export async function summarizeSession(history: { role: string, content: string }[]) {
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
@@ -42,11 +43,11 @@ export async function summarizeSession(history: { role: string, content: string 
       summaryTitle: "Conversation Summary",
       userMessage: history.find(m => {
         const r = (m.role || "").toLowerCase();
-        return r === 'user' || r === 'human';
+        return r === ROLES.USER || r === ROLES.HUMAN;
       })?.content?.substring(0, 100) || "N/A",
       aiAnswer: [...history].reverse().find(m => {
         const r = (m.role || "").toLowerCase();
-        return r === 'agent' || r === 'assistant' || r === 'model' || r === 'ai';
+        return r === ROLES.AGENT || r === ROLES.ASSISTANT || r === ROLES.MODEL ;
       })?.content?.substring(0, 100) || "N/A"
     };
   }

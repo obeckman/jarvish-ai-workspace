@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { AgentStateType } from "@/Backend/agent/state";
 import { REASONING_MODEL } from "@/Backend/agent/models";
-import { ROLES, STAGES } from "@/Backend/agent/constants";
+import { ROLES, STAGES } from "@/shared/jarvish.constants";;
 import { mapStateToGeminiHistory } from "./utils";
 import { AIMessage } from "@langchain/core/messages";
 
@@ -13,6 +13,7 @@ import { AIMessage } from "@langchain/core/messages";
  * 3. Prevents the agent from "guessing" or hallucinating data.
  */
 export async function clarificationNode(state: AgentStateType) {
+  console.log(`[Agent Graph] Node: Clarification | State messages param:`, state.messages);
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
   
   const systemInstruction = `You are the Jarvish Clarification Agent. A recent tool execution returned a low confidence score, meaning the team lacks the information needed to proceed accurately.
@@ -48,7 +49,7 @@ export async function clarificationNode(state: AgentStateType) {
   if (!content.trim().startsWith('[')) {
     content = JSON.stringify([{ type: "text", content: content }]);
   }
-
+  
   return {
     messages: [new AIMessage({
       content: content,

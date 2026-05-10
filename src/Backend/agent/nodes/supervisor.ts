@@ -2,11 +2,11 @@ import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import parse from "partial-json-parser";
 import { AgentStateType } from "@/Backend/agent/state";
 import { REASONING_MODEL } from "@/Backend/agent/models";
-import { ROLES, NODE_NAMES, STAGES } from "@/Backend/agent/constants";
-import { AgentMessageBlocksSchema, BLOCK_TYPES } from "@/Backend/agent/schema";
-import { mapStateToGeminiHistory, GEMINI_ROLES } from "./utils";
+import { STAGES, BLOCK_TYPES, ROLES } from "@/shared/jarvish.constants";;
+import { AgentMessageBlocksSchema} from "@/Backend/agent/schema";
+import { mapStateToGeminiHistory } from "./utils";
 import { AIMessage } from "@langchain/core/messages";
-
+import { HumanMessage, ToolMessage, BaseMessage } from "@langchain/core/messages";
 /**
  * Node: Supervisor
  * Responsibilities:
@@ -15,6 +15,8 @@ import { AIMessage } from "@langchain/core/messages";
  * 3. Synthesize final answers from worker findings.
  */
 export async function supervisorNode(state: AgentStateType) {
+  try{
+  //console.log(`[Agent Graph] Node: Supervisor | State messages param:`, state.messages);
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
   
   // Format memories for context
@@ -81,20 +83,32 @@ export async function supervisorNode(state: AgentStateType) {
   });
 
   const history = mapStateToGeminiHistory(state);
-  const lastMsg = history.pop();
-  if (!lastMsg) throw new Error("No messages found in history for Supervisor.");
+  const lastHistoryMsg = history.pop(); 
+  
+  //console.log(`[Agent Graph] Node: Supervisor | Last user message for Gemini:`, lastHistoryMsg);
+  
+  if (!lastHistoryMsg) throw new Error("No messages found in history for Supervisor.");
 
   // Add raw attachments to the last message if they exist
   if (state.attachments && Array.isArray(state.attachments)) {
     state.attachments.forEach(att => {
       if (att.data && att.mimeType) {
-        lastMsg.parts.push({ inlineData: { data: att.data, mimeType: att.mimeType } } as any);
+        lastHistoryMsg.parts.push({ inlineData: { data: att.data, mimeType: att.mimeType } } as any);
       }
     });
   }
-
+  // find last humen message in messages 
+  const userMsg = state.messages.slice().reverse().find(msg => { 
+    return msg instanceof HumanMessage 
+  }) || null;
+  const sentMessage = userMsg?.content || lastHistoryMsg.parts;
+  console.log(`[Agent Graph] Node: Supervisor | Sending message `, { 
+    'state.messages':state.messages, 
+    sentMessage
+  });
   const chat = model.startChat({ history });
-  const result = await chat.sendMessage(lastMsg.parts);
+
+  const result = await chat.sendMessage(sentMessage);
   const response = result.response;
   console.log(`[Agent Graph] Node: Supervisor | Raw response text:`, response.text());
 
@@ -143,7 +157,7 @@ export async function supervisorNode(state: AgentStateType) {
       }
     }
   }
-
+  
   return {
     messages: [new AIMessage({
       content: content,
@@ -152,4 +166,16 @@ export async function supervisorNode(state: AgentStateType) {
     })],
     metadata: { stage: STAGES.SYNTHESIZE, status: "Supervisor is orchestrating..." }
   };
+}
+  catch (error) {
+    console.error(`[Agent Graph] Node: Supervisor | Error during processing:`, error);
+    return {
+      messages: [new AIMessage({
+        content: JSON.stringify([{ type: BLOCK_TYPES.TEXT, content: "An error occurred while processing the response." }]),
+        tool_calls: [],
+        name: "supervisor"
+      })],
+      metadata: { stage: STAGES.SYNTHESIZE, status: "Supervisor encountered an error." }
+    };
+  }
 }

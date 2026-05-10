@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { AgentStateType } from "@/Backend/agent/state";
 import { PROCESSING_MODEL } from "@/Backend/agent/models";
-import { ROLES, STAGES, TOOL_NAMES } from "@/Backend/agent/constants";
+import { ROLES, STAGES, TOOL_NAMES } from "@/shared/jarvish.constants";
 import { searchWeb } from "../../services/tools/search.service";
 import { readFile } from "../../services/tools/file.service";
 import { AIMessage } from "@langchain/core/messages";
@@ -14,6 +14,7 @@ import { AIMessage } from "@langchain/core/messages";
  * 3. Store clean extractions and pre-fetched data in the state.
  */
 export async function processingNode(state: AgentStateType) {
+  console.log(`[Agent Graph] Node: Processing | State messages param:`, state.messages);
   const attachments = state.attachments || [];
   const processedCount = state.processedAttachments?.length || 0;
   const newAttachments = attachments.slice(processedCount);
@@ -85,10 +86,12 @@ export async function processingNode(state: AgentStateType) {
     }
   }
 
+  //console.log(`[Agent Graph] Node: Processing | Background analysis complete. Processed ${processedResults.length} attachments. Shadow tooling executed: ${shadowResults.length}.`);
   return {
     processedAttachments: processedResults,
     researchNotes: shadowResults,
     messages: [new AIMessage({
+     
       content: `Background processing complete. ${processedResults.length} files processed. ${shadowResults.length} shadow tools executed.`,
       name: ROLES.REASONING
     })],

@@ -80,6 +80,7 @@ export const schema = createSchema({
     }
 
     type Message {
+      type: String!
       role: String!
       content: String!
     }

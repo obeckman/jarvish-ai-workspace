@@ -1,13 +1,6 @@
 import { z } from 'zod';
 
-export const BLOCK_TYPES = {
-  TEXT: 'text',
-  CODE: 'code',
-  REASONING: 'reasoning',
-  ACTION: 'action',
-  DATA: 'data',
-  DRAFT: 'draft',
-} as const;
+import {BLOCK_TYPES} from '@/shared/jarvish.constants';
 
 export const TextBlockSchema = z.object({
   type: z.literal(BLOCK_TYPES.TEXT),
