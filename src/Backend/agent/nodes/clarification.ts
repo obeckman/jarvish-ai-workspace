@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { AgentStateType } from "@/Backend/agent/state";
 import { REASONING_MODEL } from "@/Backend/agent/models";
-import { ROLES, STAGES } from "@/shared/jarvish.constants";;
+import { BLOCK_TYPES, ROLES, STAGES } from "@/shared/jarvish.constants";;
 import { mapStateToGeminiHistory } from "./utils";
 import { AIMessage } from "@langchain/core/messages";
 
@@ -26,7 +26,7 @@ export async function clarificationNode(state: AgentStateType) {
   
   OUTPUT MANDATE:
   - You MUST use a JSON array of UI blocks.
-  - E.g., [{ "type": "text", "content": "I tried searching for X, but couldn't find a definitive answer. Could you clarify Y?" }]
+  - E.g., [{ "type": "${BLOCK_TYPES.TEXT}", "content": "I tried searching for X, but couldn't find a definitive answer. Could you clarify Y?" }]
   `;
 
   const model = genAI.getGenerativeModel({
@@ -47,7 +47,7 @@ export async function clarificationNode(state: AgentStateType) {
   
   // Fallback wrapper if model doesn't output JSON blocks
   if (!content.trim().startsWith('[')) {
-    content = JSON.stringify([{ type: "text", content: content }]);
+    content = JSON.stringify([{ type: BLOCK_TYPES.TEXT, content: content }]);
   }
   
   return {

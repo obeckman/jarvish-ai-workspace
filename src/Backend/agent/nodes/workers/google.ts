@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { AgentStateType } from "@/Backend/agent/state";
 import { REASONING_MODEL } from "@/Backend/agent/models";
-import { ROLES, TOOL_NAMES, STAGES, NODE_NAMES } from "@/shared/jarvish.constants";
+import { ROLES, TOOL_NAMES, STAGES, NODE_NAMES, BLOCK_TYPES } from "@/shared/jarvish.constants";
 import { mapStateToGeminiHistory } from "../utils";
 import { AIMessage } from "@langchain/core/messages";
 import { 
@@ -90,18 +90,18 @@ export async function googleWorkerNode(state: AgentStateType) {
             if (Array.isArray(parsed) && parsed.every((block: any) => block.type && typeof block.content === 'string')) {
               content = JSON.stringify(parsed);
             } else {
-              content = JSON.stringify([{ type: "text", content }]);
+              content = JSON.stringify([{ type: BLOCK_TYPES.TEXT, content }]);
             }
           } catch (jsonError) {
-            content = JSON.stringify([{ type: "text", content }]);
+            content = JSON.stringify([{ type: BLOCK_TYPES.TEXT, content }]);
           }
         }
       } else {
-        content = JSON.stringify([{ type: "text", content }]);
+        content = JSON.stringify([{ type: BLOCK_TYPES.TEXT, content }]);
       }
     } catch (e) {
       if (!content.startsWith('[') && !content.startsWith('{')) {
-        content = JSON.stringify([{ type: "text", content }]);
+        content = JSON.stringify([{ type: BLOCK_TYPES.TEXT, content }]);
       }
     }
   }
