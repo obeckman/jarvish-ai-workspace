@@ -9,8 +9,8 @@ import {BLOCK_TYPES} from '@/shared/jarvish.constants';
  * 3. A JSON stringified array of blocks where one block's content is a markdown code block containing more JSON.
  * 4. Partially complete JSON (using partial-json-parser).
  */
-export function parseAgentMessageContent(content: string): AgentMessageBlock[] | string {
-  if (!content || typeof content !== 'string') return content;
+export function parseAgentMessageContent(content: string): AgentMessageBlock[] | null  {
+  if (!content || typeof content !== 'string') return null;
 
   let cleaned = content.trim();
 
@@ -28,7 +28,7 @@ export function parseAgentMessageContent(content: string): AgentMessageBlock[] |
 
   cleaned = stripMarkdown(cleaned);
 
-  if (!cleaned) return content;
+  if (!cleaned) return null;
 
   try {
     // Try standard JSON.parse first for efficiency and correctness
@@ -40,13 +40,14 @@ export function parseAgentMessageContent(content: string): AgentMessageBlock[] |
       const partialParsed = parse(cleaned);
       return processParsedResult(partialParsed);
     } catch (e2) {
-      // If all parsing fails, return the cleaned string
-      return cleaned;
+      // If all parsing fails, return null
+      console.warn(`[parseAgentMessageContent] Failed to parse content as JSON or partial JSON. Returning null.`, { content, error: e2 });
+      return cleaned ? [{ type: BLOCK_TYPES.TEXT, content: cleaned }] : null;
     }
   }
 }
 
-function processParsedResult(parsed: unknown): AgentMessageBlock[] | string {
+function processParsedResult(parsed: unknown): AgentMessageBlock[]  {
   if (Array.isArray(parsed)) {
     // Flat map to handle nested blocks that might have been parsed recursively
     const blocks = parsed.flatMap((item): AgentMessageBlock[] => {
@@ -70,7 +71,7 @@ function processParsedResult(parsed: unknown): AgentMessageBlock[] | string {
       return []; // Filter out invalid items
     });
     
-    return blocks.length > 0 ? blocks : JSON.stringify(parsed);
+    return blocks;
   }
 
   const validation = AgentMessageBlockSchema.safeParse(parsed);

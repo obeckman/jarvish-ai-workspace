@@ -24,20 +24,20 @@ export function getMessageType(m: any): string {
  * Maps LangGraph state messages to Gemini API history format.
  */
 export function mapStateToGeminiHistory(state: AgentStateType) {
-  let history = state.messages
+  const mappedMessages = state.messages
     .filter(m => {
+      if ((m as any).name === ROLES.REASONING) {
+        return false;
+      }
       const r = getMessageRole(m);
-      // Filter out UI-only roles that the LLM shouldn't see
-      return r !== ROLES.REASONING;
+      return r !== ROLES.REASONING.toLowerCase();
     })
     .map(m => {
       const r = getMessageRole(m);
-      const t = getMessageType(m);
-
-      let role: string = GEMINI_ROLES.MODEL; 
-      if (r === ROLES.USER || r === ROLES.HUMAN ) {
+      let role: string = GEMINI_ROLES.MODEL;
+      if (r === ROLES.USER.toLowerCase() || r === ROLES.HUMAN.toLowerCase()) {
         role = GEMINI_ROLES.USER;
-      } else if (r === ROLES.TOOL || r === ROLES.FUNCTION) {
+      } else if (r === ROLES.TOOL.toLowerCase() || r === ROLES.FUNCTION.toLowerCase()) {
         role = GEMINI_ROLES.FUNCTION;
       }
 
@@ -45,20 +45,15 @@ export function mapStateToGeminiHistory(state: AgentStateType) {
       const toolCalls = (m as any).tool_calls;
       
       if (toolCalls && toolCalls.length > 0) {
-        // Filter out delegation tools as they don't have real execution results
         const realToolCalls = toolCalls.filter((tc: any) => 
           !tc.name.startsWith('delegate_to_')
         );
 
         if (realToolCalls.length > 0) {
           parts.push(...realToolCalls.map((tc: any) => ({
-            functionCall: {
-              name: tc.name,
-              args: tc.args
-            }
+            functionCall: { name: tc.name, args: tc.args }
           })));
         } else if (m.content) {
-          // If it only had delegation calls, treat it as a text message or skip
           parts.push({ text: String(m.content) });
         }
       } else if (role === GEMINI_ROLES.FUNCTION) {
@@ -81,11 +76,26 @@ export function mapStateToGeminiHistory(state: AgentStateType) {
     })
     .filter(m => m.parts.length > 0);
 
-  // Gemini Requirement: History must start with a 'USER' message.
-  const firstUserIndex = history.findIndex(m => m.role === GEMINI_ROLES.USER);
-  if (firstUserIndex !== -1) {
-    history = history.slice(firstUserIndex);
+  if (mappedMessages.length === 0) {
+    return [];
   }
 
-  return history;
+  const history: { role: string; parts: any[] }[] = [mappedMessages[0]];
+  for (let i = 1; i < mappedMessages.length; i++) {
+    const currentMsg = mappedMessages[i];
+    const lastMsg = history[history.length - 1];
+
+    if (currentMsg.role === lastMsg.role) {
+      lastMsg.parts.push(...currentMsg.parts);
+    } else {
+      history.push(currentMsg);
+    }
+  }
+
+  const firstUserIndex = history.findIndex(m => m.role === GEMINI_ROLES.USER);
+  if (firstUserIndex === -1) {
+    return [];
+  }
+  
+  return history.slice(firstUserIndex);
 }

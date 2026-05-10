@@ -180,7 +180,6 @@ export async function archiveNode(state: AgentStateType) {
   // }));
   
   return {
-    //messages: state.messages,
     metadata: { stage: STAGES.FINALIZE, status: "Jarvish has remembered this session and indexed all documents." }
   };
 }

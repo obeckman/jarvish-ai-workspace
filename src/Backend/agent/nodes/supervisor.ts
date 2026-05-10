@@ -54,9 +54,9 @@ export async function supervisorNode(state: AgentStateType) {
   UI BLOCK OUTPUT MANDATE:
   - When providing a final answer, you MUST use a JSON array of UI blocks.
   - NEVER wrap the JSON in markdown code blocks.
-  - Use 'text' for standard prose: { "type": "text", "content": "..." }
-  - Use 'data' for tables/charts: { "type": "data", "displayType": "chart" | "table", "title": "...", "data": [...] }
-  - Use 'code' for snippets: { "type": "code", "language": "...", "content": "..." }`;
+  - Use 'TEXT' for standard prose: { "type": "TEXT", "content": "..." }
+  - Use 'DATA' for tables/charts: { "type": "DATA", "displayType": "chart" | "table", "title": "...", "data": [...] }
+  - Use 'CODE' for snippets: { "type": "CODE", "language": "...", "content": "..." }`;
 
   const model = genAI.getGenerativeModel({
     model: REASONING_MODEL,
@@ -160,6 +160,7 @@ export async function supervisorNode(state: AgentStateType) {
   
   return {
     messages: [new AIMessage({
+      
       content: content,
       tool_calls: toolCalls,
       name: "supervisor"

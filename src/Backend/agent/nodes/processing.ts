@@ -86,15 +86,19 @@ export async function processingNode(state: AgentStateType) {
     }
   }
 
+  const messages = [];
+  if (processedResults.length > 0 || shadowResults.length > 0) {
+    messages.push(new AIMessage({
+      content: `Background processing complete. ${processedResults.length} files processed. ${shadowResults.length} shadow tools executed.`,
+      name: ROLES.REASONING
+    }));
+  }
+
   //console.log(`[Agent Graph] Node: Processing | Background analysis complete. Processed ${processedResults.length} attachments. Shadow tooling executed: ${shadowResults.length}.`);
   return {
     processedAttachments: processedResults,
     researchNotes: shadowResults,
-    messages: [new AIMessage({
-     
-      content: `Background processing complete. ${processedResults.length} files processed. ${shadowResults.length} shadow tools executed.`,
-      name: ROLES.REASONING
-    })],
+    messages,
     metadata: { 
       stage: STAGES.RESEARCH, 
       status: `Background analysis finished.` 

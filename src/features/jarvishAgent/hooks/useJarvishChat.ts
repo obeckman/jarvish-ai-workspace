@@ -148,11 +148,13 @@ export const useJarvishChat = (
       if (validatedResponse.getSessionHistory) {
         const history = validatedResponse.getSessionHistory.map((m, i: number) => {
          // to do - current qwery is only "role" "content" not alligned with 
-          const content = parseAgentMessageContent(String(m.content));
+         console.log(`[loadSessionHistory] Mapping history message:`, m); 
+         const content = parseAgentMessageContent(String(m.content));
           
           return {
             id: `hist-${i}`,
             role: m.role,
+            type: m.type,
             content: content,
             timestamp: Date.now()
           } as Message;
@@ -277,6 +279,7 @@ export const useJarvishChat = (
             const result = JSON.parse(jsonStr);
             const validatedEvent = AgentEventsSubscriptionResponseSchema.parse(result.data);
             const data = validatedEvent.agentEvents;
+            console.log(`[SSE Event Received] Type: ${data.type} | Content: ${data.content}`, data);
             if (!data) continue;
 
             if (data.type === EVENT_TYPES.STATUS) {
@@ -295,7 +298,8 @@ export const useJarvishChat = (
               } });
             } else if (data.type === EVENT_TYPES.MESSAGE) {
               const newContent = parseAgentMessageContent(data.content);
-               dispatch({ type: 'ADD_MESSAGE', payload: {
+              console.log(`[Parsed Assistant Message Content]:`, newContent); 
+              dispatch({ type: 'ADD_MESSAGE', payload: {
                 id: assistantMsgId,
                 role: ROLES.AGENT,
                 content: newContent,

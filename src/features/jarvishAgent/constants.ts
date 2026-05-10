@@ -9,26 +9,6 @@ import { graphql } from './gql';
 export { EVENT_TYPES, STAGES };
 
 
-//fix me oren - considre src/shared/jarvish.constants.ts
-// export const BLOCK_TYPES = {
-//   TEXT: 'TEXT',
-//   CODE: 'CODE',
-//   REASONING: 'REASONING',
-//   ACTION: 'ACTION',
-//   DATA: 'DATA',
-//   DOCUMENT: 'DOCUMENT',
-//   DRAFT: 'DRAFT',
-// } as const;
-
-//export const MESSAGE_ROLES = ROLES;
-
-// export const AGENT_STATUS = {
-//   IDLE: 'IDLE',
-//   THINKING: 'THINKING',
-//   RESPONDING: 'RESPONDING',
-//   ERROR: 'ERROR',
-// } as const;
-
 export const UI_STRINGS = {
   INITIAL_GREETING: 'Hello! I am Jarvish, your personal agent. How can I help you today?',
   DEFAULT_INPUT: 'whats the date',
