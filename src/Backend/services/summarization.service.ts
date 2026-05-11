@@ -43,11 +43,11 @@ export async function summarizeSession(history: { role: string, content: string 
     return {
       summaryTitle: "Conversation Summary",
       userMessage: history.find(m => {
-        const r = (m.role || "").toLowerCase();
+        const r = (m.role || "");
         return r === ROLES.USER || r === ROLES.HUMAN;
       })?.content?.substring(0, 100) || "N/A",
       aiAnswer: [...history].reverse().find(m => {
-        const r = (m.role || "").toLowerCase();
+        const r = (m.role || "");
         return r === ROLES.AGENT || r === ROLES.ASSISTANT || r === ROLES.MODEL ;
       })?.content?.substring(0, 100) || "N/A"
     };

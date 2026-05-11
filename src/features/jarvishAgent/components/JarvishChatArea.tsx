@@ -12,7 +12,7 @@ import {
 import cn from 'classnames';
 import styles from '@/features/jarvishAgent/jarvish-agent.module.scss';
 import { Message, Session } from '@/features/jarvishAgent/types';
-import { ROLES ,AGENT_STATUS, STAGES, AgentStatus} from '@/shared/jarvish.constants';
+import { ROLES ,AGENT_STATUS, STAGES, AgentStatus, BLOCK_TYPES} from '@/shared/jarvish.constants';
 import { ChatMessage } from './Blocks/ChatMessage';
 import { Markdown } from '@/components/shared/Markdown/Markdown';
 
@@ -83,7 +83,7 @@ export const JarvishChatArea: React.FC<JarvishChatAreaProps> = ({
 
     messages.forEach((m) => {
       console.log(`[JarvishChatArea] Rendering message:`, m);
-      if (m.role === ROLES.REASONING) {
+      if (m.type === BLOCK_TYPES.REASONING) {
         currentReasoningGroup.push(m);
       } else {
         flushReasoning();

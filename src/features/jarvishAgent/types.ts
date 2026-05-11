@@ -1,12 +1,9 @@
 import { z } from 'zod';
-import { ROLES, BLOCK_TYPES, EVENT_TYPES, MessageRole } from '@/shared/jarvish.constants'
+import { ROLES, BLOCK_TYPES, EVENT_TYPES, MessageRole, EventType, BlockType } from '@/shared/jarvish.constants'
 import * as GQL from './gql/graphql';
 
 
 
-const MessageRoleKeySchema = z.enum(Object.keys(ROLES) as [keyof typeof ROLES, ...string[]]);
-const EventTypeKeySchema = z.enum(Object.keys(EVENT_TYPES) as [keyof typeof EVENT_TYPES, ...string[]]);
-const BlockTypeKeySchema = z.enum(Object.keys(BLOCK_TYPES) as [keyof typeof BLOCK_TYPES, ...string[]]);
 
 // Re-export generated fragment types with null-to-undefined conversion or just as they are
 export type Session = GQL.SessionFieldsFragment;
@@ -85,8 +82,9 @@ export type MessageContent = z.infer<typeof MessageContentSchema>;
 export interface Message {
   id: string;
   role: MessageRole;
-  content: MessageContent; 
+  content?: MessageContent; 
   timestamp: number;
+  type: BlockType;
 }
 
 export interface Attachment {
@@ -99,8 +97,8 @@ export interface Attachment {
 
 // For GQL_QUERIES.GET_SESSION_HISTORY
 export const SessionHistoryItemSchema = z.object({
-  type: EventTypeKeySchema,
-  role: MessageRoleKeySchema,
+  type: z.enum(EVENT_TYPES),//EventTypeKeySchema,
+  role: z.enum(ROLES),
   content: z.string(), // Backend sends string, will be parsed into MessageContent in frontend
 });
 export const GetSessionHistoryResponseSchema = z.object({
@@ -109,7 +107,7 @@ export const GetSessionHistoryResponseSchema = z.object({
 
 // For GQL_SUBSCRIPTIONS.AGENT_CHAT (agentEvents field)
 export const AgentEventDataSchema = z.object({
-  type: EventTypeKeySchema,
+  type: z.enum(EVENT_TYPES),//EventTypeKeySchema,
   content: z.string(), // Raw content from SSE, might be JSON string
   stage: z.number().nullable(),
 });

@@ -70,7 +70,7 @@ export async function toolsNode(state: AgentStateType) {
       }
       
       // Analyze output to determine confidence
-      const outputStr = String(output).toLowerCase();
+      const outputStr = String(output);
       if (!output || outputStr.trim() === '') {
         confidence = 0;
       } else if (outputStr.includes('error:') || outputStr.includes('failed to')) {

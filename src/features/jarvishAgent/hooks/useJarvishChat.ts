@@ -18,7 +18,8 @@ import {
   ROLES, 
   AGENT_STATUS, 
   API_ENDPOINTS ,
-  AgentStatus
+  AgentStatus,
+  BLOCK_TYPES
 } from '@/shared/jarvish.constants.ts'
 
 import { parseAgentMessageContent } from '../utils/parser';
@@ -141,22 +142,31 @@ export const useJarvishChat = (
       const result = await res.json();
       const validatedResponse = GetSessionHistoryResponseSchema.parse(result.data);
       if (validatedResponse.getSessionHistory) {
-        const history = validatedResponse.getSessionHistory.map((m, i: number) => {
+        
+        const history : Message[] = []
+        validatedResponse.getSessionHistory.forEach((message, i: number) => {
          // to do - current qwery is only "role" "content" not alligned with 
-         console.log(`[loadSessionHistory] Mapping history message:`, m); 
-         const content = parseAgentMessageContent(String(m.content));
-          
-          return {
+         
+         console.log(`[loadSessionHistory] Mapping history message:`, message); 
+
+         const newContentArray = parseAgentMessageContent(String(message.content));
+          console.log(`[loadSessionHistory] Parsed Assistant Message Content:`, newContentArray); 
+              newContentArray.forEach(newContentMessage => {
+          history.push( {
             id: `hist-${i}`,
-            role: m.role,
-            type: m.type,
-            content: content,
-            timestamp: Date.now()
-          } as Message;
+            timestamp: Date.now(),
+            ...newContentMessage,
+            role: message.role,
+            type: message.type, 
+          } as Message);
+
+        })
         });
+
         dispatch({ type: 'SET_MESSAGES', payload: history.length > 0 ? history : [] });
       }
-    } catch (e) {
+    
+   } catch (e) {
       console.error('Failed to load history:', e);
       dispatch({ type: 'SET_ERROR_MESSAGE', payload: "Failed to load conversation history." });
     } finally {
@@ -194,6 +204,7 @@ export const useJarvishChat = (
     dispatch({ type: 'SET_REASONING_VISIBLE', payload: true });
     
     const userMsg: Message = { 
+      type: BLOCK_TYPES.TEXT,
       id: Date.now().toString(), 
       role: ROLES.USER, 
       content: queryToSend, 
@@ -266,35 +277,47 @@ export const useJarvishChat = (
           if (!jsonStr) continue;
 
           try {
-            const result = JSON.parse(jsonStr);
+            const result = JSON.parse(jsonStr, (key, value) => {
+              if (key === 'type' && typeof value === 'string') {
+                return value.toLowerCase();
+              }
+              return value;
+            });
             const validatedEvent = AgentEventsSubscriptionResponseSchema.parse(result.data);
             const data = validatedEvent.agentEvents;
             console.log(`[SSE Event Received] Type: ${data.type} | Content: ${data.content}`, data);
             if (!data) continue;
 
-            if (data.type === EVENT_TYPES.STATUS) {
+            if (data.type.toLowerCase() === EVENT_TYPES.STATUS) {
               dispatch({ type: 'SET_STATUS_MESSAGE', payload: data.content });
               dispatch({ type: 'ADD_STATUS_LOG', payload: data.content });
               
               if (data.stage) {
                 dispatch({ type: 'SET_CURRENT_STAGE', payload: data.stage });
               }
-            } else if (data.type === EVENT_TYPES.REASONING) {
+            } else if (data.type.toLowerCase() === EVENT_TYPES.REASONING) {
               dispatch({ type: 'ADD_MESSAGE', payload: {
                 id: `reason-content-${Date.now()}-${Math.random()}`,
+                type: BLOCK_TYPES.REASONING,
                 role: ROLES.REASONING,
                 content: data.content,
                 timestamp: Date.now()
               } });
-            } else if (data.type === EVENT_TYPES.MESSAGE) {
-              const newContent = parseAgentMessageContent(data.content);
-              console.log(`[Parsed Assistant Message Content]:`, newContent); 
+            } else if (data.type.toLowerCase() === EVENT_TYPES.MESSAGE) {
+              const newContentArray = parseAgentMessageContent(data.content);
+              console.log(`[Parsed Assistant Message Content]:`, newContentArray); 
+              newContentArray.forEach(newContentMessage => {
               dispatch({ type: 'ADD_MESSAGE', payload: {
                 id: assistantMsgId,
+                
+                
+                // content: newContentMessage.content,
+                timestamp: Date.now(),
+                ...newContentMessage,
+                //type: BLOCK_TYPES.,
                 role: ROLES.AGENT,
-                content: newContent,
-                timestamp: Date.now()
               } });
+            });
               
               dispatch({ type: 'SET_STATUS', payload: AGENT_STATUS.RESPONDING });
             } else if (data.type === EVENT_TYPES.ERROR) {

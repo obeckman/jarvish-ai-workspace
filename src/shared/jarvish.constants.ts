@@ -4,22 +4,22 @@
  */
 
 export const ROLES = {
-  USER: 'USER',
-  AGENT: 'AGENT',
-  REASONING: 'REASONING',
-  HUMAN: 'HUMAN',
-  MODEL: 'MODEL',
-  ASSISTANT: 'ASSISTANT',
-  TOOL: 'TOOL',
-  SYSTEM: 'SYSTEM',
-  FUNCTION: 'FUNCTION',
+  USER: 'user',
+  AGENT: 'agent',
+  REASONING: 'reasoning',
+  HUMAN: 'human',
+  MODEL: 'model',
+  ASSISTANT: 'assistant',
+  TOOL: 'tool',
+  SYSTEM: 'system',
+  FUNCTION: 'function',
 } as const;
 
 export const EVENT_TYPES = {
-  STATUS: 'STATUS',
-  MESSAGE: 'MESSAGE',
-  REASONING: 'REASONING',
-  ERROR: 'ERROR',
+  STATUS: 'status',
+  MESSAGE: 'message',
+  REASONING: 'reasoning',
+  ERROR: 'error',
 } as const;
 
 export const STAGES = {
@@ -31,7 +31,7 @@ export const STAGES = {
 
 export const NODE_NAMES = {
   CONTEXT: 'context',
-  REASONING: 'REASONING', // Legacy / Main
+  REASONING: 'reasoning', // Legacy / Main
   SUPERVISOR: 'supervisor',
   RESEARCH_WORKER: 'research_worker',
   GOOGLE_WORKER: 'google_worker',
@@ -61,13 +61,13 @@ export const TOOL_NAMES = {
 } as const;
 
 export const BLOCK_TYPES = {
-  TEXT: 'TEXT',
-  CODE: 'CODE',
-  REASONING: 'REASONING',
-  ACTION: 'ACTION',
-  DATA: 'DATA',
-  DOCUMENT: 'DOCUMENT',
-  DRAFT: 'DRAFT',
+  TEXT: 'text',
+  CODE: 'code',
+  REASONING: 'reasoning',
+  ACTION: 'action',
+  DATA: 'data',
+  DOCUMENT: 'document',
+  DRAFT: 'draft',
 } as const;
 
 // Gemini API specific role strings
@@ -78,10 +78,10 @@ export const GEMINI_ROLES = {
 } as const;
 
 export const AGENT_STATUS = {
-  IDLE: 'IDLE',
-  THINKING: 'THINKING',
-  RESPONDING: 'RESPONDING',
-  ERROR: 'ERROR',
+  IDLE: 'idle',
+  THINKING: 'thinking',
+  RESPONDING: 'responding',
+  ERROR: 'error',
 } as const;
 
 export const STORAGE_KEYS = {
@@ -98,3 +98,4 @@ export type AgentStatus = typeof AGENT_STATUS[keyof typeof AGENT_STATUS];
 export type MessageRole = typeof ROLES[keyof typeof ROLES];
 export type BlockType = typeof BLOCK_TYPES[keyof typeof BLOCK_TYPES];
 export type EventType = typeof EVENT_TYPES[keyof typeof EVENT_TYPES];
+

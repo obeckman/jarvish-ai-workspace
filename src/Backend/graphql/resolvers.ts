@@ -19,7 +19,7 @@ const checkpointer = new SqliteSaver(sqlite);
  */
 function mapInputToLangChainMessages(history: { role: string, content: string }[] = []): BaseMessage[] {
   return history.map(h => {
-    const role = (h.role || "").toLowerCase();
+    const role = (h.role || "");
     if (role === ROLES.USER) {
       return new HumanMessage({ content: h.content });
     }
@@ -39,6 +39,9 @@ function mapInputToLangChainMessages(history: { role: string, content: string }[
  * Maps the GraphQL operations to the underlying LangGraph logic.
  */
 export const resolvers: Resolvers = {
+  EventType: Object.fromEntries(
+    Object.entries(EVENT_TYPES)
+  ),
   Query: {
     status: () => "Backend graphQL is healthy",
     getSessions: async (_: any, { limit = 10, offset = 0, search }: { limit?: number | null, offset?: number | null, search?: string | null }) => {
@@ -89,22 +92,22 @@ export const resolvers: Resolvers = {
 
       if (!state || !state.values.messages) return [];
       
-      return state.values.messages.map((m: any): Message => {
+      return state.values.messages.map((message: any): Message => {
         // Map LangChain roles to FE roles
-        const rawType = getMessageType(m);
-        const rawRole = getMessageRole(m);
-        const rawName = (m.name || m.lc_kwargs?.name || "").toLowerCase();
+        const rawType = getMessageType(message);
+        const rawRole = getMessageRole(message);
+        const rawName = (message.name || message.lc_kwargs?.name || "");
         
         // Determine role with fallback to AGENT
         let role: string = ROLES.AGENT;
-        logger.debug({ sessionId, rawType, rawRole, rawName }, "Mapping message in getSessionHistory");
+        logger.debug({ message,sessionId, rawType, rawRole, rawName }, "Mapping message in getSessionHistory");
         if (rawType === ROLES.HUMAN || rawRole === ROLES.USER) {
           role = ROLES.USER;
         } else if (
           rawType === ROLES.TOOL || 
           rawRole === ROLES.REASONING || 
           rawType === ROLES.FUNCTION ||
-          (m.tool_calls && m.tool_calls.length > 0) ||
+          (message.tool_calls && message.tool_calls.length > 0) ||
           (rawName && !
             [
               NODE_NAMES.REASONING, 
@@ -121,7 +124,7 @@ export const resolvers: Resolvers = {
         }
 
         // Handle content which can be string or array of parts
-        let content = m.content;
+        let content = message.content;
         if (Array.isArray(content)) {
           content = content.map((part: any) => part.text || JSON.stringify(part)).join('\n');
         } else if (typeof content !== 'string') {

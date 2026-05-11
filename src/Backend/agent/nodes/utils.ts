@@ -9,7 +9,7 @@ import { ROLES, GEMINI_ROLES } from "@/shared/jarvish.constants";
  */
 export function getMessageRole(m: any): string {
   if (!m) return "";
-  return (m.role || m.lc_kwargs?.role || (typeof m._getType === 'function' ? m._getType() : m.type) || "").toLowerCase();
+  return (m.role || m.lc_kwargs?.role || (typeof m._getType === 'function' ? m._getType() : m.type) || "");
 }
 
 /**
@@ -17,7 +17,7 @@ export function getMessageRole(m: any): string {
  */
 export function getMessageType(m: any): string {
   if (!m) return "";
-  return (typeof m._getType === 'function' ? m._getType() : (m.type || "")).toLowerCase();
+  return (typeof m._getType === 'function' ? m._getType() : (m.type || ""));
 }
 
 /**
@@ -30,14 +30,14 @@ export function mapStateToGeminiHistory(state: AgentStateType) {
         return false;
       }
       const r = getMessageRole(m);
-      return r !== ROLES.REASONING.toLowerCase();
+      return r !== ROLES.REASONING;
     })
     .map(m => {
       const r = getMessageRole(m);
       let role: string = GEMINI_ROLES.MODEL;
-      if (r === ROLES.USER.toLowerCase() || r === ROLES.HUMAN.toLowerCase()) {
+      if (r === ROLES.USER || r === ROLES.HUMAN) {
         role = GEMINI_ROLES.USER;
-      } else if (r === ROLES.TOOL.toLowerCase() || r === ROLES.FUNCTION.toLowerCase()) {
+      } else if (r === ROLES.TOOL || r === ROLES.FUNCTION) {
         role = GEMINI_ROLES.FUNCTION;
       }
 

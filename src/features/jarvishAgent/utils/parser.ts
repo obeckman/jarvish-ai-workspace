@@ -1,6 +1,6 @@
 import parse from 'partial-json-parser';
 import { AgentMessageBlock, AgentMessageBlockSchema } from '../types';
-import {BLOCK_TYPES} from '@/shared/jarvish.constants';
+import { BLOCK_TYPES } from '@/shared/jarvish.constants';
 
 /**
  * Robustly parses agent message content which might be:
@@ -9,8 +9,8 @@ import {BLOCK_TYPES} from '@/shared/jarvish.constants';
  * 3. A JSON stringified array of blocks where one block's content is a markdown code block containing more JSON.
  * 4. Partially complete JSON (using partial-json-parser).
  */
-export function parseAgentMessageContent(content: string): AgentMessageBlock[] | null  {
-  if (!content || typeof content !== 'string') return null;
+export function parseAgentMessageContent(content: string): AgentMessageBlock[] {
+  if (!content || typeof content !== 'string') return [];
 
   let cleaned = content.trim();
 
@@ -28,26 +28,20 @@ export function parseAgentMessageContent(content: string): AgentMessageBlock[] |
 
   cleaned = stripMarkdown(cleaned);
 
-  if (!cleaned) return null;
+  if (!cleaned) return [];
 
   try {
     // Try standard JSON.parse first for efficiency and correctness
     const parsed = JSON.parse(cleaned);
     return processParsedResult(parsed);
   } catch (e) {
-    try {
-      // Fallback to partial-json-parser for streaming/incomplete content
-      const partialParsed = parse(cleaned);
-      return processParsedResult(partialParsed);
-    } catch (e2) {
-      // If all parsing fails, return null
-      console.warn(`[parseAgentMessageContent] Failed to parse content as JSON or partial JSON. Returning null.`, { content, error: e2 });
-      return cleaned ? [{ type: BLOCK_TYPES.TEXT, content: cleaned }] : null;
-    }
+    // If all parsing fails, return as a text block
+    return cleaned ? [{ type: BLOCK_TYPES.TEXT, content: cleaned }] : [];
   }
+
 }
 
-function processParsedResult(parsed: unknown): AgentMessageBlock[]  {
+function processParsedResult(parsed: unknown): AgentMessageBlock[] {
   if (Array.isArray(parsed)) {
     // Flat map to handle nested blocks that might have been parsed recursively
     const blocks = parsed.flatMap((item): AgentMessageBlock[] => {
@@ -63,14 +57,14 @@ function processParsedResult(parsed: unknown): AgentMessageBlock[]  {
         }
         return [block];
       }
-      
+
       // If item doesn't match schema, return as a text block if possible or ignore
       if (typeof item === 'string') {
-          return [{ type: BLOCK_TYPES.TEXT, content: item }];
+        return [{ type: BLOCK_TYPES.TEXT, content: item }];
       }
       return []; // Filter out invalid items
     });
-    
+
     return blocks;
   }
 
