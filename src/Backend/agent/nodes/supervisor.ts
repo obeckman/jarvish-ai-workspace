@@ -45,6 +45,8 @@ export async function supervisorNode(state: AgentStateType) {
   VERIFIED CONTEXT FROM MEMORY:
   ${memoriesText}
 
+  **Your primary goal is to synthesize answers directly from the VERIFIED CONTEXT above. Do not fall back to canned responses if the answer is present in the memories.**
+
   USER AUTHENTICATION STATUS:
   - Google Services: ${state.googleToken ? "AUTHENTICATED" : "NOT AUTHENTICATED"}
 

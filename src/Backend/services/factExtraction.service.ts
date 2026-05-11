@@ -11,21 +11,26 @@ export async function extractAndStoreFacts(sessionId: string, history: { role: s
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
   const model = genAI.getGenerativeModel({ 
     model: REASONING_MODEL,
-    systemInstruction: `You are a Fact Extraction Agent. Your job is to analyze conversation history and extract static, long-term facts about the user. When a user provides documents or specific information, extract key facts *from the content of those documents or information*, not just meta-facts about the user providing them.
-    Examples of static facts:
-    - "User prefers 180°C for pizza."
-    - "User has 26 villages in Tribal Wars."
-    - "User uses React and TypeScript for frontend."
-    - "Oren Beckman's resume lists 10 years of experience in software development."
-    - "The provided CV highlights expertise in AI and machine learning."
+    systemInstruction: `You are a Fact Extraction Agent. Your job is to analyze conversation history and extract key, long-term facts about the user and entities they mention. When a user provides documents or specific information, extract key facts *from the content*, not just meta-facts about the user providing them.
 
-    Ignore transient or conversational information.
+    **CRITICAL: Pay close attention to ALL personal details, preferences, and relationships the user explicitly states, including location, name, and other biographical information.**
+
+    Examples of facts to extract:
+    - "User's friend's name is Bobi." (Category: relationships)
+    - "User lives in בית לחם הגלילית." (Category: personal_info)
+    - "User prefers 180°C for pizza." (Category: preferences)
+    - "User has 26 villages in Tribal Wars." (Category: gaming)
+    - "User uses React and TypeScript for frontend." (Category: professional_info)
+    - "Oren Beckman's resume lists 10 years of experience in software development." (Category: professional_info)
+    - "The provided CV highlights expertise in AI and machine learning." (Category: resume_summary)
+
+    Ignore transient information (like asking for the time) unless it reveals a preference (e.g., "I always check the time at 5 PM").
 
     Output ONLY a JSON array of objects:
     [
-      { "fact": "...", "category": "preferences" },
-      { "fact": "...", "category": "gaming" },
-      { "fact": "...", "category": "resume" }
+      { "fact": "User's friend is named Bobi.", "category": "relationships" },
+      { "fact": "User lives in בית לחם הגלילית.", "category": "personal_info" },
+      { "fact": "...", "category": "preferences" }
     ]
 
     If no facts are found, output an empty array [].`  });

@@ -46,7 +46,7 @@ export async function addMemory(text: string, metadata: Record<string, any> = {}
   await vectorStore.add(text, embedding, metadata);
 }
 
-const RELEVANCE_THRESHOLD = 0.7;
+const RELEVANCE_THRESHOLD = 0.65;
 
 /**
  * Retrieves the most semantically relevant memories based on a text query.
@@ -72,6 +72,8 @@ export async function retrieveMemories(query: string, topK: number = 5): Promise
 
     // Perform vector similarity search in the store
     const results = await vectorStore.search(queryVector, topK);
+    
+    console.log(`[Memory Service] Raw search results for "${query}":`, JSON.stringify(results, null, 2));
     
     // Apply relevance threshold to prevent poisoning
     const filtered = results.filter(m => m.score >= RELEVANCE_THRESHOLD);
