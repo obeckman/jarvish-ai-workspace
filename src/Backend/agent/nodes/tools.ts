@@ -1,3 +1,4 @@
+import { logger } from "@/Backend/utils/logger";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { AgentStateType } from "../state";
 import { TOOL_EXECUTION_MODEL } from "../models";
@@ -18,11 +19,11 @@ import { ToolMessage } from "@langchain/core/messages";
  * 3. Accumulate results into the 'researchNotes' state.
  */
 export async function toolsNode(state: AgentStateType) {
-  console.log(`[Agent Graph] Node: Tools | State messages param:`, state.messages);
+  logger.debug({ sessionId: state.sessionId, messagesCount: state.messages.length }, "Node: Tools");
   const lastMessage = state.messages[state.messages.length - 1];
   const toolCalls = (lastMessage as any).tool_calls || [];
   
-  console.log(`[Agent Graph] Node: Tools | Executing ${toolCalls.length} tools.`);
+  logger.info({ sessionId: state.sessionId, toolCallsCount: toolCalls.length }, "Executing tools");
 
   const results: any[] = [];
   const notes: string[] = [];
@@ -32,7 +33,7 @@ export async function toolsNode(state: AgentStateType) {
   for (const call of toolCalls) {
     let output: any;
     let confidence = 100;
-    console.log(`[Agent Graph] Node: Tools | Executing tool: ${call.name}`);
+    logger.debug({ sessionId: state.sessionId, toolName: call.name, toolArgs: call.args }, "Executing tool");
     try {
       if (call.name === TOOL_NAMES.WEB_SEARCH) {
         output = await searchWeb(call.args);
@@ -79,6 +80,7 @@ export async function toolsNode(state: AgentStateType) {
       }
       
     } catch (e: any) {
+      logger.error({ sessionId: state.sessionId, toolName: call.name, error: e }, "Error executing tool");
       output = `Error executing tool: ${e.message}`;
       confidence = 0;
     }

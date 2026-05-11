@@ -1,3 +1,4 @@
+import { logger } from "@/Backend/utils/logger";
 import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import parse from "partial-json-parser";
 import { AgentStateType } from "@/Backend/agent/state";
@@ -15,16 +16,17 @@ import { HumanMessage, ToolMessage, BaseMessage } from "@langchain/core/messages
  * 3. Synthesize final answers from worker findings.
  */
 export async function supervisorNode(state: AgentStateType) {
+  logger.debug({ sessionId: state.sessionId, messagesCount: state.messages.length }, "Node: Supervisor");
   try{
     const lastMessage = state.messages[state.messages.length - 1];
     const lastMessageName = (lastMessage as any).name;
 
     // If the last message is from a worker, it's the final answer for this turn.
     if (lastMessageName === NODE_NAMES.CODER_WORKER || lastMessageName === NODE_NAMES.RESEARCH_WORKER || lastMessageName === NODE_NAMES.GOOGLE_WORKER) {
-      console.log(`[Agent Graph] Node: Supervisor | Worker response detected. Ending turn.`);
+      logger.debug({ sessionId: state.sessionId, workerName: lastMessageName }, "Worker response detected. Ending turn.");
       return {}; // Return empty object to avoid re-broadcasting the message.
     }
-  //console.log(`[Agent Graph] Node: Supervisor | State messages param:`, state.messages);
+  logger.info(`[Agent Graph] Node: Supervisor | State messages param:`, state.messages);
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
   
   // Format memories for context
@@ -95,7 +97,7 @@ export async function supervisorNode(state: AgentStateType) {
   const history = mapStateToGeminiHistory(state);
   const lastHistoryMsg = history.pop(); 
   
-  //console.log(`[Agent Graph] Node: Supervisor | Last user message for Gemini:`, lastHistoryMsg);
+  logger.info(`[Agent Graph] Node: Supervisor | Last user message for Gemini:`, lastHistoryMsg);
   
   if (!lastHistoryMsg) throw new Error("No messages found in history for Supervisor.");
 
@@ -112,15 +114,13 @@ export async function supervisorNode(state: AgentStateType) {
     return msg instanceof HumanMessage 
   }) || null;
   const sentMessage = userMsg?.content || lastHistoryMsg.parts;
-  console.log(`[Agent Graph] Node: Supervisor | Sending message `, { 
-    'state.messages':state.messages, 
-    sentMessage
-  });
+  logger.info({ sessionId: state.sessionId }, "Sending message to Gemini");
+  logger.debug({ sessionId: state.sessionId, sentMessage }, "Sent message details");
   const chat = model.startChat({ history });
 
   const result = await chat.sendMessage(sentMessage);
   const response = result.response;
-  console.log(`[Agent Graph] Node: Supervisor | Raw response text:`, response.text());
+  logger.debug({ sessionId: state.sessionId, rawResponse: response.text() }, "Raw response text from Gemini");
 
   let content = response.text();
   const toolCalls = response.functionCalls();
@@ -148,9 +148,9 @@ export async function supervisorNode(state: AgentStateType) {
 
         if (endIdx > startIdx) {
           const jsonPotential = cleaned.substring(startIdx, endIdx + 1);
-          console.log(`[Supervisor Node] Extracted JSON potential:`, jsonPotential);
+          logger.debug({ sessionId: state.sessionId, jsonPotential }, "Extracted JSON potential from response");
           const parsed = parse(jsonPotential);
-          console.log(`[Supervisor Node] parsed JSON :`, parsed);
+          logger.debug({ sessionId: state.sessionId, parsed }, "Parsed JSON from response");
           const blocksArray = Array.isArray(parsed) ? parsed : [parsed];
           const validation = AgentMessageBlocksSchema.safeParse(blocksArray);
           
@@ -179,7 +179,7 @@ export async function supervisorNode(state: AgentStateType) {
   };
 }
   catch (error) {
-    console.error(`[Agent Graph] Node: Supervisor | Error during processing:`, error);
+    logger.error({ sessionId: state.sessionId, error }, "Node: Supervisor | Error during processing");
     return {
       messages: [new AIMessage({
         content: JSON.stringify([{ type: BLOCK_TYPES.TEXT, content: "An error occurred while processing the response." }]),

@@ -9,6 +9,7 @@ import { db } from "@/Backend/db/index";
 import { sessionSummaries } from "@/Backend/db/schema";
 import { STAGES, ROLES } from "@/shared/jarvish.constants";
 import { getMessageRole, getMessageType } from "./utils";
+import { logger } from "@/Backend/utils/logger";
 
 /**
  * Node: Memory Archiving
@@ -20,14 +21,14 @@ import { getMessageRole, getMessageType } from "./utils";
  * 5. Extract static facts for the structured user profile.
  */
 export async function archiveNode(state: AgentStateType) {
-  console.log(`[Agent Graph] Node: Archive | State messages param:`, state.messages);
+  logger.debug({ sessionId: state.sessionId, messagesCount: state.messages.length }, "Node: Archive");
   let summary: { summaryTitle: string; userMessage: string; aiAnswer: string } | null = null;
   let extractedFacts: any[] = [];
   let indexedAttachments: string[] = [];
 
   // 1. Generate Session Summary for UI History (New Requirement)
   if (state.sessionId) {
-    console.log(`[Agent Graph] Node: Archive | Generating session summary for ${state.sessionId}`);
+    logger.info({ sessionId: state.sessionId }, "Generating session summary");
     try {
       const history = state.messages.map(m => {
         const role = getMessageRole(m);
@@ -54,13 +55,14 @@ export async function archiveNode(state: AgentStateType) {
           aiAnswer: summary.aiAnswer,
         }
       });
-      console.log(`[Agent Graph] Node: Archive | Session summary stored: ${JSON.stringify(summary)}`);
+      logger.info({ sessionId: state.sessionId, summaryTitle: summary.summaryTitle }, "Session summary stored");
     }
       // 5. Extract Static Facts
       extractedFacts = await extractAndStoreFacts(state.sessionId, history);
-      //console.log(`[Agent Graph] Node: Archive | Extracted facts: ${extractedFacts.length}`);
+      logger.debug({ sessionId: state.sessionId, extractedFactsCount: extractedFacts.length }, "Extracted facts");
 
-    } catch (err) {      console.error("[Archive Node Error: Session Summary]", err);
+    } catch (err) {
+      logger.error({ sessionId: state.sessionId, error: err }, "Archive Node Error: Session Summary");
     }
   }
 
@@ -76,7 +78,7 @@ export async function archiveNode(state: AgentStateType) {
   });
 
   if (lastUserMessage && lastModelMessage) {
-    console.log(`[Agent Graph] Node: Archive | Saving interaction to memory.`);
+    logger.info({ sessionId: state.sessionId }, "Saving interaction to memory");
 
     const userContent = typeof lastUserMessage.content === 'string' ? lastUserMessage.content : JSON.stringify(lastUserMessage.content);
     const modelContent = typeof lastModelMessage.content === 'string' ? lastModelMessage.content : JSON.stringify(lastModelMessage.content);
@@ -89,16 +91,16 @@ export async function archiveNode(state: AgentStateType) {
       type: 'history', 
       sessionId: state.sessionId,
       timestamp: new Date().toISOString() 
-    }).catch(err => console.error("[Archive Node Error: Summary Archival]", err));
+    }).catch(err => logger.error({ sessionId: state.sessionId, error: err }, "Archive Node Error: Summary Archival"));
   } else {
     const roles = state.messages.map(m => getMessageRole(m));
-    console.log(`[Agent Graph] Node: Archive | Interaction skipped (missing User or Model message). Roles present: ${roles.join(', ')}`);
+    logger.debug({ sessionId: state.sessionId, roles }, "Interaction skipped (missing User or Model message)");
   }
 
 
   // 2. Index Attachments
   if (state.attachments && state.attachments.length > 0) {
-    console.log(`[Agent Graph] Node: Archive | Indexing ${state.attachments.length} attachments.`);
+    logger.info({ sessionId: state.sessionId, attachmentsCount: state.attachments.length }, "Indexing attachments");
     
     for (const att of state.attachments) {
       try {
@@ -134,10 +136,10 @@ export async function archiveNode(state: AgentStateType) {
             timestamp: new Date().toISOString()
           });
           indexedAttachments.push(att.name); // Track indexed attachments
-          console.log(`[Agent Graph] Indexed attachment: ${att.name}`);
+          logger.debug({ sessionId: state.sessionId, attachmentName: att.name }, "Indexed attachment");
         }
       } catch (err) {
-        console.error(`[Archive Node Error: Attachment ${att.name}]`, err);
+        logger.error({ sessionId: state.sessionId, attachmentName: att.name, error: err }, "Archive Node Error: Attachment indexing failed");
       }
     }
   }
@@ -167,18 +169,12 @@ export async function archiveNode(state: AgentStateType) {
         sessionId: state.sessionId,
         timestamp: new Date().toISOString(),
       });
-      console.log(`[Agent Graph] Node: Archive | Overall agent interaction summary added to vector store.`);
+      logger.info({ sessionId: state.sessionId }, "Overall agent interaction summary added to vector store");
     } catch (err) {
-      console.error("[Archive Node Error: Overall Summary Archival]", err);
+      logger.error({ sessionId: state.sessionId, error: err }, "Archive Node Error: Overall Summary Archival");
     }
   }
 
-  // console.log(`[Agent Graph] Node: Archive | State messages before return:`, state.messages.map(m => {
-  //   const r = getMessageRole(m);
-  //   const c = typeof m.content === 'string' ? m.content : JSON.stringify(m.content);
-  //   return {role: r, content: c ? c.substring(0, 50) + '...' : ''};
-  // }));
-  
   return {
     metadata: { stage: STAGES.FINALIZE, status: "Jarvish has remembered this session and indexed all documents." }
   };

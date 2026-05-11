@@ -4,6 +4,7 @@ import parse from "partial-json-parser";
 import { addMemory } from "@/Backend/services/memory/memory.service"; // Import addMemory
 import { db } from "@/Backend/db";
 import { structuredFacts } from "@/Backend/db/schema";
+import { logger } from "@/Backend/utils/logger";
 /**
  * Extracts static facts about the user from a session history.
  */
@@ -40,10 +41,10 @@ export async function extractAndStoreFacts(sessionId: string, history: { role: s
   try {
     const result = await model.generateContent(prompt);
     const text = result.response.text() || "";
-    console.log(`[Fact Extraction] Raw model output: ${text}`);
+    logger.debug("[Fact Extraction] Raw model output", { text });
     let cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
     const parsedFacts = parse(cleaned);
-    console.log(`[Fact Extraction] Parsed facts:`, parsedFacts);
+    logger.debug("[Fact Extraction] Parsed facts", { parsedFacts });
 
     if (Array.isArray(parsedFacts) && parsedFacts.length > 0) {
       for (const factData of parsedFacts) {
@@ -60,14 +61,14 @@ export async function extractAndStoreFacts(sessionId: string, history: { role: s
           fact: factText,
           category,
         });
-        console.log(`[Fact Extraction] Stored fact: "${factText}" (Category: ${category}) in VectorDB and database.`);
+        logger.info(`[Fact Extraction] Stored fact: "${factText}" (Category: ${category}) in VectorDB and database.`);
       }
-      console.log(`[Fact Extraction] Extracted and stored ${parsedFacts.length} new facts for session ${sessionId} in VectorDB.`);
+      logger.info(`[Fact Extraction] Extracted and stored ${parsedFacts.length} new facts for session ${sessionId} in VectorDB.`);
       return parsedFacts; // Return the extracted facts on success
     }
     return []; // Return empty array if no facts found
   } catch (error) {
-    console.error("[Fact Extraction Error]", error);
+    logger.error(error, "[Fact Extraction Error]");
     return []; // Return empty array on error
   }
 }

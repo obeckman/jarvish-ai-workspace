@@ -5,6 +5,7 @@ import { ROLES, STAGES, TOOL_NAMES } from "@/shared/jarvish.constants";
 import { searchWeb } from "../../services/tools/search.service";
 import { readFile } from "../../services/tools/file.service";
 import { AIMessage } from "@langchain/core/messages";
+import { logger } from "@/Backend/utils/logger";
 
 /**
  * Node: Attachment & Shadow Tooling Processing
@@ -14,7 +15,7 @@ import { AIMessage } from "@langchain/core/messages";
  * 3. Store clean extractions and pre-fetched data in the state.
  */
 export async function processingNode(state: AgentStateType) {
-  console.log(`[Agent Graph] Node: Processing | State messages param:`, state.messages);
+  logger.debug({ sessionId: state.sessionId, messagesCount: state.messages.length }, "Node: Processing");
   const attachments = state.attachments || [];
   const processedCount = state.processedAttachments?.length || 0;
   const newAttachments = attachments.slice(processedCount);
@@ -22,7 +23,7 @@ export async function processingNode(state: AgentStateType) {
   const lastMessage = state.messages[state.messages.length - 1];
   const query = typeof lastMessage.content === 'string' ? lastMessage.content : "";
 
-  console.log(`[Agent Graph] Node: Processing | Starting background analysis.`);
+  logger.info({ sessionId: state.sessionId }, "Starting background analysis");
   
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
   const model = genAI.getGenerativeModel({ model: PROCESSING_MODEL });
@@ -50,7 +51,7 @@ export async function processingNode(state: AgentStateType) {
         timestamp: new Date().toISOString()
       });
     } catch (error: any) {
-      console.error(`[Processing Node Error: ${att.name}]`, error);
+      logger.error({ sessionId: state.sessionId, attachmentName: att.name, error }, "Processing Node Error");
     }
   }
 
@@ -73,16 +74,16 @@ export async function processingNode(state: AgentStateType) {
       const [tool, arg] = shadowResult.response.text().split('|').map(s => s.trim());
 
       if (tool === 'WEB_SEARCH' && arg) {
-        console.log(`[Shadow Tooling] Pre-executing web search: ${arg}`);
+        logger.info({ sessionId: state.sessionId, arg }, "Shadow Tooling: Pre-executing web search");
         const searchResult = await searchWeb({ query: arg });
         shadowResults.push(`[Shadow Search Result] ${String(searchResult).substring(0, 1000)}`);
       } else if (tool === 'READ_FILE' && arg) {
-        console.log(`[Shadow Tooling] Pre-reading file: ${arg}`);
+        logger.info({ sessionId: state.sessionId, arg }, "Shadow Tooling: Pre-reading file");
         const fileResult = await readFile({ path: arg });
         shadowResults.push(`[Shadow File Content: ${arg}] ${String(fileResult).substring(0, 1000)}`);
       }
     } catch (e) {
-      console.warn("[Shadow Tooling Warning]", e);
+      logger.warn({ sessionId: state.sessionId, error: e }, "Shadow Tooling Warning");
     }
   }
 
@@ -94,7 +95,7 @@ export async function processingNode(state: AgentStateType) {
     }));
   }
 
-  //console.log(`[Agent Graph] Node: Processing | Background analysis complete. Processed ${processedResults.length} attachments. Shadow tooling executed: ${shadowResults.length}.`);
+  logger.info({ sessionId: state.sessionId }, `[Agent Graph] Node: Processing | Background analysis complete. Processed ${processedResults.length} attachments. Shadow tooling executed: ${shadowResults.length}.`);
   return {
     processedAttachments: processedResults,
     researchNotes: shadowResults,

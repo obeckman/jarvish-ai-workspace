@@ -1,3 +1,4 @@
+import { logger } from '@/Backend/utils/logger';
 import { createAgentGraph } from '@/Backend/agent/graph';
 import { db, sqlite } from '@/Backend/db/index';
 import { sessions, sessionSummaries, structuredFacts } from '@/Backend/db/schema';
@@ -96,7 +97,7 @@ export const resolvers: Resolvers = {
         
         // Determine role with fallback to AGENT
         let role: string = ROLES.AGENT;
-        console.log("Mapping message:", { rawType, rawRole, rawName, content: m.content });
+        logger.debug({ sessionId, rawType, rawRole, rawName }, "Mapping message in getSessionHistory");
         if (rawType === ROLES.HUMAN || rawRole === ROLES.USER) {
           role = ROLES.USER;
         } else if (
@@ -174,7 +175,7 @@ export const resolvers: Resolvers = {
             }
           });
         } catch (e) {
-          console.error("Async summary generation failed:", e);
+          logger.error({ sessionId, error: e }, "Async summary generation failed");
         }
       })();
 
@@ -261,7 +262,7 @@ export const resolvers: Resolvers = {
               .set({ updatedAt: new Date() })
               .where(eq(sessions.id, sessionId));
           } catch (e) {
-            console.error("Failed to update session updatedAt", e);
+            logger.error({ sessionId, error: e }, "Failed to update session updatedAt");
           }
         }
 

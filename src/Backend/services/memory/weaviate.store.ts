@@ -1,6 +1,6 @@
 import { WeaviateClient } from 'weaviate-client';
 import { IVectorStore, Memory } from '@/Backend/services/memory/vector_store.interface';
-
+import { logger } from '@/Backend/utils/logger';
 /**
  * Weaviate Implementation of the Vector Store using Client v3 (Collections API).
  * Handles schema creation, data insertion, and semantic search.
@@ -17,12 +17,12 @@ export class WeaviateVectorStore implements IVectorStore {
    * Checks if the 'Memory' collection exists in Weaviate, creating it if not.
    */
   async ensureSchema(): Promise<void> {
-    console.log(`[Weaviate] Ensuring schema for collection: ${this.className}...`);
+    logger.info(`[Weaviate] Ensuring schema for collection: ${this.className}...`);
     try {
       const exists = await this.client.collections.exists(this.className);
 
       if (!exists) {
-        console.log(`[Weaviate] Creating collection: ${this.className}`);
+        logger.info(`[Weaviate] Creating collection: ${this.className}`);
         await this.client.collections.create({
           name: this.className,
           properties: [
@@ -41,7 +41,7 @@ export class WeaviateVectorStore implements IVectorStore {
         });
       }
     } catch (error) {
-      console.error('[Weaviate Schema Error]', error);
+      logger.error(error,'[Weaviate Schema Error]');
       throw error;
     }
   }
@@ -60,7 +60,7 @@ export class WeaviateVectorStore implements IVectorStore {
         vectors: embedding,
       });
     } catch (error) {
-      console.error('[Weaviate Add Error]', error);
+      logger.error(error, '[Weaviate Add Error]');
       throw error;
     }
   }
@@ -83,7 +83,7 @@ export class WeaviateVectorStore implements IVectorStore {
         metadata: obj.properties.metadata ? JSON.parse(String(obj.properties.metadata)) : {},
       }));
     } catch (error) {
-      console.error('[Weaviate Search Error]', error);
+      logger.error(error, '[Weaviate Search Error]');
       return [];
     }
   }
@@ -96,7 +96,7 @@ export class WeaviateVectorStore implements IVectorStore {
       const collection = this.client.collections.get(this.className);
       await collection.data.deleteById(id);
     } catch (error) {
-      console.error('[Weaviate Delete Error]', error);
+      logger.error(error, '[Weaviate Delete Error]');
       throw error;
     }
   }

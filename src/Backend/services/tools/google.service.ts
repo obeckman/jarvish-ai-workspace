@@ -1,3 +1,4 @@
+import logger from '@/Backend/utils/logger';
 import { google } from 'googleapis';
 
 /**
@@ -29,7 +30,7 @@ export async function listCalendarEvents(accessToken: string, args: { maxResults
     });
     return res.data.items || [];
   } catch (error: any) {
-    console.error(`[Google Service Error] listCalendarEvents failed:`, error.message);
+    logger.error(error, `[Google Service Error] listCalendarEvents failed: ${error.message}`);
     if (error.code === 401 || error.status === 401) {
       return "ERROR: Google authentication has expired or is invalid. Please log out and log in again to refresh your access.";
     }
@@ -59,7 +60,7 @@ export async function searchGmailMessages(accessToken: string, args: { query: st
       };
     }));
   } catch (error: any) {
-    console.error(`[Google Service Error] searchGmailMessages failed:`, error.message);
+    logger.error(error, `[Google Service Error] searchGmailMessages failed: ${error.message}`);
     if (error.code === 401 || error.status === 401) {
       return "ERROR: Google authentication has expired or is invalid. Please log out and log in again to refresh your access.";
     }
@@ -87,7 +88,7 @@ export async function getGoogleDocContent(accessToken: string, args: { documentI
     
     return content;
   } catch (error: any) {
-    console.error(`[Google Service Error] getGoogleDocContent failed:`, error.message);
+    logger.error(error, `[Google Service Error] getGoogleDocContent failed: ${error.message}`);
     if (error.code === 401 || error.status === 401) {
       return "ERROR: Google authentication has expired or is invalid. Please log out and log in again to refresh your access.";
     }
@@ -122,7 +123,7 @@ export async function updateGoogleDoc(accessToken: string, args: { documentId: s
 
     return `Successfully updated Google Doc: ${args.documentId}`;
   } catch (error: any) {
-    console.error(`[Google Service Error] updateGoogleDoc failed:`, error.message);
+    logger.error(error, `[Google Service Error] updateGoogleDoc failed: ${error.message}`);
     return `ERROR: Failed to update Google Doc: ${error.message}`;
   }
 }

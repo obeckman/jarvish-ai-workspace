@@ -2,6 +2,7 @@ import { AgentStateType } from "@/Backend/agent/state";
 import { retrieveMemories } from "@/Backend/services/memory/memory.service";
 import { ROLES, STAGES } from "@/shared/jarvish.constants";
 import { AIMessage } from "@langchain/core/messages";
+import { logger } from "@/Backend/utils/logger";
 
 /**
  * Node: Context Retrieval
@@ -11,15 +12,15 @@ import { AIMessage } from "@langchain/core/messages";
  * 3. Update the state with retrieved memories and stage progress.
  */
 export async function contextNode(state: AgentStateType) {
-  //console.log(`[Agent Graph] Node: Context | State messages param:`, state.messages);
+  logger.debug({ sessionId: state.sessionId, messagesCount: state.messages.length }, "Node: Context");
   const lastMessage = state.messages[state.messages.length - 1];
   const query = typeof lastMessage.content === 'string' ? lastMessage.content : "Summarize interaction";
 
   // Stage 1: Preparation / Memory Retrieval
-  console.log(`[Agent Graph] Node: Context | Retrieving memories for query.`);
-  
+  logger.info({ sessionId: state.sessionId, query }, "Retrieving memories for query");
+
   const memories = await retrieveMemories(query, 5);
-  //console.log(`[Agent Graph] Node: Context | Retrieved ${memories.length} memories.`, memories);
+  logger.debug({ sessionId: state.sessionId, retrievedMemoriesCount: memories.length }, "Retrieved memories");
   return {
     memories: memories,
     messages: [

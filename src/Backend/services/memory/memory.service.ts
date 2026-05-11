@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { IVectorStore, Memory } from '@/Backend/services/memory/vector_store.interface';
-
+import { logger } from '@/Backend/utils/logger';
 let vectorStore: IVectorStore | null = null;
 
 /**
@@ -58,7 +58,7 @@ const RELEVANCE_THRESHOLD = 0.65;
  */
 export async function retrieveMemories(query: string, topK: number = 5): Promise<Memory[]> {
   if (!vectorStore) {
-    console.warn('[Memory Service] Vector store not initialized.');
+    logger.warn('[Memory Service] Vector store not initialized.');
     return [];
   }
 
@@ -73,16 +73,16 @@ export async function retrieveMemories(query: string, topK: number = 5): Promise
     // Perform vector similarity search in the store
     const results = await vectorStore.search(queryVector, topK);
     
-    console.log(`[Memory Service] Raw search results for "${query}":`, JSON.stringify(results, null, 2));
+    logger.info(`[Memory Service] Raw search results for "${query}":`, JSON.stringify(results, null, 2));
     
     // Apply relevance threshold to prevent poisoning
     const filtered = results.filter(m => m.score >= RELEVANCE_THRESHOLD);
     
-    console.log(`[Memory Service] Query: "${query}" | Found ${results.length} results | ${filtered.length} passed threshold (${RELEVANCE_THRESHOLD})`);
+    logger.info(`[Memory Service] Query: "${query}" | Found ${results.length} results | ${filtered.length} passed threshold (${RELEVANCE_THRESHOLD})`);
     
     return filtered;
   } catch (error) {
-    console.error(`[Memory Service Error]`, error);
+    logger.error(error, `[Memory Service Error]`);
     return [];
   }
 }

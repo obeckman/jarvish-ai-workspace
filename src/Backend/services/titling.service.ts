@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { REASONING_MODEL } from "@/Backend/agent/models";
-
+import { logger } from '@/Backend/utils/logger';
 /**
  * Generates a concise, descriptive title for a research session based on the initial query.
  */
@@ -20,8 +20,8 @@ export async function generateTitle(query: string): Promise<string> {
     const title = result.response.text()?.trim() || "New Research";
     // Clean up any extra quotes or markdown
     return title.replace(/['"]+/g, '').substring(0, 50);
-  } catch (e) {
-    console.error(`[Titling Error]`, e);
+  } catch (error) {
+    logger.error(error, `[Titling Error]`);
     return query.substring(0, 30) + "...";
   }
 }

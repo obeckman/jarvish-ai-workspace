@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { runWebServer } from '@/Backend/WebServer';
 import { runVectorDatabase } from '@/Backend/VectorDB';
+import { logger } from '@/Backend/utils/logger';
 
 const PORT = process.env.PORT || 3000; // Match old server's port
 
@@ -11,7 +12,7 @@ const PORT = process.env.PORT || 3000; // Match old server's port
  * 3. Starts the API Server
  */
 async function initializingBEServer() {
-  console.log("--- Initializing BE Server ---");
+  logger.info("--- Initializing BE Server ---");
 
   try {
     // 3. Start Express
@@ -19,11 +20,11 @@ async function initializingBEServer() {
 
     const app = runWebServer();
     app.listen(PORT, () => {
-      console.log(`[API] Server is running at http://localhost:${PORT}/graphql`);
+      logger.info(`[API] Server is running at http://localhost:${PORT}/graphql`);
     });
 
   } catch (error) {
-    console.error("[Fatal Startup Error]", error);
+    logger.error({ error }, "[Fatal Startup Error]");
     process.exit(1);
   }
 }

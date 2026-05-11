@@ -7,4 +7,5 @@
 | Status | ID | Title | Created | Updated |
 | :--- | :--- | :--- | :--- | :--- |
 | [x] | gql-codegen_20260505 | GraphQL CodeGen Integration | 2026-05-05 | 2026-05-05 |
+| [ ] | backend-logger | Backend Logger Implementation | 2026-05-11 | 2026-05-11 |
 
