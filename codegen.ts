@@ -10,7 +10,7 @@ const config: CodegenConfig = {
         useIndexSignature: true,
       },
     },
-    'src/features/jarvishAgent/gql/': {
+    'src/features/jarvishAgent/graphql/__generated__/': {
       preset: 'client',
       plugins: [],
       config: {

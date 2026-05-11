@@ -4,7 +4,7 @@
  */
 
 import { EVENT_TYPES, STAGES } from '@/shared/jarvish.constants';
-import { graphql } from './gql';
+import { graphql } from './graphql/__generated__/';
 
 export { EVENT_TYPES, STAGES };
 

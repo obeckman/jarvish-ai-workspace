@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { ROLES, BLOCK_TYPES, EVENT_TYPES, MessageRole, EventType, BlockType } from '@/shared/jarvish.constants'
-import * as GQL from './gql/graphql';
+import * as GQL from './graphql/__generated__/graphql';
 
 
 

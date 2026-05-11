@@ -136,9 +136,13 @@ export const resolvers: Resolvers = {
                       ].includes(rawName as any);
        
         return {
-          type: isUserFacingNode ? EVENT_TYPES.MESSAGE : EVENT_TYPES.REASONING,
+          type: isUserFacingNode || role === ROLES.USER ? 
+            EVENT_TYPES.MESSAGE : 
+            EVENT_TYPES.REASONING,
           role,
-          content: content || (role === ROLES.REASONING ? "Processing research step..." : "")
+          content: content || (role === ROLES.REASONING ? 
+            "Processing research step..." : 
+            "")
         };
       });
     },

@@ -26,7 +26,7 @@ import { parseAgentMessageContent } from '../utils/parser';
 import { 
   AgentChatSubscriptionVariables, 
   GetSessionHistoryQueryVariables 
-} from '../gql/graphql';
+} from '@/features/jarvishAgent/graphql/__generated__/graphql';
 
 // --- Reducer Definitions ---
 
