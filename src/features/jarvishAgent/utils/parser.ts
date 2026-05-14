@@ -74,5 +74,7 @@ function processParsedResult(parsed: unknown): AgentMessageBlock[] {
   }
 
   // If it's a single object but not a valid block, return as stringified JSON if it's not a string
-  return typeof parsed === 'string' ? parsed : JSON.stringify(parsed);
+  return typeof parsed === 'string' ? 
+  [{ type: BLOCK_TYPES.TEXT, content: parsed }] : 
+  [{ type: BLOCK_TYPES.TEXT, content: JSON.stringify(parsed) }];
 }
