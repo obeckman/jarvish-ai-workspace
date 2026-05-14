@@ -190,9 +190,9 @@ export const JarvishAgent: React.FC = () => {
         />
 
         {viewMode === 'memory' ? (
-          <div className={styles.memoryContainer}>
+          
             <JarvishMemoryPanel />
-          </div>
+          
         ) : (
           <>
             <JarvishChatArea 

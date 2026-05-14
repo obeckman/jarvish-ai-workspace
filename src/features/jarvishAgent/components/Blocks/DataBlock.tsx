@@ -8,9 +8,10 @@ import {
   Tooltip 
 } from 'recharts';
 import styles from '../../jarvish-agent.module.scss';
+import { DISPLAY_TYPE } from '@/shared/jarvish.constants';
 
 interface DataBlockProps {
-  displayType: 'table' | 'chart';
+  displayType: (typeof DISPLAY_TYPE)[keyof typeof DISPLAY_TYPE];
   title?: string;
   data: any[];
   onAction?: (label: string) => void;
@@ -31,12 +32,12 @@ export const DataBlock: React.FC<DataBlockProps> = React.memo(({ displayType, ti
     setTableData(updatedData);
 
     if (onAction) {
-      const updateMessage = `[x-block-update] User updated '${title || 'table'}' data. Row ${rowIndex + 1}, column '${column}' changed from '${oldValue}' to '${newValue}'. Please recalculate the summary based on this new data.`;
+      const updateMessage = `[x-block-update] User updated '${title || DISPLAY_TYPE.TABLE}' data. Row ${rowIndex + 1}, column '${column}' changed from '${oldValue}' to '${newValue}'. Please recalculate the summary based on this new data.`;
       onAction(updateMessage);
     }
   };
 
-  if (displayType === 'table') {
+  if (displayType === DISPLAY_TYPE.TABLE) {
     if (!tableData || !Array.isArray(tableData) || tableData.length === 0) {
       return <div className={styles.dataBlock}>No data available for table.</div>;
     }

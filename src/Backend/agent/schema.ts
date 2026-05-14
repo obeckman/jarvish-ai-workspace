@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import {BLOCK_TYPES} from '@/shared/jarvish.constants';
+import {BLOCK_TYPES, DISPLAY_TYPE} from '@/shared/jarvish.constants';
 
 export const TextBlockSchema = z.object({
   type: z.literal(BLOCK_TYPES.TEXT),
@@ -30,7 +30,7 @@ export const ActionBlockSchema = z.object({
 
 export const DataBlockSchema = z.object({
   type: z.literal(BLOCK_TYPES.DATA),
-  displayType: z.enum(['table', 'chart']),
+  displayType: z.enum(Object.values(DISPLAY_TYPE)),
   title: z.string().optional(),
   data: z.any(),
 });

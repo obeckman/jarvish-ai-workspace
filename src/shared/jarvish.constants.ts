@@ -94,6 +94,11 @@ export const API_ENDPOINTS = {
   CONFIG: '/api/config',
 } as const;
 
+export const DISPLAY_TYPE ={
+  TABLE: 'table',
+  CHART: 'chart',
+} as const;
+
 export type AgentStatus = typeof AGENT_STATUS[keyof typeof AGENT_STATUS];
 export type MessageRole = typeof ROLES[keyof typeof ROLES];
 export type BlockType = typeof BLOCK_TYPES[keyof typeof BLOCK_TYPES];

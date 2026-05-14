@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ROLES, BLOCK_TYPES, EVENT_TYPES, MessageRole, EventType, BlockType } from '@/shared/jarvish.constants'
+import { ROLES, BLOCK_TYPES, EVENT_TYPES, MessageRole, BlockType, DISPLAY_TYPE } from '@/shared/jarvish.constants'
 import * as GQL from './graphql/__generated__/graphql';
 
 
@@ -40,7 +40,7 @@ export const ActionBlockSchema = z.object({
 
 export const DataBlockSchema = z.object({
   type: z.literal(BLOCK_TYPES.DATA),
-  displayType: z.enum(['table', 'chart']),
+  displayType: z.enum(Object.values(DISPLAY_TYPE)),
   title: z.string().optional(),
   data: z.unknown().describe('Data for rendering, can be any JSON-serializable structure.'),
 });

@@ -8,7 +8,7 @@ import { extractAndStoreFacts } from "@/Backend/services/factExtraction.service"
 import { db } from "@/Backend/db/index";
 import { sessionSummaries } from "@/Backend/db/schema";
 import { STAGES, ROLES } from "@/shared/jarvish.constants";
-import { getMessageRole, getMessageType } from "./utils";
+import { getMessageRole } from "./utils";
 import { logger } from "@/Backend/utils/logger";
 
 /**
@@ -34,29 +34,29 @@ export async function archiveNode(state: AgentStateType) {
         const role = getMessageRole(m);
         const content = typeof m.content === 'string' ? m.content : JSON.stringify(m.content);
         return {
-          role: (role === ROLES.USER || role === ROLES.HUMAN ) ? ROLES.USER : ROLES.ASSISTANT,
+          role: (role === ROLES.USER || role === ROLES.HUMAN) ? ROLES.USER : ROLES.ASSISTANT,
           content: content
         };
       });
 
       summary = await summarizeSession(history);
-      if(summary) {
-        
-      await db.insert(sessionSummaries).values({
-        sessionId: state.sessionId,
-        summaryTitle: summary.summaryTitle,
-        userMessage: summary.userMessage,
-        aiAnswer: summary.aiAnswer,
-      }).onConflictDoUpdate({
-        target: sessionSummaries.sessionId,
-        set: {
+      if (summary) {
+
+        await db.insert(sessionSummaries).values({
+          sessionId: state.sessionId,
           summaryTitle: summary.summaryTitle,
           userMessage: summary.userMessage,
           aiAnswer: summary.aiAnswer,
-        }
-      });
-      logger.info({ sessionId: state.sessionId, summaryTitle: summary.summaryTitle }, "Session summary stored");
-    }
+        }).onConflictDoUpdate({
+          target: sessionSummaries.sessionId,
+          set: {
+            summaryTitle: summary.summaryTitle,
+            userMessage: summary.userMessage,
+            aiAnswer: summary.aiAnswer,
+          }
+        });
+        logger.info({ sessionId: state.sessionId, summaryTitle: summary.summaryTitle }, "Session summary stored");
+      }
       // 5. Extract Static Facts
       extractedFacts = await extractAndStoreFacts(state.sessionId, history);
       logger.debug({ sessionId: state.sessionId, extractedFactsCount: extractedFacts.length }, "Extracted facts");
@@ -69,12 +69,12 @@ export async function archiveNode(state: AgentStateType) {
   // 2. Archive Conversation Summary to Vector Store
   const lastUserMessage = state.messages.findLast(m => {
     const r = getMessageRole(m);
-    return r === ROLES.USER || r === ROLES.HUMAN ;
+    return r === ROLES.USER || r === ROLES.HUMAN;
   });
-  
+
   const lastModelMessage = state.messages.findLast(m => {
     const r = getMessageRole(m);
-    return r === ROLES.ASSISTANT || r === ROLES.AGENT || r === ROLES.MODEL  ;
+    return r === ROLES.ASSISTANT || r === ROLES.AGENT || r === ROLES.MODEL;
   });
 
   if (lastUserMessage && lastModelMessage) {
@@ -87,10 +87,10 @@ export async function archiveNode(state: AgentStateType) {
     User: ${userContent}
     Assistant: ${modelContent}`;
 
-    await addMemory(conversationSummary, { 
-      type: 'history', 
+    await addMemory(conversationSummary, {
+      type: 'history',
       sessionId: state.sessionId,
-      timestamp: new Date().toISOString() 
+      timestamp: new Date().toISOString()
     }).catch(err => logger.error({ sessionId: state.sessionId, error: err }, "Archive Node Error: Summary Archival"));
   } else {
     const roles = state.messages.map(m => getMessageRole(m));
@@ -101,11 +101,11 @@ export async function archiveNode(state: AgentStateType) {
   // 2. Index Attachments
   if (state.attachments && state.attachments.length > 0) {
     logger.info({ sessionId: state.sessionId, attachmentsCount: state.attachments.length }, "Indexing attachments");
-    
+
     for (const att of state.attachments) {
       try {
         let contentToIndex = "";
-        
+
         if (att.mimeType === 'application/pdf') {
           const buffer = Buffer.from(att.data, 'base64');
           const parser = new PDFParse({ data: new Uint8Array(buffer) });
@@ -119,7 +119,7 @@ export async function archiveNode(state: AgentStateType) {
           const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
           const model = genAI.getGenerativeModel({ model: ARCHIVE_MODEL });
           const prompt = "Describe this image in detail for a searchable research database. Focus on identifying objects, text, and context.";
-          
+
           const result = await model.generateContent([
             prompt,
             { inlineData: { data: att.data, mimeType: att.mimeType } }

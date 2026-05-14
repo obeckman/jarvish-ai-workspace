@@ -41,10 +41,10 @@ export async function extractAndStoreFacts(sessionId: string, history: { role: s
   try {
     const result = await model.generateContent(prompt);
     const text = result.response.text() || "";
-    logger.debug("[Fact Extraction] Raw model output", { text });
+    logger.debug({ text }, "[Fact Extraction] Raw model output");
     let cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
     const parsedFacts = parse(cleaned);
-    logger.debug("[Fact Extraction] Parsed facts", { parsedFacts });
+    logger.debug({ parsedFacts }, "[Fact Extraction] Parsed facts");
 
     if (Array.isArray(parsedFacts) && parsedFacts.length > 0) {
       for (const factData of parsedFacts) {

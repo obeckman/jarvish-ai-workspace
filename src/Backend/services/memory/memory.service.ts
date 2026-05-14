@@ -73,12 +73,12 @@ export async function retrieveMemories(query: string, topK: number = 5): Promise
     // Perform vector similarity search in the store
     const results = await vectorStore.search(queryVector, topK);
     
-    logger.info(`[Memory Service] Raw search results for "${query}":`, JSON.stringify(results, null, 2));
+    logger.info({ results }, `[Memory Service] Raw search results for "${query}":`);
     
     // Apply relevance threshold to prevent poisoning
     const filtered = results.filter(m => m.score >= RELEVANCE_THRESHOLD);
     
-    logger.info(`[Memory Service] Query: "${query}" | Found ${results.length} results | ${filtered.length} passed threshold (${RELEVANCE_THRESHOLD})`);
+    logger.info({ query, resultsLength: results.length, filteredLength: filtered.length }, `[Memory Service] Query: "${query}" | Found ${results.length} results | ${filtered.length} passed threshold (${RELEVANCE_THRESHOLD})`);
     
     return filtered;
   } catch (error) {

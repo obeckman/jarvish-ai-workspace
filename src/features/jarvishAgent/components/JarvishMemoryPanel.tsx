@@ -1,7 +1,7 @@
 import React from 'react';
 import { Trash2, BrainCircuit, RefreshCw } from 'lucide-react';
 import { useJarvishMemory } from '../hooks/useJarvishMemory';
-import styles from '../jarvish-agent.module.scss';
+import styles from '@/features/jarvishAgent/components/JarvishMemoryPanel.module.scss';
 
 export const JarvishMemoryPanel: React.FC = () => {
   const { facts, isFetching, fetchFacts, deleteFact } = useJarvishMemory();
@@ -9,7 +9,7 @@ export const JarvishMemoryPanel: React.FC = () => {
   return (
     <div className={styles.memoryPanel}>
       <div className={styles.memoryHeader}>
-        <h2><BrainCircuit size={20} /> Jarvish Memory</h2>
+        <h2><BrainCircuit size={20} />Jarvish Memory</h2>
         <button onClick={fetchFacts} disabled={isFetching} className={styles.refreshBtn}>
           <RefreshCw size={16} className={isFetching ? styles.spin : ''} />
         </button>

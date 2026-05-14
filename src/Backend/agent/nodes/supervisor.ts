@@ -26,7 +26,7 @@ export async function supervisorNode(state: AgentStateType) {
       logger.debug({ sessionId: state.sessionId, workerName: lastMessageName }, "Worker response detected. Ending turn.");
       return {}; // Return empty object to avoid re-broadcasting the message.
     }
-  logger.info(`[Agent Graph] Node: Supervisor | State messages param:`, state.messages);
+  logger.info({ sessionId: state.sessionId, messages: state.messages }, "[Agent Graph] Node: Supervisor | State messages param:");
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
   
   // Format memories for context
@@ -97,7 +97,7 @@ export async function supervisorNode(state: AgentStateType) {
   const history = mapStateToGeminiHistory(state);
   const lastHistoryMsg = history.pop(); 
   
-  logger.info(`[Agent Graph] Node: Supervisor | Last user message for Gemini:`, lastHistoryMsg);
+  logger.info({ sessionId: state.sessionId, lastHistoryMsg }, "[Agent Graph] Node: Supervisor | Last user message for Gemini:");
   
   if (!lastHistoryMsg) throw new Error("No messages found in history for Supervisor.");
 
