@@ -1,5 +1,8 @@
 import { z } from 'zod';
-import { ROLES, BLOCK_TYPES, EVENT_TYPES, MessageRole, BlockType, DISPLAY_TYPE } from '@/shared/jarvish.constants'
+import { 
+  ROLES, BLOCK_TYPES, EVENT_TYPES, MessageRole, BlockType, DISPLAY_TYPE ,AGENT_STATUS,
+  AgentStatus
+} from '@/shared/jarvish.constants'
 import * as GQL from './graphql/__generated__/graphql';
 
 
@@ -68,6 +71,7 @@ export const AgentMessageBlockSchema = z.discriminatedUnion('type', [
 ]);
 
 import { AnyBlockComponentProps } from './components/Blocks/blockProps';
+import { STATE_ACTIONS, UI_STRINGS } from './constants';
 
 export type AgentMessageBlock = z.infer<typeof AgentMessageBlockSchema>;
 
@@ -137,3 +141,36 @@ export const GetStructuredFactsResponseSchema = z.object({
     createdAt: z.string(),
   })),
 });
+
+export interface ChatState {
+  messages: Message[];
+  input: string;
+  status: AgentStatus;
+  statusMessage: string | null;
+  statusLogs: string[];
+  currentStage: number;
+  attachments: Attachment[];
+  errorMessage: string | null;
+  isReasoningVisible: boolean;
+  lastSentQuery: string;
+}
+
+export type ChatAction =
+  | { type: typeof STATE_ACTIONS.SET_MESSAGES; payload: Message[] }
+  | { type: typeof STATE_ACTIONS.ADD_MESSAGE; payload: Message }
+  | { type: typeof STATE_ACTIONS.UPDATE_LAST_MESSAGE; payload: { id: string; content: MessageContent } }
+  | { type: typeof STATE_ACTIONS.SET_INPUT; payload: string }
+  | { type: typeof STATE_ACTIONS.SET_STATUS; payload: AgentStatus }
+  | { type: typeof STATE_ACTIONS.SET_STATUS_MESSAGE; payload: string | null }
+  | { type: typeof STATE_ACTIONS.ADD_STATUS_LOG; payload: string }
+  | { type: typeof STATE_ACTIONS.SET_STATUS_LOGS; payload: string[] }
+  | { type: typeof STATE_ACTIONS.SET_CURRENT_STAGE; payload: number }
+  | { type: typeof STATE_ACTIONS.SET_ATTACHMENTS; payload: Attachment[] }
+  | { type: typeof STATE_ACTIONS.ADD_ATTACHMENT; payload: Attachment }
+  | { type: typeof STATE_ACTIONS.REMOVE_ATTACHMENT; payload: number }
+  | { type: typeof STATE_ACTIONS.SET_ERROR_MESSAGE; payload: string | null }
+  | { type: typeof STATE_ACTIONS.SET_REASONING_VISIBLE; payload: boolean }
+  | { type: typeof STATE_ACTIONS.SET_LAST_SENT_QUERY; payload: string }
+  | { type: typeof STATE_ACTIONS.RESET_CHAT };
+
+

@@ -3,8 +3,10 @@
  * Following the "Zero Magic Strings" policy.
  */
 
-import { EVENT_TYPES, STAGES } from '@/shared/jarvish.constants';
+import { EVENT_TYPES, STAGES, AGENT_STATUS } from '@/shared/jarvish.constants';
 import { graphql } from './graphql/__generated__/';
+import { ChatState } from './types';
+
 
 export { EVENT_TYPES, STAGES };
 
@@ -110,4 +112,37 @@ export const GQL_SUBSCRIPTIONS = {
       }
     }
   `),
+} as const;
+
+
+export const STATE_ACTIONS = {
+  SET_MESSAGES: 'SET_MESSAGES',
+  ADD_MESSAGE: 'ADD_MESSAGE',
+  UPDATE_LAST_MESSAGE: 'UPDATE_LAST_MESSAGE',
+  SET_INPUT: 'SET_INPUT',
+  SET_STATUS: 'SET_STATUS',
+  SET_STATUS_MESSAGE: 'SET_STATUS_MESSAGE',
+  ADD_STATUS_LOG: 'ADD_STATUS_LOG',
+  SET_STATUS_LOGS: 'SET_STATUS_LOGS',
+  SET_CURRENT_STAGE: 'SET_CURRENT_STAGE',
+  SET_ATTACHMENTS: 'SET_ATTACHMENTS',
+  ADD_ATTACHMENT: 'ADD_ATTACHMENT',
+  REMOVE_ATTACHMENT: 'REMOVE_ATTACHMENT',
+  SET_ERROR_MESSAGE: 'SET_ERROR_MESSAGE',
+  SET_REASONING_VISIBLE: 'SET_REASONING_VISIBLE',
+  SET_LAST_SENT_QUERY: 'SET_LAST_SENT_QUERY',
+  RESET_CHAT: 'RESET_CHAT',
+} as const;
+
+export const INITIAL_CHAT_STATE: ChatState = {
+  messages: [],
+  input: UI_STRINGS.DEFAULT_INPUT,
+  status: AGENT_STATUS.IDLE,
+  statusMessage: null,
+  statusLogs: [],
+  currentStage: 0,
+  attachments: [],
+  errorMessage: null,
+  isReasoningVisible: false,
+  lastSentQuery: '',
 } as const;

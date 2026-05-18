@@ -4,7 +4,7 @@ import styles from './jarvish-agent.module.scss';
 // Hooks
 import { useGoogleAuth } from './hooks/useGoogleAuth';
 import { useJarvishSessions } from './hooks/useJarvishSessions';
-import { useJarvishChat } from './hooks/useJarvishChat';
+import { useJarvishChat } from './hooks/UseJarvishChat';
 
 // Components
 import { JarvishSidebar } from './components/JarvishSidebar';
@@ -15,7 +15,7 @@ import { JarvishMemoryPanel } from './components/JarvishMemoryPanel';
 import { GhostWriterPanel } from './components/GhostWriterPanel';
 import {BLOCK_TYPES, ROLES} from '@/shared/jarvish.constants.ts'
 // Types
-import { MessageRole } from './types';
+
 
 export const JarvishAgent: React.FC = () => {
   // Global/UI State not tied to a single domain

@@ -1,10 +1,8 @@
 import React, { useCallback, useRef, useReducer } from 'react';
 import {
   Message,
-  Attachment,
   GetSessionHistoryResponseSchema,
   AgentEventsSubscriptionResponseSchema,
-  MessageContent
 } from '@/features/jarvishAgent/types';
 import {
 
@@ -12,142 +10,41 @@ import {
   EVENT_TYPES,
   UI_STRINGS,
   GQL_QUERIES,
-  STAGES
+  STAGES,
+  STATE_ACTIONS,
+  INITIAL_CHAT_STATE
 } from '@/features/jarvishAgent/constants';
 import {
   ROLES,
   AGENT_STATUS,
   API_ENDPOINTS,
-  AgentStatus,
   BLOCK_TYPES
 } from '@/shared/jarvish.constants.ts'
 
-import { parseAgentMessageContent } from '../utils/parser';
+import { parseAgentMessageContent } from '../../utils/parser';
 import {
   AgentChatSubscriptionVariables,
   GetSessionHistoryQueryVariables
 } from '@/features/jarvishAgent/graphql/__generated__/graphql';
 
+
+import { chatReducer } from './state';
 // --- Reducer Definitions ---
 
-interface ChatState {
-  messages: Message[];
-  input: string;
-  status: AgentStatus;
-  statusMessage: string | null;
-  statusLogs: string[];
-  currentStage: number;
-  attachments: Attachment[];
-  errorMessage: string | null;
-  isReasoningVisible: boolean;
-  lastSentQuery: string;
-}
-
-const SET_MESSAGES = 'SET_MESSAGES';
-const ADD_MESSAGE = 'ADD_MESSAGE';
-const UPDATE_LAST_MESSAGE = 'UPDATE_LAST_MESSAGE';
-const SET_INPUT = 'SET_INPUT';
-const SET_STATUS = 'SET_STATUS';
-const SET_STATUS_MESSAGE = 'SET_STATUS_MESSAGE';
-const ADD_STATUS_LOG = 'ADD_STATUS_LOG';
-const SET_STATUS_LOGS = 'SET_STATUS_LOGS';
-const SET_CURRENT_STAGE = 'SET_CURRENT_STAGE';
-const SET_ATTACHMENTS = 'SET_ATTACHMENTS';
-const ADD_ATTACHMENT = 'ADD_ATTACHMENT';
-const REMOVE_ATTACHMENT = 'REMOVE_ATTACHMENT';
-const SET_ERROR_MESSAGE = 'SET_ERROR_MESSAGE';
-const SET_REASONING_VISIBLE = 'SET_REASONING_VISIBLE';
-const SET_LAST_SENT_QUERY = 'SET_LAST_SENT_QUERY';
-const RESET_CHAT = 'RESET_CHAT';
-
-type ChatAction =
-  | { type: typeof SET_MESSAGES; payload: Message[] }
-  | { type: typeof ADD_MESSAGE; payload: Message }
-  | { type: typeof UPDATE_LAST_MESSAGE; payload: { id: string; content: MessageContent } }
-  | { type: typeof SET_INPUT; payload: string }
-  | { type: typeof SET_STATUS; payload: AgentStatus }
-  | { type: typeof SET_STATUS_MESSAGE; payload: string | null }
-  | { type: typeof ADD_STATUS_LOG; payload: string }
-  | { type: typeof SET_STATUS_LOGS; payload: string[] }
-  | { type: typeof SET_CURRENT_STAGE; payload: number }
-  | { type: typeof SET_ATTACHMENTS; payload: Attachment[] }
-  | { type: typeof ADD_ATTACHMENT; payload: Attachment }
-  | { type: typeof REMOVE_ATTACHMENT; payload: number }
-  | { type: typeof SET_ERROR_MESSAGE; payload: string | null }
-  | { type: typeof SET_REASONING_VISIBLE; payload: boolean }
-  | { type: typeof SET_LAST_SENT_QUERY; payload: string }
-  | { type: typeof RESET_CHAT };
-
-const initialChatState: ChatState = {
-  messages: [],
-  input: UI_STRINGS.DEFAULT_INPUT,
-  status: AGENT_STATUS.IDLE,
-  statusMessage: null,
-  statusLogs: [],
-  currentStage: 0,
-  attachments: [],
-  errorMessage: null,
-  isReasoningVisible: false,
-  lastSentQuery: '',
-};
-
-function chatReducer(state: ChatState, action: ChatAction): ChatState {
-  switch (action.type) {
-    case SET_MESSAGES:
-      return { ...state, messages: action.payload };
-    case ADD_MESSAGE:
-      return { ...state, messages: [...state.messages, action.payload] };
-    case UPDATE_LAST_MESSAGE:
-      return {
-        ...state,
-        messages: state.messages.map(m =>
-          m.id === action.payload.id ? { ...m, content: action.payload.content } : m
-        ),
-      };
-    case SET_INPUT:
-      return { ...state, input: action.payload };
-    case SET_STATUS:
-      return { ...state, status: action.payload };
-    case SET_STATUS_MESSAGE:
-      return { ...state, statusMessage: action.payload };
-    case ADD_STATUS_LOG:
-      return { ...state, statusLogs: [...state.statusLogs, action.payload] };
-    case SET_STATUS_LOGS:
-      return { ...state, statusLogs: action.payload };
-    case SET_CURRENT_STAGE:
-      return { ...state, currentStage: action.payload };
-    case SET_ATTACHMENTS:
-      return { ...state, attachments: action.payload };
-    case ADD_ATTACHMENT:
-      return { ...state, attachments: [...state.attachments, action.payload] };
-    case REMOVE_ATTACHMENT:
-      return { ...state, attachments: state.attachments.filter((_, i) => i !== action.payload) };
-    case SET_ERROR_MESSAGE:
-      return { ...state, errorMessage: action.payload };
-    case SET_REASONING_VISIBLE:
-      return { ...state, isReasoningVisible: action.payload };
-    case SET_LAST_SENT_QUERY:
-      return { ...state, lastSentQuery: action.payload };
-    case RESET_CHAT:
-      return { ...initialChatState };
-    default:
-      return state;
-  }
-}
 
 export const useJarvishChat = (
   currentSessionId: string | null,
   googleToken: string | null,
   checkAndRefreshToken?: () => Promise<string | null>
 ) => {
-  const [state, dispatch] = useReducer(chatReducer, initialChatState);
+  const [state, dispatch] = useReducer(chatReducer, INITIAL_CHAT_STATE);
 
   const abortControllerRef = useRef<AbortController | null>(null);
   const readerRef = useRef<ReadableStreamDefaultReader | null>(null);
 
   const loadSessionHistory = useCallback(async (sessionId: string) => {
     try {
-      dispatch({ type: SET_STATUS, payload: AGENT_STATUS.THINKING });
+      dispatch({ type: STATE_ACTIONS.SET_STATUS, payload: AGENT_STATUS.THINKING });
       const res = await fetch(API_ENDPOINTS.GRAPHQL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -180,14 +77,14 @@ export const useJarvishChat = (
           })
         });
 
-        dispatch({ type: SET_MESSAGES, payload: history.length > 0 ? history : [] });
+        dispatch({ type: STATE_ACTIONS.SET_MESSAGES, payload: history.length > 0 ? history : [] });
       }
 
     } catch (e) {
       console.error('Failed to load history:', e);
-      dispatch({ type: SET_ERROR_MESSAGE, payload: "Failed to load conversation history." });
+      dispatch({ type: STATE_ACTIONS.SET_ERROR_MESSAGE, payload: "Failed to load conversation history." });
     } finally {
-      dispatch({ type: SET_STATUS, payload: AGENT_STATUS.IDLE });
+      dispatch({ type: STATE_ACTIONS.SET_STATUS, payload: AGENT_STATUS.IDLE });
     }
   }, []);
 
@@ -199,17 +96,17 @@ export const useJarvishChat = (
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
-      dispatch({ type: SET_STATUS, payload: AGENT_STATUS.IDLE });
+    dispatch({ type: STATE_ACTIONS.SET_STATUS, payload: AGENT_STATUS.IDLE });
 
-      const completedSteps = state.statusLogs.filter(log => !log.includes('thinking')).join('\n');
-      const recoveryNote = `\n\n[RECOVERY: Interrupted at Stage ${state.currentStage}. \nProgress made:\n${completedSteps}\n\nPlease resume from the next step.]`;
-      dispatch({ type: SET_INPUT, payload: state.lastSentQuery + recoveryNote });
-      dispatch({ type: SET_CURRENT_STAGE, payload: 0 });
-      dispatch({ type: SET_ATTACHMENTS, payload: [] });
-      
-      dispatch({ type: SET_STATUS_MESSAGE, payload: 'Request stopped. Progress saved to editor.' });
-      setTimeout(() => dispatch({ type: SET_STATUS_MESSAGE, payload: null }), 3000);
-    
+    const completedSteps = state.statusLogs.filter(log => !log.includes('thinking')).join('\n');
+    const recoveryNote = `\n\n[RECOVERY: Interrupted at Stage ${state.currentStage}. \nProgress made:\n${completedSteps}\n\nPlease resume from the next step.]`;
+    dispatch({ type: STATE_ACTIONS.SET_INPUT, payload: state.lastSentQuery + recoveryNote });
+    dispatch({ type: STATE_ACTIONS.SET_CURRENT_STAGE, payload: 0 });
+    dispatch({ type: STATE_ACTIONS.SET_ATTACHMENTS, payload: [] });
+
+    dispatch({ type: STATE_ACTIONS.SET_STATUS_MESSAGE, payload: 'Request stopped. Progress saved to editor.' });
+    setTimeout(() => dispatch({ type: STATE_ACTIONS.SET_STATUS_MESSAGE, payload: null }), 3000);
+
   }, [state.currentStage, state.lastSentQuery, state.statusLogs]);
 
   const processStreamLines = React.useCallback((assistantMsgId: string, lines: string[]) => {
@@ -237,16 +134,16 @@ export const useJarvishChat = (
 
         if (data.type.toLowerCase() === EVENT_TYPES.STATUS) {
           // Status events are simple text updates about what the agent is doing (e.g., "Searching for information", "Analyzing data", etc.).
-          dispatch({ type: SET_STATUS_MESSAGE, payload: data.content });
-          dispatch({ type: ADD_STATUS_LOG, payload: data.content });
+          dispatch({ type: STATE_ACTIONS.SET_STATUS_MESSAGE, payload: data.content });
+          dispatch({ type: STATE_ACTIONS.ADD_STATUS_LOG, payload: data.content });
 
           if (data.stage) {
-            dispatch({ type: SET_CURRENT_STAGE, payload: data.stage });
+            dispatch({ type: STATE_ACTIONS.SET_CURRENT_STAGE, payload: data.stage });
           }
         } else if (data.type.toLowerCase() === EVENT_TYPES.REASONING) {
           // Reasoning events contain the agent's internal thought process, which can be helpful for debugging or for users who want more transparency.
           dispatch({
-            type: ADD_MESSAGE, payload: {
+            type: STATE_ACTIONS.ADD_MESSAGE, payload: {
               id: `reason-content-${Date.now()}-${Math.random()}`,
               type: BLOCK_TYPES.REASONING,
               role: ROLES.REASONING,
@@ -260,7 +157,7 @@ export const useJarvishChat = (
           console.log(`processStreamLines : [Parsed Assistant Message Content]:`, newContentArray);
           newContentArray.forEach(newContentMessage => {
             dispatch({
-              type: ADD_MESSAGE, payload: {
+              type: STATE_ACTIONS.ADD_MESSAGE, payload: {
                 id: assistantMsgId,
                 timestamp: Date.now(),
                 ...newContentMessage,
@@ -268,23 +165,23 @@ export const useJarvishChat = (
               }
             });
           });
-          dispatch({ type: SET_STATUS, payload: AGENT_STATUS.RESPONDING });
+          dispatch({ type: STATE_ACTIONS.SET_STATUS, payload: AGENT_STATUS.RESPONDING });
         } else if (data.type === EVENT_TYPES.ERROR) {
           // Error events indicate that something went wrong during the agent's processing. The content typically contains an error message that can be displayed to the user.
-          dispatch({ type: SET_ERROR_MESSAGE, payload: `Agent Error: ${data.content}` });
+          dispatch({ type: STATE_ACTIONS.SET_ERROR_MESSAGE, payload: `Agent Error: ${data.content}` });
         }
       } catch (e) {
-        dispatch({ type: SET_ERROR_MESSAGE, payload: `Failed to parse SSE JSON: ${jsonStr}` });
+        dispatch({ type: STATE_ACTIONS.SET_ERROR_MESSAGE, payload: `Failed to parse SSE JSON: ${jsonStr}` });
         console.warn('processStreamLines : Failed to parse SSE JSON:', jsonStr);
       }
     }
   }, [])
 
   const startSendUserMessageSetUX = useCallback((queryToSend: string, overrideQuery?: string) => {
-    dispatch({ type: SET_ERROR_MESSAGE, payload: null });
-    dispatch({ type: SET_LAST_SENT_QUERY, payload: queryToSend });
-    dispatch({ type: SET_STATUS_LOGS, payload: [] });
-    dispatch({ type: SET_REASONING_VISIBLE, payload: true });
+    dispatch({ type: STATE_ACTIONS.SET_ERROR_MESSAGE, payload: null });
+    dispatch({ type: STATE_ACTIONS.SET_LAST_SENT_QUERY, payload: queryToSend });
+    dispatch({ type: STATE_ACTIONS.SET_STATUS_LOGS, payload: [] });
+    dispatch({ type: STATE_ACTIONS.SET_REASONING_VISIBLE, payload: true });
 
     const userMessageBlock: Message = {
       type: BLOCK_TYPES.TEXT,
@@ -294,18 +191,18 @@ export const useJarvishChat = (
       timestamp: Date.now()
     };
 
-    dispatch({ type: ADD_MESSAGE, payload: userMessageBlock });
-    if (!overrideQuery) dispatch({ type: SET_INPUT, payload: '' });
-    dispatch({ type: SET_STATUS, payload: AGENT_STATUS.THINKING });
-    dispatch({ type: SET_CURRENT_STAGE, payload: STAGES.PREPARE });
+    dispatch({ type: STATE_ACTIONS.ADD_MESSAGE, payload: userMessageBlock });
+    if (!overrideQuery) dispatch({ type: STATE_ACTIONS.SET_INPUT, payload: '' });
+    dispatch({ type: STATE_ACTIONS.SET_STATUS, payload: AGENT_STATUS.THINKING });
+    dispatch({ type: STATE_ACTIONS.SET_CURRENT_STAGE, payload: STAGES.PREPARE });
   }, []);
 
   const endSendUserMessageSetUX = useCallback(() => {
-    dispatch({ type: SET_STATUS, payload: AGENT_STATUS.IDLE });
-    dispatch({ type: SET_STATUS_MESSAGE, payload: null });
-    dispatch({ type: SET_CURRENT_STAGE, payload: 0 });
-    dispatch({ type: SET_ATTACHMENTS, payload: [] });
-    dispatch({ type: SET_REASONING_VISIBLE, payload: false });
+    dispatch({ type: STATE_ACTIONS.SET_STATUS, payload: AGENT_STATUS.IDLE });
+    dispatch({ type: STATE_ACTIONS.SET_STATUS_MESSAGE, payload: null });
+    dispatch({ type: STATE_ACTIONS.SET_CURRENT_STAGE, payload: 0 });
+    dispatch({ type: STATE_ACTIONS.SET_ATTACHMENTS, payload: [] });
+    dispatch({ type: STATE_ACTIONS.SET_REASONING_VISIBLE, payload: false });
   }, []);
 
   const getSendUserMessageHeaders = useCallback(async (): Promise<HeadersInit> => {
@@ -396,9 +293,9 @@ export const useJarvishChat = (
     } catch (error: any) {
 
       if (error instanceof Error && error.name === 'AbortError') return;
-      
-      dispatch({ type: SET_STATUS, payload: AGENT_STATUS.ERROR });
-      dispatch({ type: SET_ERROR_MESSAGE, payload: error instanceof Error ? error.message : 'An unexpected error occurred' });
+
+      dispatch({ type: STATE_ACTIONS.SET_STATUS, payload: AGENT_STATUS.ERROR });
+      dispatch({ type: STATE_ACTIONS.SET_ERROR_MESSAGE, payload: error instanceof Error ? error.message : 'An unexpected error occurred' });
     } finally {
       abortControllerRef.current = null;
       readerRef.current = null;
@@ -407,7 +304,7 @@ export const useJarvishChat = (
 
   const addAttachment = useCallback((file: File) => {
     if (file.size > 10 * 1024 * 1024) {
-      dispatch({ type: SET_ERROR_MESSAGE, payload: UI_STRINGS.FILE_LARGE_ERROR });
+      dispatch({ type: STATE_ACTIONS.SET_ERROR_MESSAGE, payload: UI_STRINGS.FILE_LARGE_ERROR });
       return;
     }
 
@@ -415,7 +312,7 @@ export const useJarvishChat = (
     reader.onload = (event) => {
       const base64 = (event.target?.result as string).split(',')[1];
       dispatch({
-        type: ADD_ATTACHMENT, payload: {
+        type: STATE_ACTIONS.ADD_ATTACHMENT, payload: {
           name: file.name,
           data: base64,
           mimeType: file.type
@@ -426,11 +323,11 @@ export const useJarvishChat = (
   }, []);
 
   const removeAttachment = useCallback((index: number) => {
-    dispatch({ type: REMOVE_ATTACHMENT, payload: index });
+    dispatch({ type: STATE_ACTIONS.REMOVE_ATTACHMENT, payload: index });
   }, []);
 
   const clearMessages = useCallback(() => {
-    dispatch({ type: RESET_CHAT });
+    dispatch({ type: STATE_ACTIONS.RESET_CHAT });
   }, []);
 
   return {
@@ -445,10 +342,10 @@ export const useJarvishChat = (
     isReasoningVisible: state.isReasoningVisible,
     lastSentQuery: state.lastSentQuery,
 
-    setInput: (value: string) => dispatch({ type: SET_INPUT, payload: value }),
-    setMessages: (newMessages: Message[]) => dispatch({ type: SET_MESSAGES, payload: newMessages }),
-    setErrorMessage: (message: string | null) => dispatch({ type: SET_ERROR_MESSAGE, payload: message }),
-    setIsReasoningVisible: (value: boolean) => dispatch({ type: SET_REASONING_VISIBLE, payload: value }),
+    setInput: (value: string) => dispatch({ type: STATE_ACTIONS.SET_INPUT, payload: value }),
+    setMessages: (newMessages: Message[]) => dispatch({ type: STATE_ACTIONS.SET_MESSAGES, payload: newMessages }),
+    setErrorMessage: (message: string | null) => dispatch({ type: STATE_ACTIONS.SET_ERROR_MESSAGE, payload: message }),
+    setIsReasoningVisible: (value: boolean) => dispatch({ type: STATE_ACTIONS.SET_REASONING_VISIBLE, payload: value }),
 
     sendMessage: sendUserMessage,
     cancelRequest,
