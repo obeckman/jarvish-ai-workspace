@@ -1425,7 +1425,7 @@
           </article>
 
           <article class="pain">
-            <h3><code>any</code> is concentrated at important boundaries <span class="chip">Type safety</span></h3>
+            <h3><code>any</code> is concentrated at important boundaries <span class="chip">tool schemas added</span></h3>
             <div class="pain-grid">
               <div>
                 <strong>Signal</strong>
@@ -1437,7 +1437,11 @@
               </div>
               <div>
                 <strong>First Refactor</strong>
-                <p>Add Zod schemas for stream events, tool outputs, Google token responses, attachments, and memory metadata.</p>
+                <p>Added Zod tool input schemas in <code>agent/tools/tool.schemas.ts</code> and removed unsafe <code>call.args as any</code> casts from <code>tool-executor.ts</code>. Next slices: tool output contract, Google token response schema, and memory metadata schema.</p>
+              </div>
+              <div>
+                <strong>Verify</strong>
+                <p>Tool executor import smoke passed. Full TypeScript has no new tool-boundary errors; it is still blocked by existing frontend demo errors.</p>
               </div>
             </div>
           </article>

@@ -9,6 +9,20 @@ import { searchWeb } from "@/Backend/services/tools/search.service";
 import { fetchWebPage } from "@/Backend/services/tools/web.service";
 import { TOOL_NAMES } from "@/shared/jarvish.constants";
 import { queryProcessedAttachments } from "@/Backend/agent/tools/attachment-query";
+import {
+  AddMemoryToolArgsSchema,
+  FetchWebPageToolArgsSchema,
+  ForgetMemoryToolArgsSchema,
+  GoogleDocToolArgsSchema,
+  ListCalendarEventsToolArgsSchema,
+  QueryAttachmentsToolArgsSchema,
+  ReadFileToolArgsSchema,
+  ReadPdfToolArgsSchema,
+  SearchGmailMessagesToolArgsSchema,
+  UpdateGoogleDocToolArgsSchema,
+  WebSearchToolArgsSchema,
+  WriteFileToolArgsSchema,
+} from "@/Backend/agent/tools/tool.schemas";
 
 type ToolHandler = (call: AgentToolCall, state: AgentStateType) => Promise<unknown>;
 
@@ -18,21 +32,40 @@ type ToolExecutionResult = {
 };
 
 const TOOL_HANDLERS: Record<string, ToolHandler> = {
-  [TOOL_NAMES.WEB_SEARCH]: (call) => searchWeb(call.args as any),
-  [TOOL_NAMES.FETCH_WEB_PAGE]: (call) => fetchWebPage(call.args as any),
-  [TOOL_NAMES.READ_PDF]: (call) => readPdf(call.args as any),
-  [TOOL_NAMES.READ_FILE]: (call) => readFile(call.args as any),
-  [TOOL_NAMES.WRITE_FILE]: (call) => writeFile(call.args as any),
-  [TOOL_NAMES.ADD_MEMORY]: (call) => addMemory(String(call.args.fact), { category: call.args.category }),
-  [TOOL_NAMES.FORGET_MEMORY]: async (call) => {
-    await forgetMemory(String(call.args.memoryId));
-    return `Successfully forgotten memory with ID: ${call.args.memoryId}`;
+  [TOOL_NAMES.WEB_SEARCH]: (call) => searchWeb(WebSearchToolArgsSchema.parse(call.args)),
+  [TOOL_NAMES.FETCH_WEB_PAGE]: (call) => fetchWebPage(FetchWebPageToolArgsSchema.parse(call.args)),
+  [TOOL_NAMES.READ_PDF]: (call) => readPdf(ReadPdfToolArgsSchema.parse(call.args)),
+  [TOOL_NAMES.READ_FILE]: (call) => readFile(ReadFileToolArgsSchema.parse(call.args)),
+  [TOOL_NAMES.WRITE_FILE]: (call) => writeFile(WriteFileToolArgsSchema.parse(call.args)),
+  [TOOL_NAMES.ADD_MEMORY]: (call) => {
+    const args = AddMemoryToolArgsSchema.parse(call.args);
+    return addMemory(args.fact, { category: args.category });
   },
-  [TOOL_NAMES.QUERY_ATTACHMENTS]: (call, state) => queryProcessedAttachments(String(call.args.query), state),
-  [TOOL_NAMES.LIST_CALENDAR]: (call, state) => listCalendarEvents(requireGoogleToken(state), call.args as any),
-  [TOOL_NAMES.SEARCH_GMAIL]: (call, state) => searchGmailMessages(requireGoogleToken(state), call.args as any),
-  [TOOL_NAMES.GET_GOOGLE_DOC]: (call, state) => getGoogleDocContent(requireGoogleToken(state), call.args as any),
-  [TOOL_NAMES.UPDATE_GOOGLE_DOC]: (call, state) => updateGoogleDoc(requireGoogleToken(state), call.args as any),
+  [TOOL_NAMES.FORGET_MEMORY]: async (call) => {
+    const args = ForgetMemoryToolArgsSchema.parse(call.args);
+    await forgetMemory(args.memoryId);
+    return `Successfully forgotten memory with ID: ${args.memoryId}`;
+  },
+  [TOOL_NAMES.QUERY_ATTACHMENTS]: (call, state) => {
+    const args = QueryAttachmentsToolArgsSchema.parse(call.args);
+    return queryProcessedAttachments(args.query, state);
+  },
+  [TOOL_NAMES.LIST_CALENDAR]: (call, state) => listCalendarEvents(
+    requireGoogleToken(state),
+    ListCalendarEventsToolArgsSchema.parse(call.args),
+  ),
+  [TOOL_NAMES.SEARCH_GMAIL]: (call, state) => searchGmailMessages(
+    requireGoogleToken(state),
+    SearchGmailMessagesToolArgsSchema.parse(call.args),
+  ),
+  [TOOL_NAMES.GET_GOOGLE_DOC]: (call, state) => getGoogleDocContent(
+    requireGoogleToken(state),
+    GoogleDocToolArgsSchema.parse(call.args),
+  ),
+  [TOOL_NAMES.UPDATE_GOOGLE_DOC]: (call, state) => updateGoogleDoc(
+    requireGoogleToken(state),
+    UpdateGoogleDocToolArgsSchema.parse(call.args),
+  ),
 };
 
 export async function executeAgentTool(
