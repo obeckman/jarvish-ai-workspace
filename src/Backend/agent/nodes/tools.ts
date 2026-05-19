@@ -1,14 +1,8 @@
 import { logger } from "@/Backend/utils/logger";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { AgentStateType } from "../state";
-import { TOOL_EXECUTION_MODEL } from "../models";
-import { ROLES, STAGES, TOOL_NAMES } from "@/shared/jarvish.constants";;
-import { searchWeb } from "../../services/tools/search.service";
-import { fetchWebPage } from "../../services/tools/web.service";
-import { readPdf } from "../../services/tools/pdf.service";
-import { readFile, writeFile } from "../../services/tools/file.service";
-import { addMemory, forgetMemory } from "../../services/memory/memory.service";
-import { listCalendarEvents, searchGmailMessages, getGoogleDocContent, updateGoogleDoc } from "../../services/tools/google.service";
+import { AgentToolCall } from "@/Backend/agent/contracts/state.contract";
+import { executeAgentTool, formatToolNote } from "@/Backend/agent/tools/tool-executor";
+import { STAGES } from "@/shared/jarvish.constants";
 import { ToolMessage } from "@langchain/core/messages";
 
 /**
@@ -21,7 +15,7 @@ import { ToolMessage } from "@langchain/core/messages";
 export async function toolsNode(state: AgentStateType) {
   logger.debug({ sessionId: state.sessionId, messagesCount: state.messages.length }, "Node: Tools");
   const lastMessage = state.messages[state.messages.length - 1];
-  const toolCalls = (lastMessage as any).tool_calls || [];
+  const toolCalls = ((lastMessage as any).tool_calls || []) as AgentToolCall[];
   
   logger.info({ sessionId: state.sessionId, toolCallsCount: toolCalls.length }, "Executing tools");
 
@@ -31,59 +25,7 @@ export async function toolsNode(state: AgentStateType) {
   let minimumConfidence = 100;
 
   for (const call of toolCalls) {
-    let output: any;
-    let confidence = 100;
-    logger.debug({ sessionId: state.sessionId, toolName: call.name, toolArgs: call.args }, "Executing tool");
-    try {
-      if (call.name === TOOL_NAMES.WEB_SEARCH) {
-        output = await searchWeb(call.args);
-      } else if (call.name === TOOL_NAMES.FETCH_WEB_PAGE) {
-        output = await fetchWebPage(call.args);
-      } else if (call.name === TOOL_NAMES.READ_PDF) {
-        output = await readPdf(call.args);
-      } else if (call.name === TOOL_NAMES.READ_FILE) {
-        output = await readFile(call.args);
-      } else if (call.name === TOOL_NAMES.WRITE_FILE) {
-        output = await writeFile(call.args);
-      } else if (call.name === TOOL_NAMES.ADD_MEMORY) {
-        output = await addMemory(call.args.fact, { category: call.args.category });
-      } else if (call.name === TOOL_NAMES.FORGET_MEMORY) {
-        await forgetMemory(call.args.memoryId);
-        output = `Successfully forgotten memory with ID: ${call.args.memoryId}`;
-      } else if (call.name === TOOL_NAMES.QUERY_ATTACHMENTS) {
-        output = await handleQueryAttachments(call.args.query, state);
-      } else if (call.name === TOOL_NAMES.LIST_CALENDAR) {
-        if (!state.googleToken) throw new Error("Google authentication required.");
-        output = await listCalendarEvents(state.googleToken, call.args);
-      } else if (call.name === TOOL_NAMES.SEARCH_GMAIL) {
-        if (!state.googleToken) throw new Error("Google authentication required.");
-        output = await searchGmailMessages(state.googleToken, call.args);
-      } else if (call.name === TOOL_NAMES.GET_GOOGLE_DOC) {
-        if (!state.googleToken) throw new Error("Google authentication required.");
-        output = await getGoogleDocContent(state.googleToken, call.args);
-      } else if (call.name === TOOL_NAMES.UPDATE_GOOGLE_DOC) {
-        if (!state.googleToken) throw new Error("Google authentication required.");
-        output = await updateGoogleDoc(state.googleToken, call.args);
-      } else {
-        output = `Error: Tool '${call.name}' not recognized.`;
-        confidence = 0;
-      }
-      
-      // Analyze output to determine confidence
-      const outputStr = String(output);
-      if (!output || outputStr.trim() === '') {
-        confidence = 0;
-      } else if (outputStr.includes('error:') || outputStr.includes('failed to')) {
-        confidence = 0;
-      } else if (outputStr.includes('no results found') || outputStr.includes('could not find')) {
-        confidence = 50; // Partial confidence: tool worked, but no data
-      }
-      
-    } catch (e: any) {
-      logger.error({ sessionId: state.sessionId, toolName: call.name, error: e }, "Error executing tool");
-      output = `Error executing tool: ${e.message}`;
-      confidence = 0;
-    }
+    const { output, confidence } = await executeAgentTool(call, state);
 
     if (confidence < minimumConfidence) {
       minimumConfidence = confidence;
@@ -94,11 +36,7 @@ export async function toolsNode(state: AgentStateType) {
       content: typeof output === 'string' ? output : JSON.stringify(output),
       tool_call_id: call.id,
     }));
-    const safeOutput = typeof output === 'string' 
-      ? output 
-      : (JSON.stringify(output) || '');
-    
-    notes.push(`[Source: ${call.name} | Conf: ${confidence}%] ${safeOutput.substring(0, 500)}...`);
+    notes.push(formatToolNote(call, output, confidence));
   }
 
   return {
@@ -107,31 +45,4 @@ export async function toolsNode(state: AgentStateType) {
     toolConfidence: minimumConfidence,
     metadata: { stage: STAGES.RESEARCH, status: `Completed ${toolCalls.length} research steps.` }
   };
-}
-
-/**
- * Searches through processed attachments using an LLM.
- */
-async function handleQueryAttachments(query: string, state: AgentStateType) {
-  if (!state.processedAttachments || state.processedAttachments.length === 0) {
-    return "No processed attachments found to query.";
-  }
-
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-  const model = genAI.getGenerativeModel({ model: TOOL_EXECUTION_MODEL });
-
-  const context = state.processedAttachments.map(a => 
-    `--- DOCUMENT: ${a.name} ---\n${a.extractedText}\n`
-  ).join("\n\n");
-
-  const prompt = `You are a document search assistant. Using the provided document context, answer the following query. 
-  If the information is not in the documents, say so.
-  
-  CONTEXT:
-  ${context}
-  
-  QUERY: ${query}`;
-
-  const result = await model.generateContent(prompt);
-  return result.response.text();
 }

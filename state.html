@@ -1183,6 +1183,118 @@
           </article>
 
           <article class="pain">
+            <h3>Agent Graph Refactor Plan <span class="chip">implemented</span></h3>
+            <div class="refactor-plan">
+              <div class="phase">
+                <strong>Target</strong>
+                <div>
+                  <h3>Split graph assembly from graph policy</h3>
+                  <p>
+                    Keep <code>createAgentGraph</code> as the assembler, but move router
+                    predicates, route maps, node registration, worker tool policy, and shared
+                    node contracts into named modules.
+                  </p>
+                </div>
+              </div>
+
+              <div class="phase">
+                <strong>Shape</strong>
+                <div>
+                  <h3>Proposed agent folders</h3>
+                  <p>
+                    Add <code>agent/graph/routes.ts</code>,
+                    <code>agent/graph/nodes.ts</code>,
+                    <code>agent/graph/routers.ts</code>,
+                    <code>agent/contracts/state.contract.ts</code>, and
+                    <code>agent/tools/tool-executor.ts</code>.
+                  </p>
+                </div>
+              </div>
+
+              <div class="phase">
+                <strong>Phase 1</strong>
+                <div>
+                  <h3>Extract router predicates - done</h3>
+                  <p>
+                    Move <code>supervisorRouter</code>, <code>workerRouter</code>, and
+                    <code>toolsRouter</code> out of <code>graph.ts</code>. Preserve route output
+                    strings exactly and add small tests or import smoke checks. Added
+                    <code>agent/graph/routers.ts</code> and <code>agent/graph/routes.ts</code>.
+                  </p>
+                </div>
+              </div>
+
+              <div class="phase">
+                <strong>Phase 2</strong>
+                <div>
+                  <h3>Extract node and edge registration - done</h3>
+                  <p>
+                    Create one node registry array and route-map constants so
+                    <code>graph.ts</code> reads as topology, not implementation detail.
+                    Added <code>agent/graph/nodes.ts</code> and
+                    <code>agent/graph/topology.ts</code>.
+                  </p>
+                </div>
+              </div>
+
+              <div class="phase">
+                <strong>Phase 3</strong>
+                <div>
+                  <h3>Define state contracts - done</h3>
+                  <p>
+                    Replace broad <code>any</code> for attachments, processed attachments,
+                    metadata, and tool calls with named types or Zod schemas near
+                    <code>AgentState</code>. Added
+                    <code>agent/contracts/state.contract.ts</code>.
+                  </p>
+                </div>
+              </div>
+
+              <div class="phase">
+                <strong>Phase 4</strong>
+                <div>
+                  <h3>Extract tool execution policy - done</h3>
+                  <p>
+                    Move the large <code>if/else</code> tool dispatch in
+                    <code>nodes/tools.ts</code> into a typed tool executor map with auth
+                    requirements, confidence scoring, and output-to-note formatting. Added
+                    <code>agent/tools/tool-executor.ts</code> and
+                    <code>agent/tools/attachment-query.ts</code>.
+                  </p>
+                </div>
+              </div>
+
+              <div class="phase">
+                <strong>Phase 5</strong>
+                <div>
+                  <h3>Normalize worker response formatting - done</h3>
+                  <p>
+                    Google and Coder workers duplicate UI-block cleanup logic. Extract one
+                    <code>normalizeWorkerContent</code> helper and keep worker nodes focused on
+                    model instructions and tool declarations. Added
+                    <code>agent/workers/worker-response.ts</code>.
+                  </p>
+                </div>
+              </div>
+
+              <div class="phase">
+                <strong>Verify</strong>
+                <div>
+                  <h3>Current verification notes</h3>
+                  <p>
+                    Import smoke checks passed for <code>createAgentGraph</code>,
+                    <code>toolsNode</code>, Coder/Google workers, and
+                    <code>normalizeWorkerContent</code>. Full project TypeScript now has no
+                    agent-graph errors; it is still blocked by existing frontend demo errors.
+                    <code>npm run server</code> reached <code>localhost:3000/graphql</code>,
+                    with the same embedded Weaviate <code>:6060</code> / schema lock warning.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <article class="pain">
             <h3>Jarvish message parsing and rendering is fragile <span class="chip">Current task</span></h3>
             <div class="pain-grid">
               <div>

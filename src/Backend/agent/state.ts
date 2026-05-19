@@ -1,4 +1,9 @@
 import { Annotation, messagesStateReducer } from "@langchain/langgraph"; // Reintroduce Annotation import
+import {
+  AgentAttachment,
+  AgentMetadata,
+  ProcessedAttachment,
+} from "@/Backend/agent/contracts/state.contract";
 import { Memory } from "@/Backend/services/memory/vector_store.interface";
 import { STAGES } from "@/shared/jarvish.constants";
 import { BaseMessage } from "@langchain/core/messages"; // Keep BaseMessage import
@@ -35,7 +40,7 @@ export const AgentState = Annotation.Root({ // Reintroduce Annotation.Root
   /**
    * Metadata about the current processing step.
    */
-  metadata: Annotation<Record<string, any>>({
+  metadata: Annotation<AgentMetadata>({
     reducer: (x, y) => ({ ...x, ...y }),
     default: () => ({ stage: STAGES.PREPARE, status: "idle" }),
   }),
@@ -43,7 +48,7 @@ export const AgentState = Annotation.Root({ // Reintroduce Annotation.Root
   /**
    * Files attached to the user's query.
    */
-  attachments: Annotation<any[]>({ // Keep as any[] for now, or refine if type is known
+  attachments: Annotation<AgentAttachment[]>({
     reducer: (x, y) => y,
     default: () => [],
   }),
@@ -51,7 +56,7 @@ export const AgentState = Annotation.Root({ // Reintroduce Annotation.Root
   /**
    * AI-processed/extracted versions of attachments.
    */
-  processedAttachments: Annotation<any[]>({
+  processedAttachments: Annotation<ProcessedAttachment[]>({
     reducer: (x, y) => x.concat(y),
     default: () => [],
   }),

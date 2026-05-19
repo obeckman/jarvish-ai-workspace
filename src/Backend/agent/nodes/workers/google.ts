@@ -2,7 +2,8 @@ import { logger } from "@/Backend/utils/logger";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { AgentStateType } from "@/Backend/agent/state";
 import { REASONING_MODEL } from "@/Backend/agent/models";
-import { ROLES, TOOL_NAMES, STAGES, NODE_NAMES, BLOCK_TYPES } from "@/shared/jarvish.constants";
+import { STAGES, NODE_NAMES } from "@/shared/jarvish.constants";
+import { normalizeWorkerContent } from "@/Backend/agent/workers/worker-response";
 import { mapStateToGeminiHistory } from "../utils";
 import { AIMessage } from "@langchain/core/messages";
 import { 
@@ -60,54 +61,7 @@ export async function googleWorkerNode(state: AgentStateType) {
 
     let content = response.text();
     const toolCalls = response.functionCalls();
-
-    // --- UI Block Validation ---
-    if (content && !toolCalls?.length) {
-      try {
-        let cleaned = content.trim();
-        if (cleaned.startsWith('```')) {
-          const firstNewline = cleaned.indexOf('\n');
-          if (firstNewline !== -1) cleaned = cleaned.substring(firstNewline + 1);
-          if (cleaned.endsWith('```')) cleaned = cleaned.substring(0, cleaned.length - 3).trim();
-        }
-
-        const firstBracket = cleaned.indexOf('[');
-        const firstBrace = cleaned.indexOf('{');
-        let startIdx = -1;
-        if (firstBracket !== -1 && (firstBrace === -1 || firstBracket < firstBrace)) startIdx = firstBracket;
-        else if (firstBrace !== -1) startIdx = firstBrace;
-
-        if (startIdx !== -1) {
-          const lastBracket = cleaned.lastIndexOf(']');
-          const lastBrace = cleaned.lastIndexOf('}');
-          const endIdx = Math.max(lastBracket, lastBrace);
-
-          if (endIdx > startIdx) {
-            const jsonPotential = cleaned.substring(startIdx, endIdx + 1);
-            // Assuming AgentMessageBlocksSchema and BLOCK_TYPES are available or can be imported.
-            // For now, let's just parse and re-stringify if valid JSON array.
-            // A more robust solution would involve importing AgentMessageBlocksSchema and BLOCK_TYPES
-            // and using safeParse as in supervisorNode.
-            try {
-              const parsed = JSON.parse(jsonPotential);
-              if (Array.isArray(parsed) && parsed.every((block: any) => block.type && typeof block.content === 'string')) {
-                content = JSON.stringify(parsed);
-              } else {
-                content = JSON.stringify([{ type: BLOCK_TYPES.TEXT, content }]);
-              }
-            } catch (jsonError) {
-              content = JSON.stringify([{ type: BLOCK_TYPES.TEXT, content }]);
-            }
-          }
-        } else {
-          content = JSON.stringify([{ type: BLOCK_TYPES.TEXT, content }]);
-        }
-      } catch (e) {
-        if (!content.startsWith('[') && !content.startsWith('{')) {
-          content = JSON.stringify([{ type: BLOCK_TYPES.TEXT, content }]);
-        }
-      }
-    }
+    content = normalizeWorkerContent(content, Boolean(toolCalls?.length));
 
     return {
       messages: [new AIMessage({
