@@ -1,0 +1,1652 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Jarvish Agent Interview Study Guide</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f5f7f4;
+        --ink: #14201c;
+        --muted: #65736d;
+        --panel: #ffffff;
+        --line: #d9e1dc;
+        --accent: #117c6f;
+        --accent-2: #365f9c;
+        --warn: #a95425;
+        --risk: #9f3452;
+        --soft: #e4f2ef;
+        --soft-blue: #e7eef9;
+        --soft-warn: #fff0df;
+        --soft-risk: #f9e7ee;
+        --shadow: 0 18px 48px rgba(20, 32, 28, 0.1);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        line-height: 1.5;
+      }
+
+      main {
+        width: min(1180px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 28px 0 56px;
+      }
+
+      header {
+        display: grid;
+        grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+        gap: 18px;
+        align-items: stretch;
+        margin-bottom: 18px;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        max-width: 860px;
+        font-size: clamp(2.1rem, 5vw, 4.7rem);
+        line-height: 0.98;
+        letter-spacing: 0;
+      }
+
+      h2 {
+        font-size: 1.34rem;
+      }
+
+      h3 {
+        font-size: 1rem;
+      }
+
+      a {
+        color: var(--accent-2);
+        text-decoration: none;
+        font-weight: 760;
+      }
+
+      a:hover {
+        text-decoration: underline;
+      }
+
+      code {
+        padding: 0.1rem 0.28rem;
+        border: 1px solid var(--line);
+        border-radius: 5px;
+        background: #f9fbfa;
+        font-size: 0.92em;
+      }
+
+      pre {
+        overflow-x: auto;
+        margin: 10px 0 0;
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #101918;
+        color: #e8f4f1;
+        font-size: 0.9rem;
+      }
+
+      .hero,
+      .card,
+      .section {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        box-shadow: var(--shadow);
+      }
+
+      .hero {
+        padding: 26px;
+      }
+
+      .subtitle {
+        max-width: 760px;
+        margin-top: 14px;
+        color: var(--muted);
+        font-size: 1.03rem;
+      }
+
+      .meta {
+        padding: 18px;
+      }
+
+      .meta-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .meta-row:last-child {
+        border-bottom: 0;
+      }
+
+      .label {
+        color: var(--muted);
+        font-size: 0.78rem;
+        font-weight: 760;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+
+      .value {
+        text-align: right;
+        font-weight: 800;
+      }
+
+      .nav {
+        position: sticky;
+        top: 0;
+        z-index: 4;
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        margin: 0 0 16px;
+        padding: 10px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(245, 247, 244, 0.94);
+        backdrop-filter: blur(12px);
+      }
+
+      .nav a {
+        flex: 0 0 auto;
+        padding: 8px 11px;
+        border-radius: 6px;
+        color: #0c5149;
+        background: var(--soft);
+        font-size: 0.88rem;
+      }
+
+      .section {
+        margin-top: 16px;
+        padding: 22px;
+      }
+
+      .section-head {
+        display: flex;
+        align-items: start;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 14px;
+      }
+
+      .note {
+        color: var(--muted);
+        font-size: 0.94rem;
+      }
+
+      .mt {
+        margin-top: 10px;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .grid.two {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .card {
+        padding: 15px;
+        box-shadow: none;
+      }
+
+      .card p,
+      li {
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+
+      ul,
+      ol {
+        margin: 9px 0 0;
+        padding-left: 19px;
+      }
+
+      li + li {
+        margin-top: 7px;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        min-height: 26px;
+        padding: 4px 9px;
+        border-radius: 999px;
+        background: var(--soft);
+        color: #0d5b52;
+        font-size: 0.78rem;
+        font-weight: 820;
+      }
+
+      .pill.blue {
+        background: var(--soft-blue);
+        color: #294f86;
+      }
+
+      .pill.warn {
+        background: var(--soft-warn);
+        color: var(--warn);
+      }
+
+      .pill.risk {
+        background: var(--soft-risk);
+        color: var(--risk);
+      }
+
+      .flow {
+        display: grid;
+        gap: 10px;
+      }
+
+      .step {
+        display: grid;
+        grid-template-columns: 132px 1fr;
+        gap: 14px;
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fbfcfb;
+      }
+
+      .step strong {
+        display: block;
+      }
+
+      .script {
+        display: grid;
+        gap: 12px;
+      }
+
+      .script-part {
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fbfcfb;
+      }
+
+      .script-part .time {
+        display: inline-flex;
+        margin-bottom: 6px;
+        color: var(--accent);
+        font-size: 0.82rem;
+        font-weight: 820;
+      }
+
+      .callout {
+        margin-top: 12px;
+        padding: 14px;
+        border-left: 4px solid var(--accent);
+        border-radius: 8px;
+        background: var(--soft);
+      }
+
+      .callout.warn {
+        border-left-color: var(--warn);
+        background: var(--soft-warn);
+      }
+
+      .callout.risk {
+        border-left-color: var(--risk);
+        background: var(--soft-risk);
+      }
+
+      .hebrew {
+        direction: rtl;
+        margin-top: 12px;
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fbfcfb;
+        text-align: right;
+      }
+
+      .hebrew h3 {
+        margin-bottom: 8px;
+        color: var(--accent);
+      }
+
+      .hebrew p {
+        color: var(--muted);
+      }
+
+      .qa-list {
+        display: grid;
+        gap: 12px;
+        margin-top: 10px;
+      }
+
+      .qa {
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fbfcfb;
+      }
+
+      .qa strong {
+        display: block;
+        margin-bottom: 6px;
+        color: var(--ink);
+      }
+
+      .qa p {
+        color: var(--muted);
+        font-size: 0.94rem;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+      }
+
+      th,
+      td {
+        padding: 10px;
+        border-bottom: 1px solid var(--line);
+        text-align: left;
+        vertical-align: top;
+        font-size: 0.94rem;
+      }
+
+      th {
+        background: #f0f5f2;
+        color: #263d36;
+        font-size: 0.82rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      tr:last-child td {
+        border-bottom: 0;
+      }
+
+      @media (max-width: 860px) {
+        header,
+        .grid,
+        .grid.two {
+          grid-template-columns: 1fr;
+        }
+
+        .step {
+          grid-template-columns: 1fr;
+        }
+
+        .value {
+          text-align: left;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <section class="hero">
+          <span class="pill">Interview prep summary</span>
+          <h1>Jarvish Agent</h1>
+          <p class="subtitle">
+            A full-stack learning project for an AI engineer interview: React chat UI, GraphQL Yoga streaming, LangGraph orchestration,
+            Gemini function calling, Google Workspace tools, local file tools, SQLite checkpointing, and Weaviate-backed memory.
+          </p>
+        </section>
+        <aside class="meta">
+          <div class="meta-row">
+            <span class="label">Focus</span>
+            <span class="value">AI agent architecture</span>
+          </div>
+          <div class="meta-row">
+            <span class="label">Frontend</span>
+            <span class="value">React 19 + typed GraphQL</span>
+          </div>
+          <div class="meta-row">
+            <span class="label">Backend</span>
+            <span class="value">Express + Yoga + LangGraph</span>
+          </div>
+          <div class="meta-row">
+            <span class="label">Memory</span>
+            <span class="value">SQLite + Weaviate</span>
+          </div>
+        </aside>
+      </header>
+
+      <nav class="nav" aria-label="Study guide sections">
+        <a href="#elevator">Elevator Pitch</a>
+        <a href="#five">5 Min Macro</a>
+        <a href="#ten">10 Min Pitch</a>
+        <a href="#flow">Runtime Flow</a>
+        <a href="#shared-contracts">Types & Contracts</a>
+        <a href="#frontend">Frontend</a>
+        <a href="#backend">Backend</a>
+        <a href="#agent">Agent Graph</a>
+        <a href="#tools">Tools</a>
+        <a href="#memory">Memory</a>
+        <a href="#technologies">Technologies</a>
+        <a href="#buzzwords">Buzzwords</a>
+        <a href="#bad-designs">Bad Designs</a>
+        <a href="#questions">Interview Questions</a>
+      </nav>
+
+      <section id="elevator" class="section">
+        <div class="section-head">
+          <h2>Elevator Pitch</h2>
+          <span class="pill">30-45 seconds</span>
+        </div>
+        <p>
+          Jarvish is a personal AI agent I built to understand modern AI application architecture end to end. The user talks to a
+          React chat interface, the frontend streams a GraphQL subscription over HTTP, and the backend runs a LangGraph state machine.
+          The graph retrieves long-term memory, processes attachments, delegates work to specialized Gemini-powered workers, executes
+          tools like web search, Google Docs, Gmail, Calendar, and local file operations, then streams status, reasoning, and final UI
+          blocks back to the client. It also persists sessions through SQLite checkpointing and stores semantic memory in Weaviate.
+        </p>
+        <div class="callout">
+          <strong>Interview framing:</strong> This is not just a chatbot. It is a typed, tool-using, stateful agent system with streaming UX,
+          memory retrieval, worker delegation, function calling, persistence, and explicit failure paths.
+        </div>
+        <div class="hebrew" lang="he">
+          <h3>גרסה בעברית טבעית</h3>
+          <p>
+            ג'ארביש הוא סוכן AI אישי שבניתי כדי להבין לעומק איך נראית ארכיטקטורה מודרנית של אפליקציות AI מקצה לקצה.
+            המשתמש מדבר עם ממשק צ'אט ב-React, הפרונטאנד שולח בקשת GraphQL שמחזירה אירועים בסטרימינג, ובבקאנד רץ גרף
+            עבודה ב-LangGraph. הגרף שולף זיכרונות רלוונטיים, מעבד קבצים מצורפים, מחלק משימות לעובדים ייעודיים שמבוססים
+            על Gemini, מפעיל כלים כמו חיפוש ברשת, Google Docs, Gmail, Calendar ופעולות על קבצים מקומיים, ואז מחזיר
+            לפרונטאנד סטטוסים, reasoning ותשובה מובנית ל-UI. בנוסף, המערכת שומרת סשנים ב-SQLite ושומרת זיכרון סמנטי
+            ב-Weaviate.
+          </p>
+        </div>
+      </section>
+
+      <section id="five" class="section">
+        <div class="section-head">
+          <h2>5 Min Macro Intro</h2>
+          <span class="pill blue">High-level story</span>
+        </div>
+        <div class="grid">
+          <article class="card">
+            <h3>Problem</h3>
+            <p>
+              I wanted to learn the real pieces behind AI engineer work: agent state, tool calling, streaming, RAG-like memory, typed
+              frontend/backend contracts, OAuth, persistence, and error handling.
+            </p>
+          </article>
+          <article class="card">
+            <h3>Architecture</h3>
+            <p>
+              The app separates concerns into a React feature, a GraphQL API boundary, a LangGraph orchestration layer, tool services,
+              session storage, and vector memory.
+            </p>
+          </article>
+          <article class="card">
+            <h3>Learning Value</h3>
+            <p>
+              Every part maps to a likely AI engineer interview topic: LLM orchestration, embeddings, retrieval, structured outputs,
+              function calling, observability, auth, and reliability.
+            </p>
+          </article>
+        </div>
+        <div class="callout">
+          <strong>Macro answer:</strong> The key design choice is separating the conversational UI from the agent execution graph. The
+          frontend does not decide which model or tool to use; it only sends typed input and renders typed streamed events. The backend owns
+          reasoning, tool execution, memory, and persistence.
+        </div>
+        <div class="hebrew" lang="he">
+          <h3>גרסה בעברית טבעית</h3>
+          <p>
+            ברמה הגבוהה, בניתי את הפרויקט הזה ככלי לימוד מעשי לכל המרכיבים המרכזיים של עבודת AI Engineer. רציתי לא
+            רק להשתמש במודל, אלא להבין איך בונים מערכת שלמה סביבו: ניהול state של סוכן, tool calling, סטרימינג של
+            תשובות, זיכרון בסגנון RAG, חוזה טיפוסים בין frontend ל-backend, OAuth, התמדה של מידע, וטיפול בשגיאות.
+          </p>
+          <p class="mt">
+            מבחינת ארכיטקטורה, הפרדתי בין שכבות: ה-React אחראי על חוויית המשתמש והצ'אט, GraphQL הוא הגבול הטיפוסי
+            בין הפרונט לבק, LangGraph מנהל את זרימת העבודה של הסוכן, שירותי tools מבצעים פעולות בעולם האמיתי, SQLite
+            שומר סשנים ו-checkpoints, ו-Weaviate משמש לזיכרון סמנטי. ההחלטה המרכזית היא שהפרונטאנד לא מחליט איזה
+            מודל או כלי להפעיל. הוא שולח קלט מובנה ומציג אירועים מובנים, בזמן שהבקאנד אחראי על reasoning, הפעלת כלים,
+            זיכרון והתמדה.
+          </p>
+          <p class="mt">
+            מבחינת ראיון, זה מאפשר לי לדבר על הרבה נושאים חשובים מתוך מערכת אחת אמיתית: orchestration של LLM,
+            embeddings, retrieval, structured outputs, function calling, observability, authentication, security ו-reliability.
+          </p>
+        </div>
+      </section>
+
+      <section id="ten" class="section">
+        <div class="section-head">
+          <h2>10 Min Pitch</h2>
+          <span class="pill blue">Memorize this script</span>
+        </div>
+        <div class="script">
+          <div class="script-part">
+            <span class="time">0:00-1:00 | Opening</span>
+            <p>
+              "The project I want to present is Jarvish, a personal AI agent I built as a learning platform for AI engineering. I did not
+              want to build only a simple chat wrapper around an LLM. I wanted to understand the full system around the model: frontend
+              streaming, backend orchestration, tool calling, memory, persistence, typed contracts, and production risks."
+            </p>
+          </div>
+          <div class="script-part">
+            <span class="time">1:00-2:00 | Product</span>
+            <p>
+              "From the user's point of view, Jarvish is a chat-based research and productivity agent. The user can start sessions, send
+              messages, attach files, connect to Google services, ask questions about documents or emails, and receive structured answers.
+              The UI can render text, code, data blocks, reasoning blocks, and draft blocks. There is also a ghost-writer panel that opens
+              when the model returns a draft."
+            </p>
+          </div>
+          <div class="script-part">
+            <span class="time">2:00-3:15 | Frontend/API Boundary</span>
+            <p>
+              "The frontend is a React feature under <code>src/features/jarvishAgent</code>. The main component composes three important
+              hooks: Google auth, session management, and chat streaming. When the user sends a message, the chat hook creates an optimistic
+              user message, attaches files as base64, sends a GraphQL request to <code>/graphql</code>, and reads the response as a stream.
+              The API boundary is GraphQL, and I use generated GraphQL types plus Zod validation so the UI is not just trusting random JSON."
+            </p>
+          </div>
+          <div class="script-part">
+            <span class="time">3:15-4:30 | Backend Entry</span>
+            <p>
+              "On the backend, Express hosts GraphQL Yoga. The important operation is <code>agentEvents</code>, which behaves like a streaming
+              agent endpoint. It receives the query, previous history, attachments, session ID, and optionally a Google OAuth token. The
+              resolver calls <code>streamAgentEvents</code>, which creates the LangGraph agent and maps graph updates into UI events like
+              status, reasoning, message, and error."
+            </p>
+          </div>
+          <div class="script-part">
+            <span class="time">4:30-6:00 | Agent Graph</span>
+            <p>
+              "The core of the backend is a LangGraph state machine. The state includes messages, retrieved memories, research notes,
+              attachments, processed attachments, Google token, last worker, tool confidence, and session ID. The graph starts with a context
+              node that retrieves semantic memories, then a processing node that handles attachments and pre-fetches obvious context. After
+              that, a supervisor model decides whether to answer directly or delegate to a specialized worker."
+            </p>
+          </div>
+          <div class="script-part">
+            <span class="time">6:00-7:15 | Workers And Tools</span>
+            <p>
+              "The supervisor can delegate to three workers: research, Google, and coder. The research worker handles web search, pages, PDFs,
+              and uploaded documents. The Google worker handles Gmail, Calendar, and Google Docs. The coder worker handles local files,
+              codebase analysis, drafting, and memory changes. Workers can call tools using Gemini function calling. But the backend still
+              validates every tool argument with Zod before execution, because model output is untrusted."
+            </p>
+          </div>
+          <div class="script-part">
+            <span class="time">7:15-8:15 | Memory And Persistence</span>
+            <p>
+              "The system has two kinds of persistence. SQLite stores application records: sessions, summaries, structured facts, and
+              LangGraph checkpoints. Weaviate stores semantic memory. When a new query arrives, the memory service embeds the query, searches
+              Weaviate, and only passes memories above a relevance threshold. At the end of a run, the archive node summarizes the interaction,
+              extracts facts, indexes attachments, and saves useful context for future retrieval."
+            </p>
+          </div>
+          <div class="script-part">
+            <span class="time">8:15-9:15 | Types And Safety</span>
+            <p>
+              "One thing I focused on is contracts between layers. GraphQL gives compile-time contract safety for API data. Zod gives runtime
+              safety for untrusted data like streamed events, model output, resolver inputs, and tool arguments. Drizzle gives typed database
+              rows. LangGraph gives typed agent state. The main design issue I would improve is duplicated block schemas between frontend and
+              backend; in production I would move those to a shared contracts package."
+            </p>
+          </div>
+          <div class="script-part">
+            <span class="time">9:15-10:00 | Tradeoffs And Close</span>
+            <p>
+              "The project is intentionally learning-oriented, so I can also explain what I would harden before production. I would move
+              OAuth tokens out of localStorage, add explicit approvals for write tools, isolate users and vector namespaces, add better
+              tracing and evals, protect against prompt injection, and improve schema ownership. The value of the project is that it gave me
+              hands-on experience with the real building blocks of AI engineering, not just prompt writing."
+            </p>
+          </div>
+        </div>
+        <div class="callout">
+          <strong>Memory trick:</strong> Remember the order as <code>Why -> Product -> Frontend -> Backend -> Graph -> Tools -> Memory -> Types -> Tradeoffs</code>.
+          If you forget details, return to that spine and keep going.
+        </div>
+        <div class="hebrew" lang="he">
+          <h3>תרגום מלא לעברית - 10 דקות</h3>
+          <div class="script">
+            <div class="script-part">
+              <span class="time">0:00-1:00 | פתיחה</span>
+              <p>
+                "הפרויקט שאני רוצה להציג נקרא Jarvish. זה סוכן AI אישי שבניתי כפלטפורמת לימוד לעולם של AI Engineering.
+                לא רציתי לבנות רק צ'אט פשוט שעוטף מודל שפה. רציתי להבין את כל המערכת שנבנית סביב המודל: סטרימינג
+                בפרונטאנד, orchestration בבקאנד, tool calling, זיכרון, persistence, חוזי טיפוסים, והסיכונים שצריך
+                לחשוב עליהם לפני פרודקשן."
+              </p>
+            </div>
+            <div class="script-part">
+              <span class="time">1:00-2:00 | המוצר</span>
+              <p>
+                "מנקודת המבט של המשתמש, Jarvish הוא סוכן מחקר ופרודוקטיביות שמבוסס על צ'אט. המשתמש יכול לפתוח סשנים,
+                לשלוח הודעות, לצרף קבצים, להתחבר לשירותי Google, לשאול שאלות על מסמכים או מיילים, ולקבל תשובות
+                מובנות. ה-UI יודע להציג טקסט, קוד, data blocks, reasoning blocks ו-draft blocks. יש גם פאנל ghost writer
+                שנפתח כשהמודל מחזיר טיוטה."
+              </p>
+            </div>
+            <div class="script-part">
+              <span class="time">2:00-3:15 | פרונטאנד וגבול API</span>
+              <p>
+                "הפרונטאנד הוא feature ב-React תחת <code>src/features/jarvishAgent</code>. הקומפוננטה הראשית מחברת
+                שלושה hooks חשובים: Google auth, ניהול סשנים, וצ'אט בסטרימינג. כשהמשתמש שולח הודעה, ה-chat hook יוצר
+                הודעת משתמש אופטימית, מצרף קבצים כ-base64, שולח בקשת GraphQL ל-<code>/graphql</code>, וקורא את התשובה
+                כ-stream. גבול ה-API הוא GraphQL, ואני משתמש ב-generated GraphQL types וב-Zod validation כדי שה-UI לא
+                יסמוך סתם על JSON לא ידוע."
+              </p>
+            </div>
+            <div class="script-part">
+              <span class="time">3:15-4:30 | כניסה לבקאנד</span>
+              <p>
+                "בבקאנד, Express מארח את GraphQL Yoga. הפעולה החשובה היא <code>agentEvents</code>, שמתנהגת כמו endpoint
+                סטרימינג של הסוכן. היא מקבלת את השאלה, היסטוריה קודמת, קבצים מצורפים, session ID, ולפעמים גם Google
+                OAuth token. ה-resolver קורא ל-<code>streamAgentEvents</code>, שיוצר את הסוכן ב-LangGraph וממפה עדכונים
+                מהגרף לאירועי UI כמו status, reasoning, message ו-error."
+              </p>
+            </div>
+            <div class="script-part">
+              <span class="time">4:30-6:00 | גרף הסוכן</span>
+              <p>
+                "הליבה של הבקאנד היא state machine ב-LangGraph. ה-state כולל הודעות, זיכרונות שנשלפו, research notes,
+                קבצים מצורפים, קבצים שכבר עובדו, Google token, העובד האחרון, tool confidence ו-session ID. הגרף מתחיל
+                ב-context node ששולף זיכרונות סמנטיים, ואז processing node שמעבד קבצים ומביא מראש context ברור אם צריך.
+                אחר כך supervisor model מחליט אם לענות ישירות או להעביר את המשימה לעובד ייעודי."
+              </p>
+            </div>
+            <div class="script-part">
+              <span class="time">6:00-7:15 | עובדים וכלים</span>
+              <p>
+                "ה-supervisor יכול להעביר משימות לשלושה workers: research, Google ו-coder. ה-research worker מטפל
+                בחיפוש ברשת, דפי אינטרנט, PDFs וקבצים שהועלו. ה-Google worker מטפל ב-Gmail, Calendar ו-Google Docs.
+                ה-coder worker מטפל בקבצים מקומיים, ניתוח codebase, כתיבה וטיוטות, ושינויי זיכרון. העובדים יכולים
+                לקרוא לכלים דרך Gemini function calling, אבל הבקאנד עדיין מאמת כל ארגומנט עם Zod לפני execution, כי
+                output של מודל הוא לא משהו שסומכים עליו באופן עיוור."
+              </p>
+            </div>
+            <div class="script-part">
+              <span class="time">7:15-8:15 | זיכרון והתמדה</span>
+              <p>
+                "למערכת יש שני סוגים של persistence. SQLite שומר רשומות אפליקטיביות: סשנים, summaries, structured facts
+                ו-LangGraph checkpoints. Weaviate שומר זיכרון סמנטי. כשנכנסת שאלה חדשה, memory service מייצר embedding
+                לשאלה, מחפש ב-Weaviate, ומעביר הלאה רק זיכרונות שעוברים relevance threshold. בסוף הריצה, archive node
+                מסכם את האינטראקציה, מחלץ facts, מאנדקס קבצים, ושומר context שימושי לשימוש עתידי."
+              </p>
+            </div>
+            <div class="script-part">
+              <span class="time">8:15-9:15 | טיפוסים ובטיחות</span>
+              <p>
+                "אחד הדברים שהתמקדתי בהם הוא contracts בין שכבות. GraphQL נותן compile-time contract safety לנתוני API.
+                Zod נותן runtime safety לדאטה לא מהימן כמו streamed events, output של מודל, resolver inputs ו-tool
+                arguments. Drizzle נותן טיפוסים לשורות בדאטאבייס. LangGraph נותן טיפוסים ל-agent state. הבעיה העיצובית
+                המרכזית שהייתי משפר היא שיש כפילות ב-block schemas בין frontend ל-backend; בפרודקשן הייתי מעביר את זה
+                ל-shared contracts package."
+              </p>
+            </div>
+            <div class="script-part">
+              <span class="time">9:15-10:00 | טריידאופים וסיום</span>
+              <p>
+                "הפרויקט נבנה בכוונה ככלי לימוד, ולכן אני גם יודע להסביר מה הייתי מחזק לפני פרודקשן. הייתי מוציא
+                OAuth tokens מ-localStorage, מוסיף אישור מפורש לכלים שכותבים או משנים מידע, מבודד משתמשים ו-vector
+                namespaces, מוסיף tracing ו-evals, מגן יותר טוב מ-prompt injection, ומשפר ownership של schemas. הערך
+                המרכזי של הפרויקט הוא שהוא נתן לי ניסיון מעשי באבני הבניין האמיתיות של AI Engineering, לא רק בכתיבת
+                prompts."
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="flow" class="section">
+        <div class="section-head">
+          <h2>Runtime Flow</h2>
+          <span class="pill">End to end</span>
+        </div>
+        <div class="flow">
+          <div class="step">
+            <strong>1. User submits</strong>
+            <p><code>JarvishAgent.tsx</code> creates a session when needed, then calls <code>sendMessage(sessionId)</code>.</p>
+          </div>
+          <div class="step">
+            <strong>2. Frontend state</strong>
+            <p><code>useJarvishChat.ts</code> adds the user message, clears status logs, sets stage to prepare, and opens an abort controller.</p>
+          </div>
+          <div class="step">
+            <strong>3. GraphQL request</strong>
+            <p>The hook posts <code>AgentChat</code> to <code>/graphql</code> with query, history, attachments, session ID, and optional <code>x-google-token</code>.</p>
+          </div>
+          <div class="step">
+            <strong>4. Yoga resolver</strong>
+            <p><code>agentEvents.subscribe</code> reads the Google token from headers and calls <code>streamAgentEvents</code>.</p>
+          </div>
+          <div class="step">
+            <strong>5. LangGraph stream</strong>
+            <p>The backend creates a graph with a SQLite checkpointer and streams <code>updates</code> from each node.</p>
+          </div>
+          <div class="step">
+            <strong>6. Graph nodes</strong>
+            <p>Context retrieves memory, processing handles attachments and shadow tools, supervisor delegates or answers, workers call tools, archive persists.</p>
+          </div>
+          <div class="step">
+            <strong>7. Event mapping</strong>
+            <p>Node metadata becomes <code>status</code> events. Streamable messages become <code>message</code>; internal node output becomes <code>reasoning</code>.</p>
+          </div>
+          <div class="step">
+            <strong>8. UI rendering</strong>
+            <p>The browser reads the streamed response line by line, validates with Zod, parses JSON blocks, and renders text/code/data/draft/action blocks.</p>
+          </div>
+        </div>
+        <code>React UI -> GraphQL Yoga -> streamAgentEvents -> LangGraph
+  -> context -> processing -> supervisor
+  -> worker -> tools -> worker -> supervisor/archive
+  -> streamed AgentEvent -> parsed UI blocks</code>
+      </section>
+
+      <section id="shared-contracts" class="section">
+        <div class="section-head">
+          <h2>Types And Contracts</h2>
+          <span class="pill blue">Important interview point</span>
+        </div>
+        <p>
+          Type safety in Jarvish is layered. GraphQL is the main frontend/backend contract, Zod protects runtime boundaries,
+          LangGraph types describe agent state, Drizzle types describe database rows, and service interfaces describe infrastructure
+          boundaries. The important interview point is that each type system protects a different failure mode.
+        </p>
+        <p class="note mt">
+          The backend owns the GraphQL schema in
+          <code>src/Backend/graphql/schema.ts</code>, and the frontend uses GraphQL Code Generator to produce typed operations under
+          <code>src/features/jarvishAgent/graphql/__generated__</code>. That means query variables and response shapes like sessions,
+          summaries, facts, message history, and agent events are not hand-written on the frontend.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Boundary</th>
+              <th>Main Types / Files</th>
+              <th>What It Protects</th>
+              <th>Production Improvement</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Frontend chat state</td>
+              <td><code>Message</code>, <code>Attachment</code>, <code>AgentMessageBlock</code>, <code>ChatState</code></td>
+              <td>UI rendering, optimistic updates, status, attachment handling, and block parsing.</td>
+              <td>Keep UI-only types separate from API and agent-state types.</td>
+            </tr>
+            <tr>
+              <td>GraphQL API shapes</td>
+              <td>Backend schema + generated frontend TypeScript operations.</td>
+              <td>Queries, mutations, variables, sessions, facts, history, and agent event payloads.</td>
+              <td>Keep codegen in CI so schema drift fails the build.</td>
+            </tr>
+            <tr>
+              <td>Server resolver types</td>
+              <td><code>src/Backend/graphql/__generated__/resolvers-types.ts</code> types resolver args, return values, and schema models.</td>
+              <td>Backend resolvers stay aligned with the GraphQL schema.</td>
+              <td>Make sure backend codegen runs whenever <code>schema.ts</code> changes.</td>
+            </tr>
+            <tr>
+              <td>Server input validation</td>
+              <td><code>src/Backend/graphql/schemas/resolver.schema.ts</code> validates resolver inputs with Zod.</td>
+              <td>Runtime rules such as min/max/defaults, not just compile-time field shape.</td>
+              <td>Avoid duplicating too many rules between GraphQL and Zod without a clear reason.</td>
+            </tr>
+            <tr>
+              <td>Stream/runtime validation</td>
+              <td>Frontend uses Zod schemas like <code>AgentEventsSubscriptionResponseSchema</code> after receiving data.</td>
+              <td>Malformed streamed events, unexpected backend output, and partial model-generated content.</td>
+              <td>Some schemas duplicate GraphQL types and need a single ownership model.</td>
+            </tr>
+            <tr>
+              <td>UI block protocol</td>
+              <td>Both frontend and backend define block schemas for text, code, data, reasoning, action, document, and draft blocks.</td>
+              <td>Predictable rendering of model output as structured UI, not arbitrary text.</td>
+              <td>This is the biggest drift risk: block schema should live in one shared package or be generated.</td>
+            </tr>
+            <tr>
+              <td>Tool arguments</td>
+              <td>Backend Zod schemas validate model-generated tool args before execution.</td>
+              <td>Dangerous or malformed model output before it reaches real services.</td>
+              <td>If tools are ever exposed to the frontend, generate client-facing tool types from the same schemas.</td>
+            </tr>
+            <tr>
+              <td>Agent state types</td>
+              <td><code>AgentState</code> defines LangGraph channels; <code>AgentStateType</code> describes state inside nodes.</td>
+              <td>Node-to-node state: messages, memories, attachments, token, confidence, and session ID.</td>
+              <td>Keep reducers and defaults obvious, because incorrect state merge behavior is hard to debug.</td>
+            </tr>
+            <tr>
+              <td>Database row types</td>
+              <td>Drizzle exports inferred types like <code>Session</code>, <code>NewSession</code>, <code>StructuredFact</code>.</td>
+              <td>Database reads/writes are typed from table schema instead of manual interfaces.</td>
+              <td>DB types should still be mapped to API types instead of leaking internal row shape everywhere.</td>
+            </tr>
+            <tr>
+              <td>Service interface types</td>
+              <td><code>IVectorStore</code> defines the memory store contract; services hide Weaviate, Google APIs, and file details.</td>
+              <td>Infrastructure boundaries, swappable implementations, and easier tests with mocks or fakes.</td>
+              <td>Add explicit return types on more service functions to make boundaries clearer.</td>
+            </tr>
+            <tr>
+              <td>Shared constants</td>
+              <td><code>src/shared/jarvish.constants.ts</code> holds roles, statuses, event types, block types, tool names, and endpoints.</td>
+              <td>Magic strings across frontend, backend, GraphQL, Gemini, LangChain, and UI rendering.</td>
+              <td>Some role naming is still mixed across UI, GraphQL, Gemini, and LangChain.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="grid two">
+          <article class="card">
+            <h3>Production Pattern</h3>
+            <p>
+              I would create a dedicated shared contracts layer, for example <code>src/shared/contracts</code> or a workspace package like
+              <code>@jarvish/contracts</code>. It would own event types, block schemas, role mappings, and possibly Zod schemas. Frontend and
+              backend would import from it instead of redefining the same structures.
+            </p>
+          </article>
+          <article class="card">
+            <h3>Best Interview Framing</h3>
+            <p>
+              "GraphQL gives me compile-time contract safety for API data, while Zod gives me runtime safety for untrusted data like LLM
+              output and streamed events. On the server, generated resolver types, Drizzle inferred types, LangGraph state types, and service
+              interfaces protect different boundaries. The main improvement is to remove duplicate block schemas and centralize shared contracts."
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section id="frontend" class="section">
+        <div class="section-head">
+          <h2>Frontend</h2>
+          <span class="pill">src/features/jarvishAgent</span>
+        </div>
+        <div class="grid">
+          <article class="card">
+            <h3><code>JarvishAgent.tsx</code></h3>
+            <p>Feature shell. Composes auth, session, chat hooks, sidebar, header, chat area, input, memory panel, and ghost writer panel.</p>
+          </article>
+          <article class="card">
+            <h3><code>useJarvishChat.ts</code></h3>
+            <p>Owns chat reducer state, streaming fetch, cancellation, attachment conversion, SSE parsing, Zod validation, and UI status changes.</p>
+          </article>
+          <article class="card">
+            <h3><code>useJarvishSessions.ts</code></h3>
+            <p>Manages session list pagination/search, active session persistence in localStorage, session creation/deletion, and summary polling.</p>
+          </article>
+          <article class="card">
+            <h3><code>useGoogleAuth.ts</code></h3>
+            <p>Stores access token and expiry in localStorage, initializes Google token client, and attempts silent refresh before requests.</p>
+          </article>
+          <article class="card">
+            <h3>Block renderer</h3>
+            <p>Normalizes backend content into typed UI blocks: text, code, data, reasoning, action, document, and draft.</p>
+          </article>
+          <article class="card">
+            <h3>Ghost writer</h3>
+            <p>Scans newest assistant messages for a draft block and opens a dedicated drafting panel with follow-up actions.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="backend" class="section">
+        <div class="section-head">
+          <h2>Backend</h2>
+          <span class="pill">src/Backend</span>
+        </div>
+        <div class="grid two">
+          <article class="card">
+            <h3>Server bootstrap</h3>
+            <p><code>index.ts</code> starts embedded Weaviate first, injects it into the memory service, then starts Express on port 3000.</p>
+          </article>
+          <article class="card">
+            <h3>GraphQL Yoga</h3>
+            <p><code>graphql/schema.ts</code> defines queries, mutations, and the <code>agentEvents</code> stream. Resolvers delegate to service files.</p>
+          </article>
+          <article class="card">
+            <h3>Database</h3>
+            <p>Drizzle + better-sqlite3 stores sessions, summaries, facts, plus LangGraph checkpoint tables used by <code>SqliteSaver</code>.</p>
+          </article>
+          <article class="card">
+            <h3>Streaming adapter</h3>
+            <p><code>agent-event.service.ts</code> maps graph node updates into <code>STATUS</code>, <code>MESSAGE</code>, <code>REASONING</code>, and <code>ERROR</code> events.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="agent" class="section">
+        <div class="section-head">
+          <h2>Agent Graph</h2>
+          <span class="pill">LangGraph orchestration</span>
+        </div>
+        <p>
+          <code>createAgentGraph</code> builds a <code>StateGraph</code> from <code>AgentState</code>, registers each node, adds topology, then compiles it with an optional SQLite
+          checkpointer. The state machine gives the app resumable, inspectable execution instead of one large unstructured LLM call.
+        </p>
+        <div class="flow">
+          <div class="step">
+            <strong>Context</strong>
+            <p>Embeds the latest query and retrieves top relevant memories from Weaviate.</p>
+          </div>
+          <div class="step">
+            <strong>Processing</strong>
+            <p>Extracts attachments with Gemini and predicts obvious tools like web search or file read to pre-fetch context.</p>
+          </div>
+          <div class="step">
+            <strong>Supervisor</strong>
+            <p>Uses Gemini with function declarations to delegate to research, Google, or coder workers, or to synthesize final UI blocks.</p>
+          </div>
+          <div class="step" id="workers">
+            <strong>Workers</strong>
+            <p>Specialized Gemini prompts with narrower tool sets: research, Google Workspace, and local code/drafting.</p>
+          </div>
+          <div class="step">
+            <strong>Tools</strong>
+            <p>Executes validated tool calls, appends <code>ToolMessage</code> results, scores confidence, and routes back to the last worker.</p>
+          </div>
+          <div class="step">
+            <strong>Clarification</strong>
+            <p>If confidence is below <code>70</code>, asks the user for missing information instead of guessing.</p>
+          </div>
+          <div class="step">
+            <strong>Archive</strong>
+            <p>Summarizes the session, extracts structured facts, indexes attachments, and stores memory for future retrieval.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="tools" class="section">
+        <div class="section-head">
+          <h2>Tools</h2>
+          <span class="pill">Function calling</span>
+        </div>
+        <p>
+          Tools are how the agent leaves pure text generation and interacts with real systems. In Jarvish, the model can request a tool,
+          but the backend owns validation, execution, confidence scoring, and routing after the result comes back.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Tool Group</th>
+              <th>Examples</th>
+              <th>Implementation</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Research</td>
+              <td><code>web_search</code>, <code>fetch_web_page</code>, <code>read_pdf</code>, <code>query_attachments</code></td>
+              <td>Used by the research worker for external and document context.</td>
+            </tr>
+            <tr>
+              <td>Google</td>
+              <td><code>list_calendar_events</code>, <code>search_gmail_messages</code>, <code>get_google_doc_content</code>, <code>update_google_doc</code></td>
+              <td>Uses a user OAuth access token from the request header.</td>
+            </tr>
+            <tr>
+              <td>Local/coder</td>
+              <td><code>read_file</code>, <code>write_file</code>, <code>add_to_memory</code>, <code>forget_memory</code>, <code>check_inventory</code></td>
+              <td>Used for project analysis, drafting, local files, and memory changes.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="callout">
+          <strong>Good interview point:</strong> Model output is treated as untrusted. Tool arguments are parsed through Zod schemas before execution,
+          and low-confidence results can route to clarification.
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Step</th>
+              <th>File / Concept</th>
+              <th>What Happens</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Declare</td>
+              <td><code>agent/nodes/registry.ts</code></td>
+              <td>Tool names, descriptions, argument schemas, and required fields are exposed to Gemini as function declarations.</td>
+            </tr>
+            <tr>
+              <td>Select</td>
+              <td>Worker model call</td>
+              <td>The worker decides whether to answer directly or return a tool call such as <code>read_file</code> or <code>web_search</code>.</td>
+            </tr>
+            <tr>
+              <td>Route</td>
+              <td><code>workerRouter</code></td>
+              <td>If the last worker message has tool calls, LangGraph routes execution to the tools node.</td>
+            </tr>
+            <tr>
+              <td>Validate</td>
+              <td><code>tool.schemas.ts</code></td>
+              <td>Zod parses the model-generated arguments before any external service or side effect runs.</td>
+            </tr>
+            <tr>
+              <td>Execute</td>
+              <td><code>tool-executor.ts</code></td>
+              <td>The backend maps the tool name to a real service: web, file, PDF, Google, memory, or inventory.</td>
+            </tr>
+            <tr>
+              <td>Score</td>
+              <td><code>scoreToolConfidence</code></td>
+              <td>Empty, failed, or "no results" outputs reduce confidence; strong outputs return higher confidence.</td>
+            </tr>
+            <tr>
+              <td>Continue</td>
+              <td><code>toolsRouter</code></td>
+              <td>High confidence returns to the last worker; low confidence routes to clarification.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="memory" class="section">
+        <div class="section-head">
+          <h2>Memory And Persistence</h2>
+          <span class="pill">RAG concepts</span>
+        </div>
+        <p>
+          Jarvish has two persistence tracks: relational state for sessions and summaries, and semantic memory for recall. The important
+          distinction is that SQLite/Drizzle is for exact application records, while Weaviate is for similarity search over meaning.
+        </p>
+        <div class="grid">
+          <article class="card">
+            <h3>Semantic memory</h3>
+            <p><code>addMemory</code> embeds text with <code>gemini-embedding-001</code> and stores vectors in Weaviate with JSON metadata.</p>
+          </article>
+          <article class="card">
+            <h3>Retrieval</h3>
+            <p><code>retrieveMemories</code> embeds the query, searches top K memories, then filters by a relevance threshold of <code>0.65</code>.</p>
+          </article>
+          <article class="card">
+            <h3>Session state</h3>
+            <p>LangGraph checkpoints store graph message history per <code>thread_id</code>, while Drizzle stores user-facing session rows and summaries.</p>
+          </article>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Memory Type</th>
+              <th>Storage</th>
+              <th>When It Is Used</th>
+              <th>Risk</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Raw graph history</td>
+              <td>LangGraph SQLite checkpoints</td>
+              <td>Loading previous session messages and continuing a thread.</td>
+              <td>Can grow large; needs pruning or summarization strategy.</td>
+            </tr>
+            <tr>
+              <td>Session metadata</td>
+              <td>Drizzle <code>sessions</code></td>
+              <td>Sidebar list, active session, search, updated timestamps.</td>
+              <td>Must become user-scoped before multi-user production.</td>
+            </tr>
+            <tr>
+              <td>Session summary</td>
+              <td>Drizzle <code>session_summaries</code></td>
+              <td>Fast preview of what happened in a session.</td>
+              <td>Model summaries can be incomplete or wrong.</td>
+            </tr>
+            <tr>
+              <td>Structured facts</td>
+              <td>Drizzle <code>structured_facts</code></td>
+              <td>Profile-like facts extracted from conversations.</td>
+              <td>Facts need provenance, confidence, and user correction.</td>
+            </tr>
+            <tr>
+              <td>Semantic memories</td>
+              <td>Weaviate vectors</td>
+              <td>Retrieving relevant prior context for a new user query.</td>
+              <td>Can pollute prompts if irrelevant memories pass the threshold.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="technologies" class="section">
+        <div class="section-head">
+          <h2>Technology Quick Summary</h2>
+          <span class="pill blue">What, pros, cons, alternatives</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Technology</th>
+              <th>What It Is</th>
+              <th>Pros</th>
+              <th>Cons</th>
+              <th>Main Alternatives</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>React</td>
+              <td>Frontend library for building component-based user interfaces.</td>
+              <td>Huge ecosystem, strong mental model, reusable components, good for interactive chat UI.</td>
+              <td>State can become scattered, performance needs care, app architecture is not enforced.</td>
+              <td>Vue, Angular, Svelte, Solid.</td>
+            </tr>
+            <tr>
+              <td>TypeScript</td>
+              <td>JavaScript with static types.</td>
+              <td>Catches mistakes early, improves refactoring, documents data contracts.</td>
+              <td>Types can drift from runtime data, adds build complexity, weak types can give false confidence.</td>
+              <td>JavaScript, Flow, Kotlin/JS, ReScript.</td>
+            </tr>
+            <tr>
+              <td>Vite</td>
+              <td>Fast frontend dev server and build tool.</td>
+              <td>Very fast local development, simple config, modern ESM workflow.</td>
+              <td>Some ecosystem plugins assume other bundlers, production details still need understanding.</td>
+              <td>Next.js, Remix, Webpack, Parcel, Rspack.</td>
+            </tr>
+            <tr>
+              <td>GraphQL Yoga</td>
+              <td>GraphQL server used as the API boundary.</td>
+              <td>Typed schema, single endpoint, good developer tooling, supports subscription-style streaming.</td>
+              <td>More complex than REST, caching can be harder, manual streaming over fetch is fragile.</td>
+              <td>REST, tRPC, Apollo Server, Fastify Mercurius, gRPC.</td>
+            </tr>
+            <tr>
+              <td>GraphQL Codegen</td>
+              <td>Generates TypeScript types and typed operations from GraphQL schema/documents.</td>
+              <td>Reduces frontend/backend contract bugs and improves editor autocomplete.</td>
+              <td>Generated files add noise, codegen must run when schema changes.</td>
+              <td>Manual types, tRPC inferred types, OpenAPI generators, Apollo codegen.</td>
+            </tr>
+            <tr>
+              <td>Express</td>
+              <td>Minimal Node.js web server framework.</td>
+              <td>Simple, familiar, flexible, easy to mount Yoga and config endpoints.</td>
+              <td>Unopinionated, async error handling needs discipline, not the fastest option.</td>
+              <td>Fastify, Koa, Hono, NestJS.</td>
+            </tr>
+            <tr>
+              <td>LangGraph</td>
+              <td>State-machine framework for agent workflows.</td>
+              <td>Explicit nodes/edges, resumable state, better debugging than one big agent loop.</td>
+              <td>More concepts to learn, graph design can become complex, version churn is possible.</td>
+              <td>LangChain agents, LlamaIndex workflows, CrewAI, AutoGen, custom orchestrator.</td>
+            </tr>
+            <tr>
+              <td>Gemini</td>
+              <td>Google's LLM used for reasoning, routing, processing, and embeddings.</td>
+              <td>Strong multimodal support, function calling, good fit with Google ecosystem.</td>
+              <td>Vendor dependency, model behavior can change, cost/latency need monitoring.</td>
+              <td>OpenAI, Anthropic Claude, Mistral, Llama, Azure OpenAI, Bedrock.</td>
+            </tr>
+            <tr>
+              <td>Function Calling</td>
+              <td>LLM outputs structured tool calls instead of only natural language.</td>
+              <td>Connects models to real actions, enables deterministic service execution.</td>
+              <td>Tool choice can be wrong, arguments must be validated, side effects need approval.</td>
+              <td>JSON mode, structured outputs, ReAct text parsing, deterministic routers.</td>
+            </tr>
+            <tr>
+              <td>Zod</td>
+              <td>Runtime schema validation library for TypeScript.</td>
+              <td>Validates untrusted model/API data, provides inferred TypeScript types.</td>
+              <td>Can duplicate GraphQL schemas, runtime parsing has overhead.</td>
+              <td>Valibot, Yup, Joi, io-ts, TypeBox, JSON Schema/Ajv.</td>
+            </tr>
+            <tr>
+              <td>Weaviate</td>
+              <td>Vector database for semantic memory search.</td>
+              <td>Purpose-built vector search, metadata support, local embedded option.</td>
+              <td>Operational complexity, memory quality depends on embeddings and chunking.</td>
+              <td>Pinecone, Qdrant, Chroma, Milvus, pgvector, Elasticsearch vector search.</td>
+            </tr>
+            <tr>
+              <td>Embeddings</td>
+              <td>Numeric vector representations of text for semantic similarity.</td>
+              <td>Finds conceptually related memories even when wording differs.</td>
+              <td>Can retrieve irrelevant context, needs thresholds, chunking, and evaluation.</td>
+              <td>Keyword search, BM25, hybrid search, rerankers, knowledge graphs.</td>
+            </tr>
+            <tr>
+              <td>SQLite + better-sqlite3</td>
+              <td>Local relational database and fast synchronous Node driver.</td>
+              <td>Simple local persistence, no server setup, good for learning and single-user apps.</td>
+              <td>Limited for multi-user scale, sync driver can block under heavy load.</td>
+              <td>PostgreSQL, MySQL, Turso/libSQL, MongoDB, Redis for ephemeral state.</td>
+            </tr>
+            <tr>
+              <td>Drizzle ORM</td>
+              <td>TypeScript ORM/query builder for database schema and queries.</td>
+              <td>Typed SQL-like API, lightweight, clear schema definitions.</td>
+              <td>Requires migration discipline, less batteries-included than larger ORMs.</td>
+              <td>Prisma, Kysely, TypeORM, Sequelize, raw SQL.</td>
+            </tr>
+            <tr>
+              <td>SSE-style Streaming</td>
+              <td>Server streams incremental events to the browser over an HTTP response.</td>
+              <td>Great for token/status streaming, simpler than WebSockets for one-way updates.</td>
+              <td>Manual parsing can be brittle, reconnect/error semantics need care.</td>
+              <td>WebSockets, WebTransport, polling, GraphQL subscriptions over WebSocket.</td>
+            </tr>
+            <tr>
+              <td>Google APIs + OAuth</td>
+              <td>Access to Calendar, Gmail, and Docs with user permission.</td>
+              <td>Lets the agent work with private user data and real productivity tools.</td>
+              <td>Security-sensitive, scopes must be minimal, write actions need explicit consent.</td>
+              <td>Microsoft Graph, Slack APIs, Notion API, service-specific integrations.</td>
+            </tr>
+            <tr>
+              <td>pdf-parse</td>
+              <td>Library for extracting text from PDF files.</td>
+              <td>Simple way to convert PDFs into searchable text.</td>
+              <td>PDF layout extraction can be messy; scanned PDFs need OCR.</td>
+              <td>pdf.js, Unstructured, Tesseract OCR, cloud document AI services.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="callout">
+          <strong>How to say it in an interview:</strong> "I chose a practical learning stack. React and GraphQL make the UI/API boundary typed,
+          LangGraph makes agent control flow explicit, Gemini provides model and tool-calling capabilities, Weaviate handles semantic memory,
+          and SQLite/Drizzle keep local persistence simple. The tradeoff is that production would require stronger auth, evals, monitoring,
+          and side-effect controls."
+        </div>
+      </section>
+
+      <section id="buzzwords" class="section">
+        <div class="section-head">
+          <h2>Buzzwords Glossary</h2>
+          <span class="pill blue">Quick explanation + usage</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Term</th>
+              <th>Quick Explanation</th>
+              <th>How It Is Used Here</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>LLM</td>
+              <td>Large Language Model. A model that predicts and generates text, code, structured data, and tool calls.</td>
+              <td>Gemini is used for supervisor reasoning, worker responses, attachment processing, summaries, and fact extraction.</td>
+            </tr>
+            <tr>
+              <td>AI Agent</td>
+              <td>An LLM-powered system that can reason over state, choose actions, use tools, and produce results over multiple steps.</td>
+              <td>Jarvish is an agent because it retrieves memory, routes tasks, calls tools, asks for clarification, and archives output.</td>
+            </tr>
+            <tr>
+              <td>Agent Orchestration</td>
+              <td>The control flow that decides which steps, models, workers, and tools run in what order.</td>
+              <td>LangGraph defines the orchestration with nodes like context, processing, supervisor, workers, tools, clarification, and archive.</td>
+            </tr>
+            <tr>
+              <td>Supervisor / Worker Pattern</td>
+              <td>A multi-agent pattern where one coordinator delegates focused tasks to specialized workers.</td>
+              <td>The supervisor delegates to research, Google, or coder workers based on the user intent.</td>
+            </tr>
+            <tr>
+              <td>RAG</td>
+              <td>Retrieval-Augmented Generation. Retrieve relevant external context before asking the model to answer.</td>
+              <td>The context node retrieves relevant memories from Weaviate and injects them into the supervisor prompt.</td>
+            </tr>
+            <tr>
+              <td>Embeddings</td>
+              <td>Numeric vectors that represent the meaning of text so similar ideas are close in vector space.</td>
+              <td><code>gemini-embedding-001</code> converts memories and queries into vectors for semantic search.</td>
+            </tr>
+            <tr>
+              <td>Vector Database</td>
+              <td>A database optimized for storing vectors and finding nearest semantic matches.</td>
+              <td>Weaviate stores long-term memory and returns similar memories for the current query.</td>
+            </tr>
+            <tr>
+              <td>Semantic Search</td>
+              <td>Search by meaning instead of exact keywords.</td>
+              <td>The memory service can retrieve related past conversations even when the wording is different.</td>
+            </tr>
+            <tr>
+              <td>Top K</td>
+              <td>The number of best retrieval results to return.</td>
+              <td><code>retrieveMemories(query, 5)</code> asks Weaviate for the top five relevant memories.</td>
+            </tr>
+            <tr>
+              <td>Relevance Threshold</td>
+              <td>A minimum similarity score required before retrieved context is trusted.</td>
+              <td>The memory service filters results below <code>0.65</code> to reduce irrelevant memory pollution.</td>
+            </tr>
+            <tr>
+              <td>Context Window</td>
+              <td>The amount of text a model can consider in a single request.</td>
+              <td>The app limits memories, truncates tool notes, and summarizes sessions so prompts do not grow forever.</td>
+            </tr>
+            <tr>
+              <td>Tool Calling</td>
+              <td>The model requests a named external function with structured arguments.</td>
+              <td>Workers call tools such as <code>web_search</code>, <code>read_file</code>, <code>search_gmail_messages</code>, and <code>update_google_doc</code>.</td>
+            </tr>
+            <tr>
+              <td>Function Declaration</td>
+              <td>The schema given to the model that describes available tools and their arguments.</td>
+              <td><code>registry.ts</code> defines Gemini function declarations for research, Google, and coder worker tools.</td>
+            </tr>
+            <tr>
+              <td>Structured Output</td>
+              <td>Model output constrained to a predictable JSON shape instead of free text.</td>
+              <td>Final answers are expected as UI blocks like <code>text</code>, <code>code</code>, <code>data</code>, and <code>draft</code>.</td>
+            </tr>
+            <tr>
+              <td>Runtime Validation</td>
+              <td>Checking real data while the app is running, not only at TypeScript compile time.</td>
+              <td>Zod validates streamed events, session history, block content, resolver inputs, and tool arguments.</td>
+            </tr>
+            <tr>
+              <td>Type Safety</td>
+              <td>Using types to catch shape and usage errors during development.</td>
+              <td>GraphQL Codegen, TypeScript, Drizzle inferred types, and LangGraph state types protect different boundaries.</td>
+            </tr>
+            <tr>
+              <td>Codegen</td>
+              <td>Automatically generating types or code from a schema.</td>
+              <td>GraphQL Codegen generates frontend operation types and backend resolver types from the GraphQL schema.</td>
+            </tr>
+            <tr>
+              <td>Streaming</td>
+              <td>Sending partial results as they are ready instead of waiting for the whole task to finish.</td>
+              <td>The backend streams status, reasoning, message, and error events while the graph runs.</td>
+            </tr>
+            <tr>
+              <td>SSE</td>
+              <td>Server-Sent Events. A simple browser-friendly pattern for one-way server-to-client event streaming.</td>
+              <td>The frontend reads <code>data:</code> lines from the GraphQL response and updates the chat incrementally.</td>
+            </tr>
+            <tr>
+              <td>Checkpointing</td>
+              <td>Persisting workflow state so execution history can be resumed or inspected.</td>
+              <td>LangGraph uses <code>SqliteSaver</code> with <code>thread_id</code> equal to the session ID.</td>
+            </tr>
+            <tr>
+              <td>Long-Term Memory</td>
+              <td>Information stored beyond a single chat turn or page reload.</td>
+              <td>Jarvish stores conversation summaries, attachments, and facts in Weaviate and SQLite.</td>
+            </tr>
+            <tr>
+              <td>Hallucination</td>
+              <td>When a model invents facts or answers without reliable evidence.</td>
+              <td>The prompts demand verification, tools provide evidence, and low-confidence tool results route to clarification.</td>
+            </tr>
+            <tr>
+              <td>Prompt Injection</td>
+              <td>Malicious or irrelevant instructions hidden inside user-provided or retrieved content.</td>
+              <td>A production version should treat web pages, PDFs, email, and docs as untrusted data, not instructions.</td>
+            </tr>
+            <tr>
+              <td>OAuth</td>
+              <td>A permission protocol that lets users grant limited access to external services.</td>
+              <td>Google OAuth gives the agent access to Calendar, Gmail, and Docs through a user token.</td>
+            </tr>
+            <tr>
+              <td>Scopes</td>
+              <td>The exact permissions requested in OAuth.</td>
+              <td>The app requests Google read scopes; write tools need stronger explicit consent and matching write scopes.</td>
+            </tr>
+            <tr>
+              <td>Observability</td>
+              <td>Logs, metrics, and traces that explain what the system did and why it failed.</td>
+              <td>The project has logging; production should add graph traces, token counts, cost, latency, and tool failure metrics.</td>
+            </tr>
+            <tr>
+              <td>Evals</td>
+              <td>Evaluation tests for model behavior, retrieval quality, tool usage, and regressions.</td>
+              <td>Good evals would test worker routing, hallucination resistance, memory retrieval, and tool-call correctness.</td>
+            </tr>
+            <tr>
+              <td>Guardrails</td>
+              <td>Rules and checks that reduce unsafe, incorrect, or unwanted model behavior.</td>
+              <td>Zod validation, confidence thresholds, clarification routing, and future write-action approvals are guardrails.</td>
+            </tr>
+            <tr>
+              <td>Side Effect</td>
+              <td>An action that changes the outside world, like writing a file or updating a document.</td>
+              <td><code>write_file</code> and <code>update_google_doc</code> are side-effectful and should require confirmation in production.</td>
+            </tr>
+            <tr>
+              <td>Multimodal</td>
+              <td>Working with more than one data type, such as text, images, PDFs, or audio.</td>
+              <td>The processing/archive nodes can handle attachments, including PDFs, text files, and image descriptions.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="callout">
+          <strong>How to use this section:</strong> In an interview, define the term in one sentence, point to exactly where it appears in
+          Jarvish, then mention one production concern. That pattern sounds clear and senior without over-explaining.
+        </div>
+      </section>
+
+      <section id="bad-designs" class="section">
+        <div class="section-head">
+          <h2>Bad Designs To Fix</h2>
+          <span class="pill risk">Be candid</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Issue</th>
+              <th>Why It Is Risky</th>
+              <th>How To Explain The Fix</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>OAuth token in localStorage</td>
+              <td>Access tokens are exposed to XSS and are forwarded from browser to backend.</td>
+              <td>Move to a backend OAuth flow or secure httpOnly session, minimize scopes, and rotate/refresh server-side.</td>
+            </tr>
+            <tr>
+              <td>Google Docs write scope mismatch</td>
+              <td>The UI requests <code>documents.readonly</code>, but the backend exposes <code>update_google_doc</code>.</td>
+              <td>Add explicit consent for write scope only when needed, or remove write tool until the permission model is correct.</td>
+            </tr>
+            <tr>
+              <td>Google client config path incomplete</td>
+              <td><code>useGoogleAuth.ts</code> has a placeholder for fetching config, so <code>clientId</code> may never load.</td>
+              <td>Restore the <code>/api/config</code> fetch, validate missing config visibly, and test login as a real user flow.</td>
+            </tr>
+            <tr>
+              <td>Tool permissions too broad</td>
+              <td><code>write_file</code> and Google update tools can create side effects from model-generated calls.</td>
+              <td>Add user confirmation, path allowlists, dry-run previews, audit logs, and policy checks before side effects.</td>
+            </tr>
+            <tr>
+              <td>GraphQL subscription over manual fetch parsing</td>
+              <td>The frontend manually parses <code>data:</code> lines, which is fragile for real SSE framing and errors.</td>
+              <td>Use a proper SSE/client subscription transport or a dedicated streaming endpoint with tested framing.</td>
+            </tr>
+            <tr>
+              <td>Prompt-heavy orchestration</td>
+              <td>Routing quality depends on natural-language prompts and model behavior.</td>
+              <td>Add deterministic intent classification, eval cases, tracing, and fallback routes for known task types.</td>
+            </tr>
+            <tr>
+              <td>Memory can become polluted</td>
+              <td>Archive stores summaries and extracted facts even when model output may be wrong.</td>
+              <td>Store provenance, confidence, timestamps, source type, user confirmation, and support correction/deletion workflows.</td>
+            </tr>
+            <tr>
+              <td>Duplicate schemas</td>
+              <td>Frontend block schemas and backend block schemas can drift.</td>
+              <td>Move shared schema/contracts to one package or generate both sides from a single source.</td>
+            </tr>
+            <tr>
+              <td>Generated code inside feature folder</td>
+              <td>GraphQL generated artifacts live under the app feature and can obscure reviewed code.</td>
+              <td>Keep generated output clearly isolated and excluded from manual edits/review noise.</td>
+            </tr>
+            <tr>
+              <td>Limited observability/evals</td>
+              <td>There are logs, but no structured eval suite for routing, tool use, hallucination, or memory quality.</td>
+              <td>Add golden prompts, tool-call expectations, retrieval metrics, latency/cost tracking, and regression tests.</td>
+            </tr>
+            <tr>
+              <td>Mixed naming and legacy constants</td>
+              <td>Names like <code>ROLES.AGENT</code>, <code>assistant</code>, <code>model</code>, <code>reasoning</code>, and legacy node constants increase mapping bugs.</td>
+              <td>Normalize role taxonomy and create one explicit adapter between GraphQL, LangChain, Gemini, and UI roles.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="questions" class="section">
+        <div class="section-head">
+          <h2>Interview Questions To Practice</h2>
+          <span class="pill warn">Use these aloud</span>
+        </div>
+        <div class="grid two">
+          <article class="card">
+            <h3>Macro</h3>
+            <div class="qa-list">
+              <div class="qa">
+                <strong>Why did you use LangGraph instead of one long LLM call?</strong>
+                <p>
+                  LangGraph lets me model the agent as explicit steps with shared state: context retrieval, attachment processing,
+                  supervision, worker delegation, tool execution, clarification, and archive. A single LLM call is simpler, but it hides
+                  control flow and makes retries, persistence, streaming, and debugging much harder.
+                </p>
+              </div>
+              <div class="qa">
+                <strong>Where is the boundary between UI state and agent state?</strong>
+                <p>
+                  UI state belongs to React: input text, selected session, attachments before send, loading indicators, visible panels, and
+                  rendered blocks. Agent state belongs to LangGraph: messages, retrieved memories, processed attachments, tool confidence,
+                  last worker, Google token, and session ID. The GraphQL contract is the boundary between them.
+                </p>
+              </div>
+              <div class="qa">
+                <strong>How does streaming improve perceived latency?</strong>
+                <p>
+                  Instead of waiting for the full agent run to finish, the backend streams status, reasoning, and final message events as
+                  graph nodes complete. The user sees progress like memory retrieval, research, and synthesis, so a multi-step task feels
+                  responsive and debuggable.
+                </p>
+              </div>
+              <div class="qa">
+                <strong>What is the difference between session history, summaries, structured facts, and vector memory?</strong>
+                <p>
+                  Session history is the raw conversation from the LangGraph checkpoint. Summaries are human-readable snapshots for the
+                  session list. Structured facts are explicit profile-like facts stored in SQLite. Vector memory is semantic recall in
+                  Weaviate, used to retrieve relevant past context for future prompts.
+                </p>
+              </div>
+            </div>
+          </article>
+          <article class="card">
+            <h3>Micro</h3>
+            <div class="qa-list">
+              <div class="qa">
+                <strong>How are model tool calls validated before execution?</strong>
+                <p>
+                  Gemini proposes function calls, but the backend does not trust the arguments directly. <code>tool-executor.ts</code>
+                  routes by tool name and parses each argument object through a matching Zod schema, such as
+                  <code>UpdateGoogleDocToolArgsSchema</code> or <code>ReadFileToolArgsSchema</code>, before calling the service.
+                </p>
+              </div>
+              <div class="qa">
+                <strong>What happens when a tool returns low confidence?</strong>
+                <p>
+                  Tool output is scored. Empty output, errors, or "no results" reduce confidence. If confidence is below the configured
+                  threshold, the graph routes to the clarification node, which asks the user for missing information instead of letting the
+                  model guess.
+                </p>
+              </div>
+              <div class="qa">
+                <strong>How do you prevent hallucinations in this architecture?</strong>
+                <p>
+                  I use several layers: retrieval context, specialized workers, tool-backed answers, source-oriented prompts, Zod validation,
+                  confidence routing, and a clarification path. For production I would add evals, citations as structured metadata, prompt
+                  injection filtering, and stricter provenance checks before storing memory.
+                </p>
+              </div>
+              <div class="qa">
+                <strong>How would you test worker routing and memory retrieval quality?</strong>
+                <p>
+                  I would create golden prompts with expected routes: Google tasks should call the Google worker, web tasks should call the
+                  research worker, and code tasks should call the coder worker. For memory, I would test embedding retrieval with known facts,
+                  measure precision/recall at top K, and add regression tests for irrelevant-memory filtering.
+                </p>
+              </div>
+            </div>
+          </article>
+          <article class="card">
+            <h3>Production</h3>
+            <div class="qa-list">
+              <div class="qa">
+                <strong>How would you secure OAuth and Google Workspace tools?</strong>
+                <p>
+                  I would move token handling out of localStorage and into a backend-managed OAuth flow with httpOnly cookies or server-side
+                  sessions. I would request minimal scopes, separate read and write permissions, require explicit user confirmation for write
+                  tools, and log every side-effectful action.
+                </p>
+              </div>
+              <div class="qa">
+                <strong>What observability would you add for cost, latency, and failures?</strong>
+                <p>
+                  I would trace each graph run with session ID, node timings, model name, token counts, tool calls, errors, retry count, and
+                  final route. Then I would add dashboards for latency per node, cost per task, tool failure rate, retrieval quality, and
+                  user-visible error rate.
+                </p>
+              </div>
+              <div class="qa">
+                <strong>How would you handle prompt injection from web pages, files, or email?</strong>
+                <p>
+                  I would treat external content as data, not instructions. Tool outputs would be wrapped with provenance, dangerous
+                  instructions would be filtered or marked untrusted, and the system prompt would tell workers never to follow instructions
+                  found inside retrieved documents. Sensitive tools would still require policy checks and user approval.
+                </p>
+              </div>
+              <div class="qa">
+                <strong>How would you migrate from a learning app to a multi-user product?</strong>
+                <p>
+                  I would add real authentication, tenant-aware database rows, per-user vector namespaces, permission checks on every resolver
+                  and tool call, rate limits, audit logging, encrypted secrets, background jobs for long tasks, and a proper deployment setup
+                  with monitoring and rollback.
+                </p>
+              </div>
+            </div>
+          </article>
+          <article class="card">
+            <h3>Your honest answer</h3>
+            <p>
+              "I built some pieces in a learning-first way, so I can explain the architecture and also explain what I would harden:
+              auth, permissions, schema ownership, evals, prompt-injection defense, and side-effect approvals."
+            </p>
+          </article>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
