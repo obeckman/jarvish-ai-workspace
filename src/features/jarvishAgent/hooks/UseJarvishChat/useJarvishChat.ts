@@ -67,11 +67,10 @@ export const useJarvishChat = (
           console.log(`[loadSessionHistory] Parsed Assistant Message Content:`, newContentArray);
           newContentArray.forEach(newContentMessage => {
             history.push({
-              id: `hist-${i}`,
+              id: `hist-${i}-${Math.random()}`,
               timestamp: Date.now(),
               ...newContentMessage,
               role: message.role,
-              type: message.type,
             } as Message);
 
           })

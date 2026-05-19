@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 import {
   Loader2,
   BrainCircuit,
@@ -49,6 +49,20 @@ export const JarvishChatArea: React.FC<JarvishChatAreaProps> = ({
 }) => {
   const currentSession = sessions.find(s => s.id === currentSessionId);
   const summary = currentSession?.summary;
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = useCallback(() => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({
+        top: scrollContainerRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, status, scrollToBottom]);
 
   // Helper to group messages (specifically reasoning steps)
   const renderMessages = () => {
@@ -174,7 +188,7 @@ export const JarvishChatArea: React.FC<JarvishChatAreaProps> = ({
 
   // Render Full Chat View
   return (
-    <div className={styles.messages}>
+    <div className={styles.messages} ref={scrollContainerRef}>
       {!currentSessionId ? (
         <div className={styles.summaryPlaceholder}>
           <div className={styles.placeholderCard}>
