@@ -41,10 +41,10 @@ export async function googleWorkerNode(state: AgentStateType) {
       systemInstruction,
       tools: [{
         functionDeclarations: [
-          googleCalendarDeclaration as any,
-          gmailSearchDeclaration as any,
-          googleDocsDeclaration as any,
-          updateGoogleDocDeclaration as any
+          googleCalendarDeclaration,
+          gmailSearchDeclaration,
+          googleDocsDeclaration,
+          updateGoogleDocDeclaration
         ]
       }]
     });

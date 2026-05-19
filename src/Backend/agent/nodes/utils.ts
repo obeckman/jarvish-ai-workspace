@@ -1,23 +1,28 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { AgentStateType } from "@/Backend/agent/state";
 import { ROLES, GEMINI_ROLES } from "@/shared/jarvish.constants";
+import {
+  asAgentMessageLike,
+  getAgentMessageName,
+  getAgentMessageRole,
+  getAgentMessageType,
+  getAgentToolCalls,
+} from "@/Backend/agent/contracts/message.contract";
 
 
 
 /**
  * Safely extracts the role from a message (BaseMessage or raw object).
  */
-export function getMessageRole(m: any): string {
-  if (!m) return "";
-  return (m.role || m.lc_kwargs?.role || (typeof m._getType === 'function' ? m._getType() : m.type) || "");
+export function getMessageRole(m: unknown): string {
+  return getAgentMessageRole(m);
 }
 
 /**
  * Safely extracts the type from a message (BaseMessage or raw object).
  */
-export function getMessageType(m: any): string {
-  if (!m) return "";
-  return (typeof m._getType === 'function' ? m._getType() : (m.type || ""));
+export function getMessageType(m: unknown): string {
+  return getAgentMessageType(m);
 }
 
 /**
@@ -26,13 +31,14 @@ export function getMessageType(m: any): string {
 export function mapStateToGeminiHistory(state: AgentStateType) {
   const mappedMessages = state.messages
     .filter(m => {
-      if ((m as any).name === ROLES.REASONING) {
+      if (getAgentMessageName(m) === ROLES.REASONING) {
         return false;
       }
       const r = getMessageRole(m);
       return r !== ROLES.REASONING;
     })
     .map(m => {
+      const msg = asAgentMessageLike(m);
       const r = getMessageRole(m);
       let role: string = GEMINI_ROLES.MODEL;
       if (r === ROLES.USER || r === ROLES.HUMAN) {
@@ -42,7 +48,7 @@ export function mapStateToGeminiHistory(state: AgentStateType) {
       }
 
       const parts: any[] = [];
-      const toolCalls = (m as any).tool_calls;
+      const toolCalls = getAgentToolCalls(m);
       
       if (toolCalls && toolCalls.length > 0) {
         const realToolCalls = toolCalls.filter((tc: any) => 
@@ -59,14 +65,14 @@ export function mapStateToGeminiHistory(state: AgentStateType) {
       } else if (role === GEMINI_ROLES.FUNCTION) {
         parts.push({
           functionResponse: {
-            name: (m as any).name || 'unknown_tool', 
-            response: { result: m.content }
+            name: getAgentMessageName(m) || 'unknown_tool',
+            response: { result: msg.content }
           }
         });
-      } else if (m.content) {
-        const content = typeof m.content === 'string' 
-          ? m.content 
-          : JSON.stringify(m.content);
+      } else if (msg.content) {
+        const content = typeof msg.content === 'string'
+          ? msg.content
+          : JSON.stringify(msg.content);
         parts.push({ text: content });
       } else if (role === GEMINI_ROLES.USER) {
         parts.push({ text: "" });

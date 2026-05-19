@@ -5,27 +5,28 @@
  */
 
 import { TOOL_NAMES } from "@/shared/jarvish.constants";
+import { SchemaType, type FunctionDeclaration } from "@google/generative-ai";
 
-export const queryAttachmentsDeclaration = {
+export const queryAttachmentsDeclaration: FunctionDeclaration = {
   name: TOOL_NAMES.QUERY_ATTACHMENTS,
   description: 'Searches through the AI-extracted text versions of the currently uploaded attachments.',
   parameters: {
-    type: 'object',
+    type: SchemaType.OBJECT,
     properties: {
-      query: { type: 'string', description: 'What to look for in the uploaded documents.' },
+      query: { type: SchemaType.STRING, description: 'What to look for in the uploaded documents.' },
     },
     required: ['query'],
   },
 };
 
-export const inventoryToolDeclaration = {
+export const inventoryToolDeclaration: FunctionDeclaration = {
   name: TOOL_NAMES.CHECK_INVENTORY,
   description: 'Checks the live inventory status for a specific product SKU.',
   parameters: {
-    type: "object",
+    type: SchemaType.OBJECT,
     properties: {
       sku: {
-        type: "string",
+        type: SchemaType.STRING,
         description: 'The exact SKU of the product to check (e.g., "SHOE-123").',
       },
     },
@@ -33,136 +34,136 @@ export const inventoryToolDeclaration = {
   },
 };
 
-export const webSearchDeclaration = {
+export const webSearchDeclaration: FunctionDeclaration = {
   name: TOOL_NAMES.WEB_SEARCH,
   description: 'Searches the web for information using Google Search.',
   parameters: {
-    type: 'object',
+    type: SchemaType.OBJECT,
     properties: {
-      query: { type: 'string', description: 'The search query.' },
+      query: { type: SchemaType.STRING, description: 'The search query.' },
     },
     required: ['query'],
   },
 };
 
-export const fetchWebPageDeclaration = {
+export const fetchWebPageDeclaration: FunctionDeclaration = {
   name: TOOL_NAMES.FETCH_WEB_PAGE,
   description: 'Reads the text content of a specific URL.',
   parameters: {
-    type: 'object',
+    type: SchemaType.OBJECT,
     properties: {
-      url: { type: 'string', description: 'The URL to fetch.' },
+      url: { type: SchemaType.STRING, description: 'The URL to fetch.' },
     },
     required: ['url'],
   },
 };
 
-export const readPdfDeclaration = {
+export const readPdfDeclaration: FunctionDeclaration = {
   name: TOOL_NAMES.READ_PDF,
   description: 'Extracts text from a PDF file at a given URL.',
   parameters: {
-    type: 'object',
+    type: SchemaType.OBJECT,
     properties: {
-      url: { type: 'string', description: 'The URL of the PDF file.' },
+      url: { type: SchemaType.STRING, description: 'The URL of the PDF file.' },
     },
     required: ['url'],
   },
 };
 
-export const readFileDeclaration = {
+export const readFileDeclaration: FunctionDeclaration = {
   name: TOOL_NAMES.READ_FILE,
   description: 'Reads the content of a local file within the project.',
   parameters: {
-    type: 'object',
+    type: SchemaType.OBJECT,
     properties: {
-      path: { type: 'string', description: 'The relative path to the file.' },
+      path: { type: SchemaType.STRING, description: 'The relative path to the file.' },
     },
     required: ['path'],
   },
 };
 
-export const writeFileDeclaration = {
+export const writeFileDeclaration: FunctionDeclaration = {
   name: TOOL_NAMES.WRITE_FILE,
   description: 'Writes content to a local file within the project.',
   parameters: {
-    type: 'object',
+    type: SchemaType.OBJECT,
     properties: {
-      path: { type: 'string', description: 'The relative path where the file will be written.' },
-      content: { type: 'string', description: 'The content to write into the file.' },
+      path: { type: SchemaType.STRING, description: 'The relative path where the file will be written.' },
+      content: { type: SchemaType.STRING, description: 'The content to write into the file.' },
     },
     required: ['path', 'content'],
   },
 };
 
-export const addMemoryDeclaration = {
+export const addMemoryDeclaration: FunctionDeclaration = {
   name: TOOL_NAMES.ADD_MEMORY,
   description: 'Saves a specific fact or information to long-term memory.',
   parameters: {
-    type: 'object',
+    type: SchemaType.OBJECT,
     properties: {
-      fact: { type: 'string', description: 'The fact or information to remember.' },
-      category: { type: 'string', description: 'Optional category (e.g., "personal", "work").' },
+      fact: { type: SchemaType.STRING, description: 'The fact or information to remember.' },
+      category: { type: SchemaType.STRING, description: 'Optional category (e.g., "personal", "work").' },
     },
     required: ['fact'],
   },
 };
 
-export const forgetMemoryDeclaration = {
+export const forgetMemoryDeclaration: FunctionDeclaration = {
   name: "forget_memory",
   description: 'Removes a specific memory by its ID. Use this when the user wants you to forget something or when information is outdated.',
   parameters: {
-    type: 'object',
+    type: SchemaType.OBJECT,
     properties: {
-      memoryId: { type: 'string', description: 'The unique ID of the memory to remove.' },
+      memoryId: { type: SchemaType.STRING, description: 'The unique ID of the memory to remove.' },
     },
     required: ['memoryId'],
   },
 };
 
-export const googleCalendarDeclaration = {
+export const googleCalendarDeclaration: FunctionDeclaration = {
   name: TOOL_NAMES.LIST_CALENDAR,
   description: 'Lists upcoming events from the user\'s Google Calendar.',
   parameters: {
-    type: 'object',
+    type: SchemaType.OBJECT,
     properties: {
-      maxResults: { type: 'number', description: 'Max results (default 10).' },
+      maxResults: { type: SchemaType.NUMBER, description: 'Max results (default 10).' },
     }
   },
 };
 
-export const gmailSearchDeclaration = {
+export const gmailSearchDeclaration: FunctionDeclaration = {
   name: TOOL_NAMES.SEARCH_GMAIL,
   description: 'Searches Gmail messages.',
   parameters: {
-    type: 'object',
+    type: SchemaType.OBJECT,
     properties: {
-      query: { type: 'string', description: 'Search query.' },
+      query: { type: SchemaType.STRING, description: 'Search query.' },
     },
     required: ['query'],
   },
 };
 
-export const googleDocsDeclaration = {
+export const googleDocsDeclaration: FunctionDeclaration = {
   name: TOOL_NAMES.GET_GOOGLE_DOC,
   description: 'Reads a Google Doc.',
   parameters: {
-    type: 'object',
+    type: SchemaType.OBJECT,
     properties: {
-      documentId: { type: 'string', description: 'Doc ID.' }
+      documentId: { type: SchemaType.STRING, description: 'Doc ID.' }
     },
     required: ['documentId'],
   },
 };
 
-export const updateGoogleDocDeclaration = {
+export const updateGoogleDocDeclaration: FunctionDeclaration = {
   name: TOOL_NAMES.UPDATE_GOOGLE_DOC,
   description: 'Appends or replaces content in a Google Doc.',
   parameters: {
-    type: 'object',
+    type: SchemaType.OBJECT,
     properties: {
-      documentId: { type: 'string', description: 'Doc ID.' },
-      content: { type: 'string', description: 'Text to add/update.' },
-      append: { type: 'boolean', description: 'If true, appends to the end. Defaults to true.' }
+      documentId: { type: SchemaType.STRING, description: 'Doc ID.' },
+      content: { type: SchemaType.STRING, description: 'Text to add/update.' },
+      append: { type: SchemaType.BOOLEAN, description: 'If true, appends to the end. Defaults to true.' }
     },
     required: ['documentId', 'content'],
   },

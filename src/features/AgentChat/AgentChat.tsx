@@ -18,15 +18,16 @@ export const AgentChat: React.FC = () => {
   }, []);
 
   const loginWithGoogle = useCallback(() => {
-    if (!(window as any).google) {
+    const google = window.google;
+    if (!google?.accounts?.oauth2) {
       alert('Google SDK not loaded yet. Please refresh.');
       return;
     }
 
-    const client = (window as any).google.accounts.oauth2.initTokenClient({
+    const client = google.accounts.oauth2.initTokenClient({
       client_id: GOOGLE_CLIENT_ID,
       scope: 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/documents.readonly',
-      callback: (tokenResponse: any) => {
+      callback: (tokenResponse) => {
         if (tokenResponse.access_token) {
           localStorage.setItem('google_access_token', tokenResponse.access_token);
           setGoogleToken(tokenResponse.access_token);

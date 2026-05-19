@@ -1,5 +1,5 @@
 import { logger } from "@/Backend/utils/logger";
-import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
+import { GoogleGenerativeAI, SchemaType, type Part } from "@google/generative-ai";
 import parse from "partial-json-parser";
 import { AgentStateType } from "@/Backend/agent/state";
 import { REASONING_MODEL } from "@/Backend/agent/models";
@@ -8,6 +8,7 @@ import { AgentMessageBlocksSchema} from "@/Backend/agent/schema";
 import { mapStateToGeminiHistory } from "./utils";
 import { AIMessage } from "@langchain/core/messages";
 import { HumanMessage, ToolMessage, BaseMessage } from "@langchain/core/messages";
+import { getAgentMessageName } from "@/Backend/agent/contracts/message.contract";
 /**
  * Node: Supervisor
  * Responsibilities:
@@ -19,7 +20,7 @@ export async function supervisorNode(state: AgentStateType) {
   logger.debug({ sessionId: state.sessionId, messagesCount: state.messages.length }, "Node: Supervisor");
   try{
     const lastMessage = state.messages[state.messages.length - 1];
-    const lastMessageName = (lastMessage as any).name;
+    const lastMessageName = getAgentMessageName(lastMessage);
 
     // If the last message is from a worker, it's the final answer for this turn.
     if (lastMessageName === NODE_NAMES.CODER_WORKER || lastMessageName === NODE_NAMES.RESEARCH_WORKER || lastMessageName === NODE_NAMES.GOOGLE_WORKER) {
@@ -105,7 +106,7 @@ export async function supervisorNode(state: AgentStateType) {
   if (state.attachments && Array.isArray(state.attachments)) {
     state.attachments.forEach(att => {
       if (att.data && att.mimeType) {
-        lastHistoryMsg.parts.push({ inlineData: { data: att.data, mimeType: att.mimeType } } as any);
+        lastHistoryMsg.parts.push({ inlineData: { data: att.data, mimeType: att.mimeType } } satisfies Part);
       }
     });
   }

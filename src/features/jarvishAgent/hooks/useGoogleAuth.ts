@@ -20,13 +20,18 @@ export const useGoogleAuth = () => {
       }
 
       try {
-        const client = (window as any).google.accounts.oauth2.initTokenClient({
+        const google = window.google;
+        if (!google?.accounts?.oauth2) {
+          throw new Error("Google Identity Services are not loaded.");
+        }
+
+        const client = google.accounts.oauth2.initTokenClient({
           client_id: clientId,
           scope: 'openid profile https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.events.readonly https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/documents.readonly',
           prompt: isSilent ? 'none' : 'select_account',
-          callback: (tokenResponse: any) => {
+          callback: (tokenResponse) => {
             if (tokenResponse.access_token) {
-              const expiry = Date.now() + (tokenResponse.expires_in * 1000);
+              const expiry = Date.now() + ((tokenResponse.expires_in ?? 3600) * 1000);
               localStorage.setItem(STORAGE_KEYS.GOOGLE_TOKEN, tokenResponse.access_token);
               localStorage.setItem('google_token_expires_at', String(expiry));
               setGoogleToken(tokenResponse.access_token);
@@ -88,20 +93,21 @@ export const useGoogleAuth = () => {
   useEffect(() => {
     if (googleToken || !clientId) return;
 
-    const handleOneTapResponse = (response: any) => {
+    const handleOneTapResponse = (response: GoogleCredentialResponse) => {
       if (response.credential) {
         loginWithGoogle();
       }
     };
 
     const initOneTap = () => {
-      if ((window as any).google?.accounts?.id) {
-        (window as any).google.accounts.id.initialize({
+      const googleId = window.google?.accounts?.id;
+      if (googleId) {
+        googleId.initialize({
           client_id: clientId,
           callback: handleOneTapResponse,
           auto_select: true,
         });
-        (window as any).google.accounts.id.prompt();
+        googleId.prompt();
       }
     };
 

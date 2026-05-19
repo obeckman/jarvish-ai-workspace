@@ -44,11 +44,11 @@ export async function coderWorkerNode(state: AgentStateType) {
       systemInstruction,
       tools: [{
         functionDeclarations: [
-          readFileDeclaration as any,
-          writeFileDeclaration as any,
-          addMemoryDeclaration as any,
-          forgetMemoryDeclaration as any,
-          inventoryToolDeclaration as any
+          readFileDeclaration,
+          writeFileDeclaration,
+          addMemoryDeclaration,
+          forgetMemoryDeclaration,
+          inventoryToolDeclaration
         ]
       }]
     });

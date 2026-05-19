@@ -1,9 +1,9 @@
 import { logger } from "@/Backend/utils/logger";
 import { AgentStateType } from "../state";
-import { AgentToolCall } from "@/Backend/agent/contracts/state.contract";
 import { executeAgentTool, formatToolNote } from "@/Backend/agent/tools/tool-executor";
 import { STAGES } from "@/shared/jarvish.constants";
 import { ToolMessage } from "@langchain/core/messages";
+import { getAgentToolCalls } from "@/Backend/agent/contracts/message.contract";
 
 /**
  * Node: Tool Execution
@@ -15,7 +15,7 @@ import { ToolMessage } from "@langchain/core/messages";
 export async function toolsNode(state: AgentStateType) {
   logger.debug({ sessionId: state.sessionId, messagesCount: state.messages.length }, "Node: Tools");
   const lastMessage = state.messages[state.messages.length - 1];
-  const toolCalls = ((lastMessage as any).tool_calls || []) as AgentToolCall[];
+  const toolCalls = getAgentToolCalls(lastMessage);
   
   logger.info({ sessionId: state.sessionId, toolCallsCount: toolCalls.length }, "Executing tools");
 

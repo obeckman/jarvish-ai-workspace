@@ -50,10 +50,10 @@ export async function researchWorkerNode(state: AgentStateType) {
       systemInstruction,
       tools: [{
         functionDeclarations: [
-          webSearchDeclaration as any,
-          fetchWebPageDeclaration as any,
-          readPdfDeclaration as any,
-          queryAttachmentsDeclaration as any
+          webSearchDeclaration,
+          fetchWebPageDeclaration,
+          readPdfDeclaration,
+          queryAttachmentsDeclaration
         ]
       }]
     });

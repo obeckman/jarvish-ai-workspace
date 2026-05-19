@@ -28,6 +28,22 @@ type StreamAgentEventsInput = SubscriptionAgentEventsArgs & {
   googleToken?: string | null;
 };
 
+type GraphStreamMode = "updates";
+
+type GraphStreamUpdate = {
+  metadata?: {
+    status?: string;
+    stage?: number;
+  };
+  messages?: Array<{
+    content?: unknown;
+    tool_calls?: unknown[];
+  }>;
+};
+
+type GraphStreamChunk = Record<string, GraphStreamUpdate | null | undefined>;
+type GraphUpdateStream = AsyncIterable<[GraphStreamMode, GraphStreamChunk]>;
+
 export async function* streamAgentEvents({
   query,
   history = [],
@@ -67,16 +83,16 @@ export async function* streamAgentEvents({
 
   const stream = await graph.stream(initialState, {
     ...config,
-    streamMode: ["updates"] as any,
+    streamMode: ["updates"],
   });
 
   try {
-    for await (const [mode, chunk] of stream as any) {
+    for await (const [mode, chunk] of stream as GraphUpdateStream) {
       if (mode !== "updates") {
         continue;
       }
 
-      for (const [nodeName, update] of Object.entries(chunk as any)) {
+      for (const [nodeName, update] of Object.entries(chunk)) {
         if (!update) {
           continue;
         }
@@ -84,17 +100,18 @@ export async function* streamAgentEvents({
         yield* mapNodeUpdateToEvents(nodeName, update);
       }
     }
-  } catch (error: any) {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown graph execution error";
     yield {
       agentEvents: {
         type: EVENT_TYPES.ERROR,
-        content: error.message || "Unknown graph execution error",
+        content: message,
       },
     };
   }
 }
 
-function* mapNodeUpdateToEvents(nodeName: string, update: any): Generator<AgentEventPayload> {
+function* mapNodeUpdateToEvents(nodeName: string, update: GraphStreamUpdate): Generator<AgentEventPayload> {
   if (update.metadata?.status) {
     yield {
       agentEvents: {
