@@ -22,6 +22,7 @@ import {
 } from '@/shared/jarvish.constants.ts'
 
 import { parseAgentMessageContent } from '../../utils/parser';
+import { normalizeHistoryMessages } from '@/features/jarvishAgent/utils/messageNormalizer';
 import {
   AgentChatSubscriptionVariables,
   GetSessionHistoryQueryVariables
@@ -56,25 +57,7 @@ export const useJarvishChat = (
       const result = await res.json();
       const validatedResponse = GetSessionHistoryResponseSchema.parse(result.data);
       if (validatedResponse.getSessionHistory) {
-
-        const history: Message[] = []
-        validatedResponse.getSessionHistory.forEach((message, i: number) => {
-          // to do - current qwery is only "role" "content" not alligned with 
-
-          console.log(`[loadSessionHistory] Mapping history message:`, message);
-
-          const newContentArray = parseAgentMessageContent(String(message.content));
-          console.log(`[loadSessionHistory] Parsed Assistant Message Content:`, newContentArray);
-          newContentArray.forEach(newContentMessage => {
-            history.push({
-              id: `hist-${i}-${Math.random()}`,
-              timestamp: Date.now(),
-              ...newContentMessage,
-              role: message.role,
-            } as Message);
-
-          })
-        });
+        const history = normalizeHistoryMessages(validatedResponse.getSessionHistory);
 
         dispatch({ type: STATE_ACTIONS.SET_MESSAGES, payload: history.length > 0 ? history : [] });
       }

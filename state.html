@@ -1313,6 +1313,118 @@
           </article>
 
           <article class="pain">
+            <h3>Jarvish Message Normalization Plan <span class="chip">phase 1 complete</span></h3>
+            <div class="refactor-plan">
+              <div class="phase">
+                <strong>Target</strong>
+                <div>
+                  <h3>One pipeline from raw event to rendered blocks</h3>
+                  <p>
+                    Create one normalization path:
+                    <code>raw GraphQL/SSE payload</code> →
+                    <code>validated event</code> →
+                    <code>parsed blocks</code> →
+                    <code>stable Message model</code> →
+                    <code>BlockRenderer</code>.
+                  </p>
+                </div>
+              </div>
+
+              <div class="phase">
+                <strong>Shape</strong>
+                <div>
+                  <h3>Proposed frontend modules</h3>
+                  <p>
+                    Add <code>utils/messageNormalizer.ts</code>,
+                    <code>utils/messageIds.ts</code>, and optional
+                    <code>utils/debugLogger.ts</code>. Keep
+                    <code>parser.ts</code> focused only on converting content strings into
+                    <code>AgentMessageBlock[]</code>.
+                  </p>
+                </div>
+              </div>
+
+              <div class="phase">
+                <strong>Phase 1</strong>
+                <div>
+                  <h3>Extract message ID policy - done</h3>
+                  <p>
+                    Replace scattered <code>Date.now()</code> and <code>Math.random()</code>
+                    IDs with helpers like <code>createHistoryMessageId</code>,
+                    <code>createReasoningMessageId</code>, and
+                    <code>createAssistantMessageId</code>. Added
+                    <code>utils/messageIds.ts</code>.
+                  </p>
+                </div>
+              </div>
+
+              <div class="phase">
+                <strong>Phase 2</strong>
+                <div>
+                  <h3>Extract history normalization - done</h3>
+                  <p>
+                    Move <code>loadSessionHistory</code> mapping into a pure function that
+                    converts backend history rows into frontend <code>Message[]</code> using
+                    <code>parseAgentMessageContent</code> and stable IDs. Added
+                    <code>utils/messageNormalizer.ts</code> and wired
+                    <code>loadSessionHistory</code> to it.
+                  </p>
+                </div>
+              </div>
+
+              <div class="phase">
+                <strong>Phase 3</strong>
+                <div>
+                  <h3>Extract SSE event normalization - next</h3>
+                  <p>
+                    Move event-type branching out of <code>processStreamLines</code> into
+                    helpers that return typed actions or normalized messages for
+                    <code>status</code>, <code>reasoning</code>, <code>message</code>, and
+                    <code>error</code>.
+                  </p>
+                </div>
+              </div>
+
+              <div class="phase">
+                <strong>Phase 4</strong>
+                <div>
+                  <h3>Harden parser recursion and malformed payload fallback</h3>
+                  <p>
+                    Keep the parser recursive, but cap recursion depth, preserve invalid JSON as
+                    text, and add examples for markdown-fenced JSON, nested text blocks, arrays,
+                    and single objects.
+                  </p>
+                </div>
+              </div>
+
+              <div class="phase">
+                <strong>Phase 5</strong>
+                <div>
+                  <h3>Gate or remove renderer debug logs</h3>
+                  <p>
+                    Remove noisy <code>console.log</code> calls from
+                    <code>BlockRenderer</code>, <code>JarvishChatArea</code>, and
+                    <code>useJarvishChat</code>, or route them through a local debug flag.
+                  </p>
+                </div>
+              </div>
+
+              <div class="phase">
+                <strong>Verify</strong>
+                <div>
+                  <h3>Current verification notes</h3>
+                  <p>
+                    Added <code>messageIds.ts</code> and <code>messageNormalizer.ts</code> for
+                    history rows. Updated <code>loadSessionHistory</code> and removed its debug
+                    logs. Targeted import smoke passed. Full TypeScript has no new Jarvish
+                    normalizer errors; it is still blocked by existing frontend demo errors.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <article class="pain">
             <h3><code>any</code> is concentrated at important boundaries <span class="chip">Type safety</span></h3>
             <div class="pain-grid">
               <div>
