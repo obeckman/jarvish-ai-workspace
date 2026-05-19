@@ -1,0 +1,17 @@
+node_modules/
+dist/
+dist-ssr/
+.git/
+.DS_Store
+.env
+
+sqlite.db
+sqlite.db-shm
+sqlite.db-wal
+
+graphify-out/cache/
+graphify-out/cost.json
+graphify-out/manifest.json
+
+src/features/jarvishAgent/graphql/__generated__/
+package-lock.json

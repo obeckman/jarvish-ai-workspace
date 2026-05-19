@@ -30,3 +30,9 @@ src/Backend/weaviate_data/
 sqlite.db
 sqlite.db-shm
 sqlite.db-wal
+
+# Graphify local artifacts
+graphify-out/manifest.json
+graphify-out/cost.json
+graphify-out/cache/
+graphify-out/.graphify_*
