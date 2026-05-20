@@ -1,5 +1,6 @@
 import logger from '@/Backend/utils/logger';
-import { google } from 'googleapis';
+import { docs_v1, google } from 'googleapis';
+import { getToolErrorMessage, getToolErrorStatus } from './tool-error';
 
 /**
  * Creates an authorized OAuth2 client using a temporary user access token.
@@ -29,12 +30,13 @@ export async function listCalendarEvents(accessToken: string, args: { maxResults
       orderBy: 'startTime',
     });
     return res.data.items || [];
-  } catch (error: any) {
-    logger.error(error, `[Google Service Error] listCalendarEvents failed: ${error.message}`);
-    if (error.code === 401 || error.status === 401) {
+  } catch (error: unknown) {
+    const message = getToolErrorMessage(error);
+    logger.error(error, `[Google Service Error] listCalendarEvents failed: ${message}`);
+    if (getToolErrorStatus(error) === 401) {
       return "ERROR: Google authentication has expired or is invalid. Please log out and log in again to refresh your access.";
     }
-    return `ERROR: Failed to access Google Calendar: ${error.message}`;
+    return `ERROR: Failed to access Google Calendar: ${message}`;
   }
 }
 
@@ -59,12 +61,13 @@ export async function searchGmailMessages(accessToken: string, args: { query: st
         threadId: detail.data.threadId
       };
     }));
-  } catch (error: any) {
-    logger.error(error, `[Google Service Error] searchGmailMessages failed: ${error.message}`);
-    if (error.code === 401 || error.status === 401) {
+  } catch (error: unknown) {
+    const message = getToolErrorMessage(error);
+    logger.error(error, `[Google Service Error] searchGmailMessages failed: ${message}`);
+    if (getToolErrorStatus(error) === 401) {
       return "ERROR: Google authentication has expired or is invalid. Please log out and log in again to refresh your access.";
     }
-    return `ERROR: Failed to search Gmail: ${error.message}`;
+    return `ERROR: Failed to search Gmail: ${message}`;
   }
 }
 
@@ -87,12 +90,13 @@ export async function getGoogleDocContent(accessToken: string, args: { documentI
     });
     
     return content;
-  } catch (error: any) {
-    logger.error(error, `[Google Service Error] getGoogleDocContent failed: ${error.message}`);
-    if (error.code === 401 || error.status === 401) {
+  } catch (error: unknown) {
+    const message = getToolErrorMessage(error);
+    logger.error(error, `[Google Service Error] getGoogleDocContent failed: ${message}`);
+    if (getToolErrorStatus(error) === 401) {
       return "ERROR: Google authentication has expired or is invalid. Please log out and log in again to refresh your access.";
     }
-    return `ERROR: Failed to access Google Doc: ${error.message}`;
+    return `ERROR: Failed to access Google Doc: ${message}`;
   }
 }
 
@@ -103,7 +107,7 @@ export async function updateGoogleDoc(accessToken: string, args: { documentId: s
   try {
     const docs = google.docs({ version: 'v1', auth: getOAuth2Client(accessToken) });
     
-    const requests: any[] = [];
+    const requests: docs_v1.Schema$Request[] = [];
     if (!args.append) {
       // For simplicity, we just append in this implementation, 
       // but in a full version we might replace or insert at specific indices.
@@ -122,8 +126,9 @@ export async function updateGoogleDoc(accessToken: string, args: { documentId: s
     });
 
     return `Successfully updated Google Doc: ${args.documentId}`;
-  } catch (error: any) {
-    logger.error(error, `[Google Service Error] updateGoogleDoc failed: ${error.message}`);
-    return `ERROR: Failed to update Google Doc: ${error.message}`;
+  } catch (error: unknown) {
+    const message = getToolErrorMessage(error);
+    logger.error(error, `[Google Service Error] updateGoogleDoc failed: ${message}`);
+    return `ERROR: Failed to update Google Doc: ${message}`;
   }
 }

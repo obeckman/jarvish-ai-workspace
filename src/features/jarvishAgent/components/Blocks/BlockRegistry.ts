@@ -5,18 +5,20 @@ import { TextBlock } from './TextBlock';
 import { ReasoningBlock } from './ReasoningBlock';
 import { DraftBlock } from './DraftBlock';
 
+type BlockComponent = React.ComponentType<AnyBlockComponentProps>;
+
 // Lazy load heavy blocks
 const CodeBlock = React.lazy(() => import('./CodeBlock').then(m => ({ default: m.CodeBlock })));
 const ActionBlock = React.lazy(() => import('./ActionBlock').then(m => ({ default: m.ActionBlock })));
 const DataBlock = React.lazy(() => import('./DataBlock').then(m => ({ default: m.DataBlock })));
 const DocumentBlock = DraftBlock; // Re-use DraftBlock for DocumentBlock for now
 
-export const BLOCK_COMPONENTS: Record<string, React.ComponentType<any>> = {
-  [BLOCK_TYPES.TEXT]: TextBlock,
-  [BLOCK_TYPES.REASONING]: ReasoningBlock,
-  [BLOCK_TYPES.CODE]: CodeBlock,
-  [BLOCK_TYPES.ACTION]: ActionBlock,
-  [BLOCK_TYPES.DATA]: DataBlock,
-  [BLOCK_TYPES.DOCUMENT]: DocumentBlock,
-  [BLOCK_TYPES.DRAFT]: DraftBlock,
+export const BLOCK_COMPONENTS: Record<string, BlockComponent> = {
+  [BLOCK_TYPES.TEXT]: TextBlock as BlockComponent,
+  [BLOCK_TYPES.REASONING]: ReasoningBlock as BlockComponent,
+  [BLOCK_TYPES.CODE]: CodeBlock as BlockComponent,
+  [BLOCK_TYPES.ACTION]: ActionBlock as BlockComponent,
+  [BLOCK_TYPES.DATA]: DataBlock as BlockComponent,
+  [BLOCK_TYPES.DOCUMENT]: DocumentBlock as BlockComponent,
+  [BLOCK_TYPES.DRAFT]: DraftBlock as BlockComponent,
 };

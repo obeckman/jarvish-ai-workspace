@@ -1,11 +1,13 @@
 import React, { useState, useCallback } from 'react';
+import { z } from 'zod';
 import { Loader2, Play } from 'lucide-react';
 import styles from '../../jarvish-agent.module.scss';
+import { ActionBlockSchema } from '@/shared/jarvish.blocks';
 
 interface ActionBlockProps {
   actionId: string;
   label: string;
-  payload?: any;
+  payload?: z.infer<typeof ActionBlockSchema>['payload'];
   disabled?: boolean;
   loading?: boolean;
   onAction?: (label: string) => void;

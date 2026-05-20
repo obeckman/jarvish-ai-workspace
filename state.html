@@ -518,7 +518,7 @@
         </div>
         <aside class="status-card" aria-label="Current project status">
           <div class="status-label">Updated</div>
-          <div class="status-value">2026-05-19</div>
+          <div class="status-value">2026-05-20</div>
           <div class="chips">
             <span class="chip">React 19</span>
             <span class="chip">GraphQL Yoga</span>
@@ -549,15 +549,15 @@
           <article class="tile">
             <h3>Current Goal</h3>
             <p>
-              Resolver refactor implemented: GraphQL resolvers now delegate to
-              mapper, service, stream, and schema boundary modules.
+              Jarvish shared block contracts and scoped type-boundary cleanup
+              are implemented across frontend, backend, and shared modules.
             </p>
           </article>
           <article class="tile">
             <h3>Immediate Next Step</h3>
             <p>
-              Review the new backend GraphQL files, then functionally test
-              session history, summary loading, mutations, and agent event streaming.
+              Run a live Jarvish streaming chat and verify shared block rendering,
+              confidence metadata display, and low-confidence clarification routing.
             </p>
           </article>
           <article class="tile">
@@ -584,30 +584,29 @@
           <div class="step">
             <strong>Phase 1</strong>
             <p>
-              Add smooth auto-scroll in <code>JarvishChatArea.tsx</code> with a
-              bottom ref and effect keyed by <code>messages</code> and
-              <code>status</code>.
+              Move Jarvish UI block schemas into <code>src/shared/jarvish.blocks.ts</code>
+              so frontend rendering and backend validation share one Zod contract.
             </p>
           </div>
           <div class="step">
             <strong>Phase 2</strong>
             <p>
-              Clean <code>parser.ts</code>: safer stringify fallback, remove or
-              use stale partial JSON import, and normalize fallback parsing.
+              Add node/tool response validation, confidence scoring, repair/clarification
+              behavior, and streamed confidence metadata.
             </p>
           </div>
           <div class="step">
             <strong>Phase 3</strong>
             <p>
-              Fix <code>useJarvishChat.ts</code> message typing so event types
-              are not assigned where block types are expected.
+              Tighten scoped <code>any</code>/<code>unknown</code> usage in Jarvish,
+              backend agent, tools, memory, GraphQL mappers, and shared contracts.
             </p>
           </div>
           <div class="step">
             <strong>Verify</strong>
             <p>
-              Run TypeScript/lint checks, then test a live Jarvish chat with
-              streamed messages and reasoning blocks.
+              <code>npm run build</code> passes. Full TypeScript and lint remain blocked
+              only by unrelated existing playground issues listed in Commands.
             </p>
           </div>
         </div>
@@ -619,7 +618,9 @@
           <span class="badge">agent notes</span>
         </div>
         <ul>
-          <li>Keep changes scoped to the Jarvish chat UX and parser/type fixes.</li>
+          <li>Keep changes scoped to Jarvish shared contracts, validation, chat streaming safety, and type-boundary cleanup.</li>
+          <li>Use <code>src/shared/jarvish.blocks.ts</code> as the source of truth for text, code, data, reasoning, action, document, and draft UI blocks.</li>
+          <li>Use broad <code>unknown</code> only at untrusted runtime boundaries, then narrow with generated types, explicit guards, or Zod.</li>
           <li>Follow repo rules from <code>GEMINI.md</code>: hooks for logic, no inline styles, named exports, absolute imports.</li>
           <li>Graphify output should keep <code>graph.json</code>, <code>graph.html</code>, and <code>GRAPH_REPORT.md</code>; local cache files are ignored.</li>
           <li>Codex CLI is installed globally as <code>@openai/codex</code> version <code>0.131.0</code>.</li>
@@ -956,10 +957,11 @@
           <article class="todo">
             <span class="todo-priority high">High</span>
             <div>
-              <h3>Verify Jarvish auto-scroll in the live chat</h3>
+              <h3>Run live Jarvish contract and confidence flow</h3>
               <p>
-                Source: <code>conductor/tracks/auto-scroll-chat/plan.md</code>.
-                Start a chat and confirm new messages and reasoning blocks scroll smoothly.
+                Source: <code>conductor/tracks/jarvish-shared-block-contract-validation/handoff.md</code>.
+                Start a chat and confirm shared UI blocks render, confidence metadata appears
+                in chat, and low-confidence output routes to clarification.
               </p>
             </div>
           </article>
@@ -967,11 +969,10 @@
           <article class="todo">
             <span class="todo-priority high">High</span>
             <div>
-              <h3>Run parser TypeScript check</h3>
+              <h3>Review confidence message volume</h3>
               <p>
-                Source: active plan. Run
-                <code>npx tsc src/features/jarvishAgent/utils/parser.ts --noEmit</code>
-                and fix any remaining parser/type fallout.
+                Source: current implementation. Status events can carry confidence metadata;
+                verify the chat does not become noisy during long multi-node streams.
               </p>
             </div>
           </article>
@@ -1425,23 +1426,23 @@
           </article>
 
           <article class="pain">
-            <h3><code>any</code> is concentrated at important boundaries <span class="chip">visible casts cleared</span></h3>
+            <h3><code>any</code> cleanup in Jarvish/backend surface <span class="chip">scoped complete</span></h3>
             <div class="pain-grid">
               <div>
                 <strong>Signal</strong>
-                <p>Search found many <code>any</code> usages in GraphQL resolvers, agent nodes, tool declarations, Google auth, and memory metadata.</p>
+                <p>Search previously found broad <code>any</code> and avoidable <code>unknown</code> in Jarvish blocks, GraphQL mappers, agent nodes, tool services, Google APIs, and memory metadata.</p>
               </div>
               <div>
                 <strong>Risk</strong>
-                <p>The exact places where external data enters are the least typed, so runtime bugs slip past TypeScript.</p>
+                <p>The exact places where external data enters are easy to over-loosen; runtime bugs can slip past TypeScript if values are not narrowed quickly.</p>
               </div>
               <div>
-                <strong>First Refactor</strong>
-                <p>Added Zod tool input schemas, typed Google Identity globals, typed Gemini function declarations, message-shape helpers, and GraphQL stream update contracts. Current repo scan shows no visible unsafe blanket casts in <code>src</code>.</p>
+                <strong>Implemented</strong>
+                <p>Added <code>JsonValue</code>, shared block schemas, typed confidence metadata, typed memory metadata, typed graph/message adapters, and tool error helpers. <code>ExtractedFactSummary</code> was replaced with a real <code>ExtractedFact</code> contract.</p>
               </div>
               <div>
                 <strong>Verify</strong>
-                <p>Scoped searches for unsafe blanket casts now return clean. Import smokes passed. Full TypeScript still stops on existing frontend demo errors outside this refactor.</p>
+                <p>Scoped searches for <code>any</code>, <code>fact?: unknown</code>, and unsafe component casts now return only text/comment false positives. <code>npm run build</code> passes. Full TypeScript still stops on existing frontend demo errors outside Jarvish/backend/shared files.</p>
               </div>
             </div>
           </article>
@@ -1511,26 +1512,26 @@
           <article class="tile">
             <h3>Modified</h3>
             <ul>
-              <li><code>src/features/jarvishAgent/components/JarvishChatArea.tsx</code></li>
+              <li><code>src/shared/jarvish.blocks.ts</code></li>
               <li><code>src/features/jarvishAgent/hooks/UseJarvishChat/useJarvishChat.ts</code></li>
-              <li><code>src/features/jarvishAgent/utils/parser.ts</code></li>
-              <li><code>.gitignore</code></li>
+              <li><code>src/features/jarvishAgent/utils/eventMapper.ts</code></li>
+              <li><code>src/features/jarvishAgent/components/Blocks/*</code></li>
+              <li><code>src/Backend/agent/**</code></li>
+              <li><code>src/Backend/graphql/**</code></li>
+              <li><code>src/Backend/services/memory/**</code></li>
+              <li><code>src/Backend/services/tools/**</code></li>
             </ul>
           </article>
           <article class="tile">
             <h3>New</h3>
             <ul>
-              <li><code>state.html</code></li>
-              <li><code>.graphifyignore</code></li>
-              <li><code>graphify-out/</code></li>
-              <li><code>conductor/tracks/auto-scroll-chat/</code></li>
+              <li><code>src/Backend/services/tools/tool-error.ts</code></li>
             </ul>
           </article>
           <article class="tile">
             <h3>Reference</h3>
             <ul>
-              <li><code>conductor/tracks/auto-scroll-chat/plan.md</code></li>
-              <li><code>graphify-out/GRAPH_REPORT.md</code></li>
+              <li><code>conductor/tracks/jarvish-shared-block-contract-validation/handoff.md</code></li>
               <li><code>GEMINI.md</code></li>
             </ul>
           </article>
@@ -1544,15 +1545,19 @@
         </div>
         <div class="command-list">
           <div class="command"><code>git status --short</code></div>
-          <div class="command"><code>npm run lint</code></div>
           <div class="command"><code>npm run build</code></div>
+          <div class="command"><code>npx tsc --noEmit --pretty false</code></div>
+          <div class="command"><code>npm run lint -- --no-warn-ignored</code></div>
+          <div class="command"><code>rg -n "type ExtractedFactSummary|fact\?: unknown|Promise&lt;any\[]&gt;|\bany\b|:\s*any\[]|catch \(error: any\)|React\.ComponentType&lt;any&gt;|\?: unknown|Record&lt;string, unknown&gt;" src/Backend src/features/jarvishAgent src/shared -g '!**/__generated__/**'</code></div>
           <div class="command"><code>npm start</code></div>
           <div class="command"><code>graphify query "how does Jarvish chat state connect to GraphQL?" --graph graphify-out/graph.json</code></div>
           <div class="command"><code>codex -C /Users/beckmanoren/repos/my-react-playground</code></div>
         </div>
         <p class="note">
-          If a session stops, open this file, read Jump Start, then inspect the
-          current git diff before editing.
+          Verification as of 2026-05-20: <code>npm run build</code> passes.
+          <code>npx tsc --noEmit --pretty false</code> is blocked by unrelated
+          existing playground feature errors, not touched Jarvish/backend/shared files.
+          Lint is blocked by existing <code>vite.config.js</code> <code>__dirname</code>.
         </p>
       </section>
     </main>

@@ -2,8 +2,9 @@ import { END, START } from "@langchain/langgraph";
 import { NODE_NAMES } from "@/shared/jarvish.constants";
 import { supervisorRouter, toolsRouter, workerRouter } from "@/Backend/agent/graph/routers";
 import { SUPERVISOR_ROUTES, TOOL_ROUTES, WORKER_ROUTES } from "@/Backend/agent/graph/routes";
+import type { DynamicAgentGraph } from "@/Backend/agent/graph";
 
-export function addAgentGraphTopology(workflow: any) {
+export function addAgentGraphTopology(workflow: DynamicAgentGraph): DynamicAgentGraph {
   return workflow
     .addEdge(START, NODE_NAMES.CONTEXT)
     .addEdge(NODE_NAMES.CONTEXT, NODE_NAMES.PROCESSING)

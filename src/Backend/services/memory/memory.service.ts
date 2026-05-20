@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { IVectorStore, Memory } from '@/Backend/services/memory/vector_store.interface';
+import { IVectorStore, Memory, MemoryMetadata } from '@/Backend/services/memory/vector_store.interface';
 import { logger } from '@/Backend/utils/logger';
 let vectorStore: IVectorStore | null = null;
 
@@ -16,8 +16,9 @@ export function setVectorStore(store: IVectorStore) {
 async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000): Promise<T> {
   try {
     return await fn();
-  } catch (error: any) {
-    if (retries > 0 && (error.status === 503 || error.status === 429)) {
+  } catch (error: unknown) {
+    const status = getRetryableStatus(error);
+    if (retries > 0 && (status === 503 || status === 429)) {
       await new Promise(resolve => setTimeout(resolve, delay));
       return withRetry(fn, retries - 1, delay * 2);
     }
@@ -32,7 +33,7 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000): Pr
  * @param text The raw information to remember.
  * @param metadata Contextual data (category, source, type, etc.).
  */
-export async function addMemory(text: string, metadata: Record<string, any> = {}) {
+export async function addMemory(text: string, metadata: MemoryMetadata = {}) {
   if (!vectorStore) throw new Error('Vector store not initialized');
 
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
@@ -94,4 +95,12 @@ export async function retrieveMemories(query: string, topK: number = 5): Promise
 export async function forgetMemory(id: string) {
   if (!vectorStore) throw new Error('Vector store not initialized');
   await vectorStore.delete(id);
+}
+
+function getRetryableStatus(error: unknown): number | undefined {
+  if (!error || typeof error !== 'object' || !('status' in error)) {
+    return undefined;
+  }
+
+  return typeof error.status === 'number' ? error.status : undefined;
 }

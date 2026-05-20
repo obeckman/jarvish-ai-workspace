@@ -14,8 +14,10 @@ import { JarvishChatInput } from './components/JarvishChatInput';
 import { JarvishMemoryPanel } from './components/JarvishMemoryPanel';
 import { GhostWriterPanel } from './components/GhostWriterPanel';
 import {BLOCK_TYPES, ROLES} from '@/shared/jarvish.constants.ts'
+import { AgentMessageBlockSchema, type AgentMessageBlock } from '@/shared/jarvish.blocks';
 // Types
 
+type DraftLikeBlock = Extract<AgentMessageBlock, { type: typeof BLOCK_TYPES.DRAFT | typeof BLOCK_TYPES.DOCUMENT }>;
 
 export const JarvishAgent: React.FC = () => {
   // Global/UI State not tied to a single domain
@@ -89,8 +91,8 @@ export const JarvishAgent: React.FC = () => {
             if (content.startsWith('[') || content.startsWith('{')) {
               const blocks = JSON.parse(content);
               const draftBlock = Array.isArray(blocks) 
-                ? blocks.find((b: any) => b.type === BLOCK_TYPES.DRAFT)
-                : (blocks.type === BLOCK_TYPES.DRAFT ? blocks : null);
+                ? blocks.find(isDraftBlock)
+                : (isDraftBlock(blocks) ? blocks : null);
               if (draftBlock) return draftBlock;
             }
           } catch (e) { /* Not JSON */ }
@@ -239,5 +241,10 @@ export const JarvishAgent: React.FC = () => {
     </div>
   );
 };
+
+function isDraftBlock(block: unknown): block is DraftLikeBlock {
+  const result = AgentMessageBlockSchema.safeParse(block);
+  return result.success && result.data.type === BLOCK_TYPES.DRAFT;
+}
 
 export default JarvishAgent;

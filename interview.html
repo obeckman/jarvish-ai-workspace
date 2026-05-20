@@ -609,8 +609,8 @@
             <p>
               "One thing I focused on is contracts between layers. GraphQL gives compile-time contract safety for API data. Zod gives runtime
               safety for untrusted data like streamed events, model output, resolver inputs, and tool arguments. Drizzle gives typed database
-              rows. LangGraph gives typed agent state. The main design issue I would improve is duplicated block schemas between frontend and
-              backend; in production I would move those to a shared contracts package."
+              rows. LangGraph gives typed agent state. I also moved the Jarvish UI block protocol into a shared in-repo Zod contract, so
+              frontend rendering and backend model-output validation use the same schema instead of parallel definitions."
             </p>
           </div>
           <div class="script-part">
@@ -700,9 +700,9 @@
               <p>
                 "אחד הדברים שהתמקדתי בהם הוא contracts בין שכבות. GraphQL נותן compile-time contract safety לנתוני API.
                 Zod נותן runtime safety לדאטה לא מהימן כמו streamed events, output של מודל, resolver inputs ו-tool
-                arguments. Drizzle נותן טיפוסים לשורות בדאטאבייס. LangGraph נותן טיפוסים ל-agent state. הבעיה העיצובית
-                המרכזית שהייתי משפר היא שיש כפילות ב-block schemas בין frontend ל-backend; בפרודקשן הייתי מעביר את זה
-                ל-shared contracts package."
+                arguments. Drizzle נותן טיפוסים לשורות בדאטאבייס. LangGraph נותן טיפוסים ל-agent state. בנוסף, העברתי
+                את ה-UI block protocol של Jarvish לחוזה Zod משותף בתוך הריפו, כדי שה-rendering בפרונט וה-validation
+                בבקאנד ישתמשו באותה סכימה במקום בשתי הגדרות מקבילות."
               </p>
             </div>
             <div class="script-part">
@@ -770,9 +770,10 @@
           <span class="pill blue">Important interview point</span>
         </div>
         <p>
-          Type safety in Jarvish is layered. GraphQL is the main frontend/backend contract, Zod protects runtime boundaries,
-          LangGraph types describe agent state, Drizzle types describe database rows, and service interfaces describe infrastructure
-          boundaries. The important interview point is that each type system protects a different failure mode.
+          Type safety in Jarvish is layered. GraphQL is the main frontend/backend API contract, shared Zod schemas own the UI block
+          protocol, Zod protects runtime boundaries, LangGraph types describe agent state, Drizzle types describe database rows, and
+          service interfaces describe infrastructure boundaries. The important interview point is that each type system protects a
+          different failure mode.
         </p>
         <p class="note mt">
           The backend owns the GraphQL schema in
@@ -816,15 +817,15 @@
             </tr>
             <tr>
               <td>Stream/runtime validation</td>
-              <td>Frontend uses Zod schemas like <code>AgentEventsSubscriptionResponseSchema</code> after receiving data.</td>
+              <td>Frontend uses <code>parseAgentEventPayload</code> with Zod after receiving streamed data.</td>
               <td>Malformed streamed events, unexpected backend output, and partial model-generated content.</td>
-              <td>Some schemas duplicate GraphQL types and need a single ownership model.</td>
+              <td>Keep <code>unknown</code> only at the transport boundary, then narrow immediately.</td>
             </tr>
             <tr>
               <td>UI block protocol</td>
-              <td>Both frontend and backend define block schemas for text, code, data, reasoning, action, document, and draft blocks.</td>
-              <td>Predictable rendering of model output as structured UI, not arbitrary text.</td>
-              <td>This is the biggest drift risk: block schema should live in one shared package or be generated.</td>
+              <td><code>src/shared/jarvish.blocks.ts</code> defines text, code, data, reasoning, action, document, and draft blocks.</td>
+              <td>Predictable rendering of model output as structured UI, with one schema shared by frontend and backend validation.</td>
+              <td>For a larger repo, graduate the shared module into a versioned contracts package.</td>
             </tr>
             <tr>
               <td>Tool arguments</td>
@@ -1587,8 +1588,8 @@
                 <strong>How do you prevent hallucinations in this architecture?</strong>
                 <p>
                   I use several layers: retrieval context, specialized workers, tool-backed answers, source-oriented prompts, Zod validation,
-                  confidence routing, and a clarification path. For production I would add evals, citations as structured metadata, prompt
-                  injection filtering, and stricter provenance checks before storing memory.
+                  shared UI block contracts, confidence routing, and a clarification path. For production I would add evals, citations as
+                  structured metadata, prompt injection filtering, and stricter provenance checks before storing memory.
                 </p>
               </div>
               <div class="qa">

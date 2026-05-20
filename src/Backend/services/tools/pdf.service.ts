@@ -1,4 +1,5 @@
 import { PDFParse } from 'pdf-parse';
+import { getToolErrorMessage } from './tool-error';
 
 /**
  * Downloads a PDF from a URL and extracts its text content.
@@ -20,7 +21,7 @@ export async function readPdf(args: { url: string }): Promise<string> {
     
     // Return a generous chunk of the text (up to 10k chars)
     return result.text.substring(0, 10000);
-  } catch (error: any) {
-    return `Failed to read PDF: ${error.message}`;
+  } catch (error: unknown) {
+    return `Failed to read PDF: ${getToolErrorMessage(error)}`;
   }
 }

@@ -1,3 +1,7 @@
+import type { JsonValue } from "@/shared/jarvish.blocks";
+
+export type MemoryMetadata = Record<string, JsonValue>;
+
 /**
  * Memory interface representing a semantically retrieved fact or interaction.
  */
@@ -5,7 +9,7 @@ export interface Memory {
   id: string;
   text: string;
   score: number;
-  metadata?: Record<string, any>;
+  metadata?: MemoryMetadata;
 }
 
 /**
@@ -24,7 +28,7 @@ export interface IVectorStore {
    * @param embedding The numerical vector representation of the text.
    * @param metadata Optional structured data (category, timestamp, etc.).
    */
-  add(text: string, embedding: number[], metadata: Record<string, any>): Promise<void>;
+  add(text: string, embedding: number[], metadata: MemoryMetadata): Promise<void>;
 
   /**
    * Searches for the most semantically relevant documents using vector similarity.

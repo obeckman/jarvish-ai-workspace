@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { z } from 'zod';
 import { 
   BarChart, 
   Bar, 
@@ -9,19 +10,22 @@ import {
 } from 'recharts';
 import styles from '../../jarvish-agent.module.scss';
 import { DISPLAY_TYPE } from '@/shared/jarvish.constants';
+import { DataBlockSchema } from '@/shared/jarvish.blocks';
+
+type DataRow = Record<string, string | number | boolean | null>;
 
 interface DataBlockProps {
   displayType: (typeof DISPLAY_TYPE)[keyof typeof DISPLAY_TYPE];
   title?: string;
-  data: any[];
+  data: z.infer<typeof DataBlockSchema>['data'];
   onAction?: (label: string) => void;
 }
 
 export const DataBlock: React.FC<DataBlockProps> = React.memo(({ displayType, title, data, onAction }) => {
-  const [tableData, setTableData] = useState<any[]>(data);
+  const [tableData, setTableData] = useState<DataRow[]>(toDataRows(data));
 
   useEffect(() => {
-    setTableData(data);
+    setTableData(toDataRows(data));
   }, [data]);
 
   const handleCellBlur = (rowIndex: number, column: string, newValue: string, oldValue: string) => {
@@ -76,7 +80,9 @@ export const DataBlock: React.FC<DataBlockProps> = React.memo(({ displayType, ti
     );
   }
 
-  if (!data || !Array.isArray(data) || data.length === 0) {
+  const chartData = toDataRows(data);
+
+  if (chartData.length === 0) {
     return <div className={styles.dataBlock}>No data available for chart.</div>;
   }
 
@@ -84,7 +90,7 @@ export const DataBlock: React.FC<DataBlockProps> = React.memo(({ displayType, ti
     <div className={styles.dataBlock}>
       {title && <h4 className={styles.dataTitle}>{title}</h4>}
       <div className={styles.chartWrapper} style={{ height: '300px' }}>
-        <BarChart width={600} height={300} data={data}>
+        <BarChart width={600} height={300} data={chartData}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.1)" />
           <XAxis dataKey="name" stroke="rgba(255,255,255,0.5)" fontSize={12} />
           <YAxis stroke="rgba(255,255,255,0.5)" fontSize={12} />
@@ -100,3 +106,28 @@ export const DataBlock: React.FC<DataBlockProps> = React.memo(({ displayType, ti
 });
 
 DataBlock.displayName = 'DataBlock';
+
+function toDataRows(data: z.infer<typeof DataBlockSchema>['data']): DataRow[] {
+  if (!Array.isArray(data)) {
+    return [];
+  }
+
+  return data.filter((item): item is DataRow => isDataRow(item));
+}
+
+function isDataRow(value: unknown): value is DataRow {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return false;
+  }
+
+  return Object.values(value).every(isDataCellValue);
+}
+
+function isDataCellValue(value: unknown): value is DataRow[string] {
+  return (
+    value === null ||
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean'
+  );
+}

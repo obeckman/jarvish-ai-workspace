@@ -1,4 +1,10 @@
+import { z } from "zod";
 import { BLOCK_TYPES } from "@/shared/jarvish.constants";
+
+const StringContentBlockSchema = z.object({
+  type: z.string(),
+  content: z.string(),
+});
 
 export function normalizeWorkerContent(content: string, hasToolCalls: boolean): string {
   if (!content || hasToolCalls) {
@@ -70,13 +76,7 @@ function extractJsonPayload(content: string): string | null {
 }
 
 function isStringContentBlock(block: unknown): block is { type: string; content: string } {
-  return Boolean(
-    block &&
-    typeof block === "object" &&
-    "type" in block &&
-    "content" in block &&
-    typeof (block as { content?: unknown }).content === "string"
-  );
+  return StringContentBlockSchema.safeParse(block).success;
 }
 
 function stringifyTextBlock(content: string): string {

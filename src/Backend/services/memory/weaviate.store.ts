@@ -1,6 +1,17 @@
 import { WeaviateClient } from 'weaviate-client';
-import { IVectorStore, Memory } from '@/Backend/services/memory/vector_store.interface';
+import { IVectorStore, Memory, MemoryMetadata } from '@/Backend/services/memory/vector_store.interface';
 import { logger } from '@/Backend/utils/logger';
+
+type WeaviateMemoryObject = {
+  uuid: string;
+  properties: {
+    text?: string;
+    metadata?: string;
+  };
+  metadata?: {
+    distance?: number;
+  };
+};
 /**
  * Weaviate Implementation of the Vector Store using Client v3 (Collections API).
  * Handles schema creation, data insertion, and semantic search.
@@ -49,7 +60,7 @@ export class WeaviateVectorStore implements IVectorStore {
   /**
    * Adds a document to Weaviate with a manually provided vector.
    */
-  async add(text: string, embedding: number[], metadata: Record<string, any>): Promise<void> {
+  async add(text: string, embedding: number[], metadata: MemoryMetadata): Promise<void> {
     try {
       const collection = this.client.collections.get(this.className);
       await collection.data.insert({
@@ -76,11 +87,13 @@ export class WeaviateVectorStore implements IVectorStore {
         returnMetadata: ['distance'],
       });
       
-      return result.objects.map((obj: any) => ({
+      const objects = result.objects as WeaviateMemoryObject[];
+
+      return objects.map((obj) => ({
         id: obj.uuid,
         text: String(obj.properties.text || ""),
         score: 1 - (obj.metadata?.distance || 0),
-        metadata: obj.properties.metadata ? JSON.parse(String(obj.properties.metadata)) : {},
+        metadata: parseMemoryMetadata(obj.properties.metadata),
       }));
     } catch (error) {
       logger.error(error, '[Weaviate Search Error]');
@@ -99,5 +112,22 @@ export class WeaviateVectorStore implements IVectorStore {
       logger.error(error, '[Weaviate Delete Error]');
       throw error;
     }
+  }
+}
+
+function parseMemoryMetadata(metadata: string | undefined): MemoryMetadata {
+  if (!metadata) {
+    return {};
+  }
+
+  try {
+    const parsed = JSON.parse(metadata);
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return parsed as MemoryMetadata;
+    }
+
+    return {};
+  } catch (_error) {
+    return {};
   }
 }

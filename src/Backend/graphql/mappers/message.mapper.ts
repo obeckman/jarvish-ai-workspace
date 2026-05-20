@@ -1,4 +1,12 @@
-import { AIMessage, BaseMessage, HumanMessage, ToolMessage } from "@langchain/core/messages";
+import {
+  AIMessage,
+  BaseMessage,
+  HumanMessage,
+  ToolMessage,
+  type ContentBlock,
+  type MessageContent,
+  type ToolCall,
+} from "@langchain/core/messages";
 import { getMessageRole, getMessageType } from "@/Backend/agent/nodes/utils";
 import { Message } from "@/Backend/graphql/__generated__/resolvers-types";
 import { EVENT_TYPES, NODE_NAMES, ROLES } from "@/shared/jarvish.constants.ts";
@@ -9,11 +17,11 @@ type InputHistoryMessage = {
 };
 
 export type RawGraphMessage = {
-  content?: unknown;
+  content?: MessageContent;
   name?: string;
   role?: string;
   type?: string;
-  tool_calls?: unknown[];
+  tool_calls?: ToolCall[];
   lc_kwargs?: {
     name?: string;
     role?: string;
@@ -91,7 +99,7 @@ export function shouldStreamMessageFromNode(nodeName: string): boolean {
   return STREAM_USER_FACING_NODE_NAMES.includes(nodeName);
 }
 
-export function stringifyMessageContent(content: unknown): string {
+export function stringifyMessageContent(content: MessageContent | null | undefined): string {
   if (Array.isArray(content)) {
     return content.map(stringifyMessagePart).join("\n");
   }
@@ -103,12 +111,9 @@ export function stringifyMessageContent(content: unknown): string {
   return content ? JSON.stringify(content) : "";
 }
 
-function stringifyMessagePart(part: unknown): string {
-  if (part && typeof part === "object" && "text" in part) {
-    const text = (part as { text?: unknown }).text;
-    if (typeof text === "string") {
-      return text;
-    }
+function stringifyMessagePart(part: ContentBlock): string {
+  if (part.type === "text" && typeof part.text === "string") {
+    return part.text;
   }
 
   return JSON.stringify(part);

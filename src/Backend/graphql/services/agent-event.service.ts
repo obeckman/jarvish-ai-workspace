@@ -18,7 +18,7 @@ import {
 } from "@/Backend/graphql/services/session.resolver.service";
 import { logger } from "@/Backend/utils/logger";
 import { EVENT_TYPES, STAGES } from "@/shared/jarvish.constants.ts";
-import { HumanMessage } from "@langchain/core/messages";
+import { HumanMessage, type MessageContent, type ToolCall } from "@langchain/core/messages";
 
 type AgentEventPayload = {
   agentEvents: Pick<AgentEvent, "type" | "content" | "stage" | "metadata">;
@@ -38,8 +38,8 @@ type GraphStreamUpdate = {
     validationReason?: string;
   };
   messages?: Array<{
-    content?: unknown;
-    tool_calls?: unknown[];
+    content?: MessageContent;
+    tool_calls?: ToolCall[];
   }>;
 };
 

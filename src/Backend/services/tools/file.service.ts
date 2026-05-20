@@ -1,5 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
+import { getToolErrorMessage } from './tool-error';
 
 /**
  * Reads a local file from the project directory.
@@ -19,8 +20,8 @@ export async function readFile(args: { path: string }): Promise<string> {
 
     const content = await fs.readFile(fullPath, 'utf-8');
     return content.substring(0, 10000);
-  } catch (error: any) {
-    return `Failed to read file: ${error.message}`;
+  } catch (error: unknown) {
+    return `Failed to read file: ${getToolErrorMessage(error)}`;
   }
 }
 
@@ -42,7 +43,7 @@ export async function writeFile(args: { path: string, content: string }): Promis
     
     await fs.writeFile(fullPath, args.content, 'utf-8');
     return `Successfully wrote to file: ${args.path}`;
-  } catch (error: any) {
-    return `Failed to write file: ${error.message}`;
+  } catch (error: unknown) {
+    return `Failed to write file: ${getToolErrorMessage(error)}`;
   }
 }

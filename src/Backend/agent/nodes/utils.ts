@@ -1,5 +1,6 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import type { Part } from "@google/generative-ai";
 import { AgentStateType } from "@/Backend/agent/state";
+import { AgentToolCall } from "@/Backend/agent/contracts/state.contract";
 import { ROLES, GEMINI_ROLES } from "@/shared/jarvish.constants";
 import {
   asAgentMessageLike,
@@ -9,7 +10,10 @@ import {
   getAgentToolCalls,
 } from "@/Backend/agent/contracts/message.contract";
 
-
+type GeminiHistoryMessage = {
+  role: string;
+  parts: Part[];
+};
 
 /**
  * Safely extracts the role from a message (BaseMessage or raw object).
@@ -29,7 +33,7 @@ export function getMessageType(m: unknown): string {
  * Maps LangGraph state messages to Gemini API history format.
  */
 export function mapStateToGeminiHistory(state: AgentStateType) {
-  const mappedMessages = state.messages
+  const mappedMessages: GeminiHistoryMessage[] = state.messages
     .filter(m => {
       if (getAgentMessageName(m) === ROLES.REASONING) {
         return false;
@@ -47,16 +51,16 @@ export function mapStateToGeminiHistory(state: AgentStateType) {
         role = GEMINI_ROLES.FUNCTION;
       }
 
-      const parts: any[] = [];
+      const parts: Part[] = [];
       const toolCalls = getAgentToolCalls(m);
       
       if (toolCalls && toolCalls.length > 0) {
-        const realToolCalls = toolCalls.filter((tc: any) => 
+        const realToolCalls = toolCalls.filter((tc: AgentToolCall) =>
           !tc.name.startsWith('delegate_to_')
         );
 
         if (realToolCalls.length > 0) {
-          parts.push(...realToolCalls.map((tc: any) => ({
+          parts.push(...realToolCalls.map((tc: AgentToolCall) => ({
             functionCall: { name: tc.name, args: tc.args }
           })));
         } else if (m.content) {
@@ -86,7 +90,7 @@ export function mapStateToGeminiHistory(state: AgentStateType) {
     return [];
   }
 
-  const history: { role: string; parts: any[] }[] = [mappedMessages[0]];
+  const history: GeminiHistoryMessage[] = [mappedMessages[0]];
   for (let i = 1; i < mappedMessages.length; i++) {
     const currentMsg = mappedMessages[i];
     const lastMsg = history[history.length - 1];

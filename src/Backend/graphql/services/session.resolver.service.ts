@@ -68,7 +68,7 @@ export async function getSessionHistory({ sessionId }: QueryGetSessionHistoryArg
   const parsed = SessionIdArgsSchema.parse({ sessionId });
   const graph = createAgentGraph(checkpointer);
   const state = await graph.getState({ configurable: { thread_id: parsed.sessionId } });
-  const values = state?.values as { messages?: unknown } | undefined;
+  const values = state?.values;
 
   if (!Array.isArray(values?.messages)) {
     logger.debug({ sessionId: parsed.sessionId }, "No message history found for session");

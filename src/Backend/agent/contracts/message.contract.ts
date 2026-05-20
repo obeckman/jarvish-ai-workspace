@@ -1,7 +1,8 @@
+import type { MessageContent } from "@langchain/core/messages";
 import { AgentToolCall } from "@/Backend/agent/contracts/state.contract";
 
 export type AgentMessageLike = {
-  content?: unknown;
+  content?: MessageContent;
   lc_kwargs?: {
     role?: string;
   };
@@ -12,12 +13,12 @@ export type AgentMessageLike = {
   _getType?: () => string;
 };
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isObject(value: unknown): value is object {
   return typeof value === "object" && value !== null;
 }
 
 export function asAgentMessageLike(message: unknown): AgentMessageLike {
-  return isRecord(message) ? (message as AgentMessageLike) : {};
+  return isObject(message) ? (message as AgentMessageLike) : {};
 }
 
 export function getAgentMessageName(message: unknown): string | undefined {

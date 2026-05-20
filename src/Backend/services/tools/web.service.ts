@@ -1,3 +1,5 @@
+import { getToolErrorMessage } from './tool-error';
+
 /**
  * Fetches and cleans the text content from a given URL.
  * 
@@ -20,7 +22,7 @@ export async function fetchWebPage(args: { url: string }): Promise<string> {
 
     // Return the first 5000 characters to prevent context window overflow.
     return text.substring(0, 5000);
-  } catch (error: any) {
-    return `Failed to fetch page: ${error.message}`;
+  } catch (error: unknown) {
+    return `Failed to fetch page: ${getToolErrorMessage(error)}`;
   }
 }

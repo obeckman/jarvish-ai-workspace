@@ -1,7 +1,10 @@
+import type { JsonValue } from "@/shared/jarvish.blocks";
+
 export type AgentMetadata = {
   stage?: number;
   status?: string;
-  [key: string]: unknown;
+  confidence?: number;
+  validationReason?: string;
 };
 
 export type AgentAttachment = {
@@ -12,11 +15,11 @@ export type AgentAttachment = {
 
 export type ProcessedAttachment = AgentAttachment & {
   extractedText?: string;
-  [key: string]: unknown;
+  timestamp?: string;
 };
 
 export type AgentToolCall = {
   id: string;
   name: string;
-  args: Record<string, unknown>;
+  args: Record<string, JsonValue>;
 };

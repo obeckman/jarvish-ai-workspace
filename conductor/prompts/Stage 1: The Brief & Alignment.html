@@ -380,6 +380,8 @@ Project stack and constraints:
 - Default engineering bias: clean code, DRY implementation, state close to the component, no magic strings, no inline styles, and no unnecessary new abstractions.
 - Codebase-first rule: before proposing new components, hooks, utilities, services, styles, endpoints, validation logic, or types, inspect whether the codebase already has an equivalent implementation or established pattern. Prefer reusing, extending, or composing existing code over creating a parallel solution.
 - Consistency rule: match the naming, folder structure, data flow, error handling, styling, and test style already used in the repository unless there is a clear reason to diverge.
+- Contract rule: when frontend and backend share payloads, identify the single source of truth for DTOs, schemas, constants, and runtime validators. Prefer one shared contract or generated types over parallel definitions.
+- Type-boundary rule: avoid `any` and avoid broad `unknown` inside trusted application logic. Use `unknown` only at untrusted runtime boundaries such as JSON parsing, external API responses, caught errors, model/tool output, and streamed transport payloads, then narrow immediately with explicit guards, generated types, or Zod schemas.
 
 Your task is to help prepare an implementation strategy for:
 {{TASK_DESCRIPTION}}
@@ -389,8 +391,9 @@ Before writing code or logic, provide THREE distinct full-stack implementation a
 2. State management strategy: keep state local by default. Evaluate lifting state, persistence, URL state, server cache, or global stores only when lifecycle requirements justify it.
 3. Trade-offs: rendering performance, state proximity, data flow clarity, testability, complexity, and delivery risk.
 4. Failure modes: edge cases involving async state, unexpected payloads, concurrency, network failures, permission issues, or stale data.
-5. Existing-code reuse: identify codebase patterns, helpers, components, hooks, services, DTOs, styles, or tests that should be reused before adding anything new.
+5. Existing-code reuse: identify codebase patterns, helpers, components, hooks, services, DTOs, schemas, validators, constants, styles, or tests that should be reused before adding anything new.
 6. Files likely touched: list likely frontend, backend, shared type, style, and test files.
+7. Type and validation boundary: identify which data crosses trust boundaries, which shared/generated contract owns it, and how invalid data should be narrowed, rejected, repaired, retried, or surfaced to the user.
 
 Output format:
 1. Clarifying questions: ask up to 5 focused questions only if ambiguity would materially change the architecture. If ambiguity is low-risk, state your assumption and continue.

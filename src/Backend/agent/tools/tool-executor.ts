@@ -44,7 +44,7 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
   [TOOL_NAMES.WRITE_FILE]: (call) => writeFile(WriteFileToolArgsSchema.parse(call.args)),
   [TOOL_NAMES.ADD_MEMORY]: (call) => {
     const args = AddMemoryToolArgsSchema.parse(call.args);
-    return addMemory(args.fact, { category: args.category });
+    return addMemory(args.fact, args.category ? { category: args.category } : {});
   },
   [TOOL_NAMES.FORGET_MEMORY]: async (call) => {
     const args = ForgetMemoryToolArgsSchema.parse(call.args);

@@ -117,7 +117,9 @@ export async function supervisorNode(state: AgentStateType) {
   const userMsg = state.messages.slice().reverse().find(msg => { 
     return msg instanceof HumanMessage 
   }) || null;
-  const sentMessage = userMsg?.content || lastHistoryMsg.parts;
+  const sentMessage: string | Part[] = typeof userMsg?.content === "string"
+    ? userMsg.content
+    : lastHistoryMsg.parts;
   logger.info({ sessionId: state.sessionId }, "Sending message to Gemini");
   logger.debug({ sessionId: state.sessionId, sentMessage }, "Sent message details");
   const chat = model.startChat({ history });

@@ -30,7 +30,7 @@ import {
 
 
 import { chatReducer } from './state';
-import { parseAgentEventPayload } from '../../utils/eventMapper';
+import { parseAgentEventPayload, type AgentEventMetadata } from '../../utils/eventMapper';
 // --- Reducer Definitions ---
 
 type GraphQLResponse<TData> = {
@@ -120,18 +120,15 @@ export const useJarvishChat = (
 
   }, []);
 
-  const addConfidenceMessageIfPresent = React.useCallback((metadata: unknown) => {
-    if (!metadata || typeof metadata !== 'object') {
+  const addConfidenceMessageIfPresent = React.useCallback((metadata: AgentEventMetadata | null | undefined) => {
+    if (!metadata) {
       return;
     }
 
-    const confidence = (metadata as { confidence?: unknown }).confidence;
+    const { confidence, validationReason } = metadata;
     if (typeof confidence !== 'number') {
       return;
     }
-
-    const validationReason = (metadata as { validationReason?: unknown }).validationReason;
-    const reason = typeof validationReason === 'string' ? validationReason : undefined;
 
     dispatch({
       type: STATE_ACTIONS.ADD_MESSAGE,
@@ -139,7 +136,7 @@ export const useJarvishChat = (
         id: `confidence-${Date.now()}-${Math.random()}`,
         type: BLOCK_TYPES.REASONING,
         role: ROLES.REASONING,
-        content: UI_STRINGS.CONFIDENCE_NOTE(confidence, reason),
+        content: UI_STRINGS.CONFIDENCE_NOTE(confidence, validationReason ?? undefined),
         timestamp: Date.now(),
       },
     });
