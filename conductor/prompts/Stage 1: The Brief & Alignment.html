@@ -1,12 +1,320 @@
-# 🛠️ The 4-Stage Managed AI Developer Prompts (Full Stack Edition)
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI Developer Prompt Toolkit</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f5f1e8;
+        --panel: #fffaf0;
+        --panel-strong: #ffffff;
+        --ink: #1e2528;
+        --muted: #66706f;
+        --line: #d7cec1;
+        --accent: #0f7c80;
+        --accent-dark: #095d60;
+        --accent-soft: #d8eeee;
+        --shadow: 0 18px 45px rgba(36, 34, 28, 0.13);
+        --radius: 8px;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+      }
 
-### Stage 1: The Brief & Alignment (Step 1 to 5)
-*Run this in a fresh chat session to establish the architectural boundary before writing a single line of code.*
+      * {
+        box-sizing: border-box;
+      }
 
-```markdown
-You are a fast, literal, and highly capable Full-Stack Developer. You are working under a Senior Engineer on an application using React 19, TypeScript, and Vite on the Frontend, and Node.js with clean architecture on the Backend. 
+      body {
+        min-height: 100vh;
+        margin: 0;
+        background:
+          linear-gradient(135deg, rgba(15, 124, 128, 0.08), transparent 34%),
+          linear-gradient(225deg, rgba(198, 83, 58, 0.08), transparent 35%),
+          var(--bg);
+        color: var(--ink);
+      }
 
-Your task is to help prepare an implementation strategy for the following task: 
+      button,
+      textarea {
+        font: inherit;
+      }
+
+      .page {
+        width: min(1420px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 28px 0 40px;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 18px;
+        margin-bottom: 22px;
+      }
+
+      .eyebrow {
+        margin: 0 0 6px;
+        color: var(--accent-dark);
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(2rem, 5vw, 4.8rem);
+        line-height: 0.92;
+        letter-spacing: 0;
+      }
+
+      .subtitle {
+        max-width: 650px;
+        margin: 12px 0 0;
+        color: var(--muted);
+        font-size: 1rem;
+        line-height: 1.5;
+      }
+
+      .copy-all {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 42px;
+        padding: 0 16px;
+        border: 1px solid var(--accent);
+        border-radius: var(--radius);
+        background: var(--accent);
+        color: #fff;
+        cursor: pointer;
+        font-weight: 800;
+        white-space: nowrap;
+        box-shadow: 0 10px 20px rgba(15, 124, 128, 0.18);
+      }
+
+      .copy-all:hover {
+        background: var(--accent-dark);
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+      }
+
+      .stage {
+        display: flex;
+        min-height: 520px;
+        flex-direction: column;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: var(--panel);
+        box-shadow: var(--shadow);
+      }
+
+      .stage--wide {
+        grid-column: 1 / -1;
+      }
+
+      .stage__header {
+        display: grid;
+        grid-template-columns: 44px 1fr auto;
+        align-items: center;
+        gap: 12px;
+        padding: 16px;
+        border-bottom: 1px solid var(--line);
+        background: var(--panel-strong);
+      }
+
+      .stage__number {
+        display: grid;
+        width: 44px;
+        height: 44px;
+        place-items: center;
+        border-radius: 50%;
+        background: var(--accent-soft);
+        color: var(--accent-dark);
+        font-weight: 900;
+      }
+
+      .stage__title {
+        min-width: 0;
+      }
+
+      .stage__title h2 {
+        margin: 0;
+        font-size: 1.08rem;
+        letter-spacing: 0;
+      }
+
+      .stage__title p {
+        margin: 4px 0 0;
+        color: var(--muted);
+        font-size: 0.88rem;
+      }
+
+      .stage__copy {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 42px;
+        height: 38px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: #ffffff;
+        color: var(--ink);
+        cursor: pointer;
+      }
+
+      .stage__copy:hover {
+        border-color: var(--accent);
+        color: var(--accent-dark);
+      }
+
+      .stage__copy svg,
+      .copy-all svg {
+        width: 18px;
+        height: 18px;
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 420px;
+        flex: 1;
+        resize: vertical;
+        border: 0;
+        background: #fffdf8;
+        color: var(--ink);
+        padding: 18px;
+        font-family:
+          "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+        font-size: 0.92rem;
+        line-height: 1.58;
+        outline: none;
+        tab-size: 2;
+      }
+
+      textarea:focus {
+        box-shadow: inset 0 0 0 2px var(--accent);
+      }
+
+      .toast {
+        position: fixed;
+        right: 20px;
+        bottom: 20px;
+        transform: translateY(16px);
+        opacity: 0;
+        pointer-events: none;
+        border-radius: var(--radius);
+        background: #172124;
+        color: #fff;
+        padding: 12px 14px;
+        font-weight: 800;
+        transition:
+          opacity 180ms ease,
+          transform 180ms ease;
+      }
+
+      .toast.is-visible {
+        transform: translateY(0);
+        opacity: 1;
+      }
+
+      @media (max-width: 920px) {
+        .topbar {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .copy-all {
+          width: 100%;
+        }
+
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 560px) {
+        .page {
+          width: min(100% - 20px, 1420px);
+          padding-top: 18px;
+        }
+
+        .stage__header {
+          grid-template-columns: 38px 1fr auto;
+          padding: 12px;
+        }
+
+        .stage__number {
+          width: 38px;
+          height: 38px;
+        }
+
+        textarea {
+          min-height: 360px;
+          padding: 14px;
+          font-size: 0.86rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Full Stack Edition</p>
+          <h1>AI Developer Prompt Toolkit</h1>
+          <p class="subtitle">
+            Edit any prompt directly in the browser, copy one section at a time,
+            or copy the full toolkit after tailoring it to the task.
+          </p>
+        </div>
+        <button class="copy-all" type="button" data-copy-all>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M8 8h10v12H8zM6 16H4V4h12v2"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+          Copy all prompts
+        </button>
+      </header>
+
+      <section class="grid" aria-label="Prompt stages">
+        <article class="stage">
+          <div class="stage__header">
+            <div class="stage__number">1</div>
+            <div class="stage__title">
+              <h2>The Brief &amp; Alignment</h2>
+              <p>Run in a fresh chat before architecture is chosen.</p>
+            </div>
+            <button class="stage__copy" type="button" data-copy="stage-1" aria-label="Copy Stage 1">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M8 8h10v12H8zM6 16H4V4h12v2"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+          </div>
+          <textarea id="stage-1" spellcheck="false">You are a fast, literal, and highly capable Full-Stack Developer. You are working under a Senior Engineer on an application using React 19, TypeScript, and Vite on the Frontend, and Node.js with clean architecture on the Backend.
+
+Your task is to help prepare an implementation strategy for the following task:
 [PASTE JIRA TICKET/DESCRIPTION/REQUIREMENTS HERE]
 
 Before you write any code or logic, you must provide THREE distinct implementation approaches to solve this problem across the full stack. For each approach, provide:
@@ -15,16 +323,36 @@ Before you write any code or logic, you must provide THREE distinct implementati
 3. The specific trade-offs (Pros & Cons regarding rendering performance, state proximity, data flow, and complexity).
 4. Potential risks or edge cases where this full-stack flow could break under unexpected state updates or network issues.
 
-Conclude by recommending one approach and explaining why it is the cleanest path forward. Do not execute or write implementation code yet. Await my architectural approval.
+Conclude by recommending one approach and explaining why it is the cleanest path forward. Do not execute or write implementation code yet. Await my architectural approval.</textarea>
+        </article>
 
-########################################################
-I approve Approach #[X]. Now, let's establish the strict Definition of Done (DoD) for this mission before you start building. 
+        <article class="stage">
+          <div class="stage__header">
+            <div class="stage__number">2</div>
+            <div class="stage__title">
+              <h2>Definition of Done</h2>
+              <p>Use after approving one architecture path.</p>
+            </div>
+            <button class="stage__copy" type="button" data-copy="stage-2" aria-label="Copy Stage 2">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M8 8h10v12H8zM6 16H4V4h12v2"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+          </div>
+          <textarea id="stage-2" spellcheck="false">I approve Approach #[X]. Now, let's establish the strict Definition of Done (DoD) for this mission before you start building.
 
 As a Senior-level Full-Stack expert, your work must satisfy these criteria across both environments:
 
 [FRONTEND ARCHITECTURE]
 1. Core Tech & State: Pure TypeScript, leveraging clean React 19 patterns. Ensure state is encapsulated locally unless we explicitly agreed to store or persist it externally in Stage 1.
-2. Styling Architecture: Strict adherence to SCSS Files using CSS Modules. Import styles locally and use the `classnames` utility library to manage conditional classes cleanly. Absolutely NO inline styles are permitted. No magic strings—all static labels, keys, or configurations must be extracted into explicit constants.
+2. Styling Architecture: Strict adherence to SCSS Files using CSS Modules. Import styles locally and use the `classnames` utility library to manage conditional classes cleanly. Absolutely NO inline styles are permitted. No magic strings-all static labels, keys, or configurations must be extracted into explicit constants.
 3. Component Design & UX: Highly modular components with a single responsibility. If asynchronous data is handled, you must elegantly manage and display loading, empty, and granular error states visually to the user.
 4. No Code Repeats: Keep code strictly DRY (Don't Repeat Yourself). Component logic and rendering should be cleanly factored.
 
@@ -36,22 +364,60 @@ As a Senior-level Full-Stack expert, your work must satisfy these criteria acros
 7. Total Conditional Handling: Every single `if` statement MUST handle its corresponding `else` branch explicitly. No silent failures or dropped execution paths.
 8. Defensive Programming: Write dedicated error handling blocks, explicitly catch and log all operational errors with contextual detail, and defensively test for edge cases (e.g., null values, empty payloads, network timeouts).
 
-Before you begin coding, restate this full-stack Definition of Done in your own words to verify your alignment. Then, wait for my signal to execute.
+Before you begin coding, restate this full-stack Definition of Done in your own words to verify your alignment. Then, wait for my signal to execute.</textarea>
+        </article>
 
-#########################################################
-
-Execute the implementation now based on our agreed approach and Definition of Done. Provide the full code clean, commented, and strictly typed across both the Frontend and Backend files. 
+        <article class="stage">
+          <div class="stage__header">
+            <div class="stage__number">3</div>
+            <div class="stage__title">
+              <h2>Execution &amp; Review Gate</h2>
+              <p>Use when the build should begin.</p>
+            </div>
+            <button class="stage__copy" type="button" data-copy="stage-3" aria-label="Copy Stage 3">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M8 8h10v12H8zM6 16H4V4h12v2"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+          </div>
+          <textarea id="stage-3" spellcheck="false">Execute the implementation now based on our agreed approach and Definition of Done. Provide the full code clean, commented, and strictly typed across both the Frontend and Backend files.
 
 Ensure the CSS Modules, classnames implementation, shared TypeScript interfaces, clean Node layers, strict `if/else` handling, and robust async/UX states match our style guide perfectly.
 
 Crucial: Immediately following your code blocks, shift your role to a skeptical Senior QA and Performance Reviewer. Audit your own full-stack code and explicitly answer:
 1. What assumptions did you make during this build that might be wrong?
 2. If a reviewer were to reject this implementation, what would be the most likely reason? (Look out for unnecessary re-renders, loose error catching, unhandled else clauses, code duplication, or type escapes like 'any').
-3. Score your output directly against each item in our full-stack Definition of Done.
+3. Score your output directly against each item in our full-stack Definition of Done.</textarea>
+        </article>
 
-#####################################################
-
-We are at a handoff point. Act as a technical project manager summarizing this session so a completely fresh, context-free AI session can continue the work flawlessly. 
+        <article class="stage">
+          <div class="stage__header">
+            <div class="stage__number">4</div>
+            <div class="stage__title">
+              <h2>The Clean Handoff</h2>
+              <p>Use at a context reset or session handoff.</p>
+            </div>
+            <button class="stage__copy" type="button" data-copy="stage-4" aria-label="Copy Stage 4">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M8 8h10v12H8zM6 16H4V4h12v2"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+          </div>
+          <textarea id="stage-4" spellcheck="false">We are at a handoff point. Act as a technical project manager summarizing this session so a completely fresh, context-free AI session can continue the work flawlessly.
 
 Generate a clean Markdown Handoff Document including:
 1. The Original Goal & Context.
@@ -61,4 +427,125 @@ Generate a clean Markdown Handoff Document including:
 5. Exact Next Recommended Step for the incoming session.
 6. The specific evidence needed to prove the next step succeeds.
 
-Remove all conversational fluff and back-and-forth debugging history. Give me pure, actionable state.
+Remove all conversational fluff and back-and-forth debugging history. Give me pure, actionable state.</textarea>
+        </article>
+
+        <article class="stage stage--wide">
+          <div class="stage__header">
+            <div class="stage__number">5</div>
+            <div class="stage__title">
+              <h2>Interview Project Onboarding</h2>
+              <p>Use when receiving an interview assignment or unknown codebase.</p>
+            </div>
+            <button class="stage__copy" type="button" data-copy="stage-5" aria-label="Copy Interview Project Onboarding">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M8 8h10v12H8zM6 16H4V4h12v2"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+          </div>
+          <textarea id="stage-5" spellcheck="false">You are the Lead Architect and Technical Project Manager for this interview project. I have just been handed this codebase/assignment, and I need a comprehensive, senior-level briefing to onboard me instantly so I can execute perfectly.
+
+Here are the assignment details, requirements, or code structure:
+[PASTE THE INTERVIEW PROJECT INSTRUCTIONS / REPO STRUCTURE / CODE HERE]
+
+----------------------------------------------------------------------
+OPTIONAL EXTRA CONTEXT (My Tech Profile & Priorities):
+- My core focus is on high-quality, type-safe Front-End development (React 19/17, TypeScript, modular components, strict state proximity, SCSS with CSS Modules and classnames, no magic strings, no inline styles).
+- I am highly comfortable with Node.js backends utilizing Clean Architecture (clear separation of routes, services, and data layers) using unified, shared TypeScript types across FE/BE.
+- I place a heavy emphasis on production-ready robustness: strict if/else handling, defensive programming, explicit error catching/logging, and pristine UX states for async operations (loading, empty, granular error UI).
+----------------------------------------------------------------------
+
+Analyze the provided project materials and output a single, comprehensive Markdown document covering the following five sections:
+
+### 1. Core Architecture & Tech Stack
+- Break down the exact tech stack being used (Frontend framework/version, bundler like Vite/Webpack, testing libraries, and Backend setup if applicable).
+- Explain the current architectural pattern of the repository (e.g., folder structure, where components live, where services/API logic live, and how data flows).
+
+### 2. The "Where & What" (Your Execution Plan)
+- Identify the exact files I need to modify or create to fulfill the assignment requirements.
+- List the precise entry points, components, or backend endpoints that are the core focus of this mission.
+- Highlight what parts of the existing code I should NOT touch or alter to avoid breaking existing functionality.
+
+### 3. Implied Code Standards & Quality Expectations
+- Based on the existing codebase (or standard senior-level expectations for this stack), outline the coding style I must adhere to.
+- Detail how state management should be handled (e.g., local state boundaries vs. global stores), styling guidelines found in the project, and type-safety expectations.
+
+### 4. Critical Edge Cases & Robustness Map
+- Map out the exact edge cases, network behaviors, or data states I must account for to make this production-ready (e.g., empty responses, slow networks, null/undefined values, API failures).
+- Detail where and how errors should be caught, logged, and surfaced to the UI elegantly.
+
+### 5. Senior-Level "Bonus Points" Opportunities
+- Identify 2-3 specific architectural improvements or modern practices (e.g., optimization hooks, strict performance considerations, clean decoupling) that are not explicitly requested in the prompt but will make my submission stand out to a senior reviewer.
+
+Be direct, highly technical, and omit conversational fluff. Give me pure, actionable engineering intelligence.</textarea>
+        </article>
+      </section>
+    </main>
+
+    <div class="toast" role="status" aria-live="polite" data-toast>Copied</div>
+
+    <script>
+      const copyButtons = document.querySelectorAll("[data-copy]");
+      const copyAllButton = document.querySelector("[data-copy-all]");
+      const toast = document.querySelector("[data-toast]");
+
+      const showToast = (message) => {
+        toast.textContent = message;
+        toast.classList.add("is-visible");
+        window.clearTimeout(showToast.timeoutId);
+        showToast.timeoutId = window.setTimeout(() => {
+          toast.classList.remove("is-visible");
+        }, 1400);
+      };
+
+      const copyTextWithFallback = (text) => {
+        const fallbackTextarea = document.createElement("textarea");
+        fallbackTextarea.value = text;
+        fallbackTextarea.setAttribute("readonly", "");
+        fallbackTextarea.style.position = "fixed";
+        fallbackTextarea.style.top = "-9999px";
+        document.body.appendChild(fallbackTextarea);
+        fallbackTextarea.select();
+
+        const didCopy = document.execCommand("copy");
+        document.body.removeChild(fallbackTextarea);
+        return didCopy;
+      };
+
+      const copyText = async (text, message) => {
+        try {
+          await navigator.clipboard.writeText(text);
+          showToast(message);
+        } catch (error) {
+          if (copyTextWithFallback(text)) {
+            showToast(message);
+          } else {
+            showToast("Select the text and copy manually");
+          }
+        }
+      };
+
+      copyButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          const textarea = document.getElementById(button.dataset.copy);
+          copyText(textarea.value, `Copied ${textarea.id.replace("-", " ")}`);
+        });
+      });
+
+      copyAllButton.addEventListener("click", () => {
+        const allText = Array.from(document.querySelectorAll("textarea"))
+          .map((textarea) => textarea.value.trim())
+          .join("\n\n########################################################\n\n");
+
+        copyText(allText, "Copied all prompts");
+      });
+    </script>
+  </body>
+</html>
