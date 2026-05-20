@@ -1,14 +1,36 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { z } from "zod";
 import { REASONING_MODEL } from "@/Backend/agent/models";
 import parse from "partial-json-parser";
 import { addMemory } from "@/Backend/services/memory/memory.service"; // Import addMemory
 import { db } from "@/Backend/db";
 import { structuredFacts } from "@/Backend/db/schema";
 import { logger } from "@/Backend/utils/logger";
+
+export type ExtractedFact = {
+  fact: string;
+  category: string;
+};
+
+const ExtractedFactSchema = z.object({
+  fact: z.string().trim().min(1),
+  category: z.string().trim().min(1).default("general"),
+});
+
+const ExtractedFactsSchema = z.array(ExtractedFactSchema);
+
+type FactExtractionHistoryMessage = {
+  role: string;
+  content: string;
+};
+
 /**
  * Extracts static facts about the user from a session history.
  */
-export async function extractAndStoreFacts(sessionId: string, history: { role: string, content: string }[]): Promise<any[]> {
+export async function extractAndStoreFacts(
+  sessionId: string,
+  history: FactExtractionHistoryMessage[],
+): Promise<ExtractedFact[]> {
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
   const model = genAI.getGenerativeModel({ 
     model: REASONING_MODEL,
@@ -47,9 +69,14 @@ export async function extractAndStoreFacts(sessionId: string, history: { role: s
     logger.debug({ parsedFacts }, "[Fact Extraction] Parsed facts");
 
     if (Array.isArray(parsedFacts) && parsedFacts.length > 0) {
-      for (const factData of parsedFacts) {
-        const factText = String(factData.fact);
-        const category = String(factData.category || "general");
+      const extractedFacts = ExtractedFactsSchema.parse(parsedFacts.map((factData) => ({
+        fact: factData?.fact,
+        category: factData?.category || "general",
+      })));
+
+      for (const factData of extractedFacts) {
+        const factText = factData.fact;
+        const category = factData.category;
         await addMemory(factText, {
           type: 'structured_fact',
           sessionId,
@@ -63,8 +90,8 @@ export async function extractAndStoreFacts(sessionId: string, history: { role: s
         });
         logger.info(`[Fact Extraction] Stored fact: "${factText}" (Category: ${category}) in VectorDB and database.`);
       }
-      logger.info(`[Fact Extraction] Extracted and stored ${parsedFacts.length} new facts for session ${sessionId} in VectorDB.`);
-      return parsedFacts; // Return the extracted facts on success
+      logger.info(`[Fact Extraction] Extracted and stored ${extractedFacts.length} new facts for session ${sessionId} in VectorDB.`);
+      return extractedFacts; // Return the extracted facts on success
     }
     return []; // Return empty array if no facts found
   } catch (error) {

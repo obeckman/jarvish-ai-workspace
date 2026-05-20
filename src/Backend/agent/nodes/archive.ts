@@ -4,16 +4,12 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { ARCHIVE_MODEL } from "@/Backend/agent/models";
 import { PDFParse } from 'pdf-parse';
 import { summarizeSession } from "@/Backend/services/summarization.service";
-import { extractAndStoreFacts } from "@/Backend/services/factExtraction.service";
+import { extractAndStoreFacts, type ExtractedFact } from "@/Backend/services/factExtraction.service";
 import { db } from "@/Backend/db/index";
 import { sessionSummaries } from "@/Backend/db/schema";
 import { STAGES, ROLES } from "@/shared/jarvish.constants";
 import { getMessageRole } from "./utils";
 import { logger } from "@/Backend/utils/logger";
-
-type ExtractedFactSummary = {
-  fact?: unknown;
-};
 
 /**
  * Node: Memory Archiving
@@ -27,7 +23,7 @@ type ExtractedFactSummary = {
 export async function archiveNode(state: AgentStateType) {
   logger.debug({ sessionId: state.sessionId, messagesCount: state.messages.length }, "Node: Archive");
   let summary: { summaryTitle: string; userMessage: string; aiAnswer: string } | null = null;
-  let extractedFacts: ExtractedFactSummary[] = [];
+  let extractedFacts: ExtractedFact[] = [];
   let indexedAttachments: string[] = [];
 
   // 1. Generate Session Summary for UI History (New Requirement)
@@ -156,7 +152,7 @@ export async function archiveNode(state: AgentStateType) {
     overallAgentSummary += `AI Answer: ${summary.aiAnswer}\n`;
 
     if (extractedFacts.length > 0) {
-      overallAgentSummary += `Extracted Facts: ${extractedFacts.map((fact) => String(fact.fact ?? "")).join('; ')}\n`;
+      overallAgentSummary += `Extracted Facts: ${extractedFacts.map((fact) => fact.fact).join('; ')}\n`;
     }
     if (indexedAttachments.length > 0) {
       overallAgentSummary += `Indexed Attachments: ${indexedAttachments.join(', ')}\n`;
