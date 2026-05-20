@@ -16,6 +16,8 @@
         --accent: #0f7c80;
         --accent-dark: #095d60;
         --accent-soft: #d8eeee;
+        --danger: #a33a2a;
+        --danger-soft: #f7ded8;
         --shadow: 0 18px 45px rgba(36, 34, 28, 0.13);
         --radius: 8px;
         font-family:
@@ -42,6 +44,10 @@
         font: inherit;
       }
 
+      button {
+        cursor: pointer;
+      }
+
       .page {
         width: min(1420px, calc(100% - 32px));
         margin: 0 auto;
@@ -49,11 +55,7 @@
       }
 
       .topbar {
-        display: flex;
-        align-items: flex-end;
-        justify-content: space-between;
-        gap: 18px;
-        margin-bottom: 22px;
+        margin-bottom: 28px;
       }
 
       .eyebrow {
@@ -66,6 +68,7 @@
       }
 
       h1 {
+        max-width: 940px;
         margin: 0;
         font-size: clamp(2rem, 5vw, 4.8rem);
         line-height: 0.92;
@@ -73,32 +76,39 @@
       }
 
       .subtitle {
-        max-width: 650px;
+        max-width: 760px;
         margin: 12px 0 0;
         color: var(--muted);
         font-size: 1rem;
         line-height: 1.5;
       }
 
-      .copy-all {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        min-height: 42px;
-        padding: 0 16px;
-        border: 1px solid var(--accent);
-        border-radius: var(--radius);
-        background: var(--accent);
-        color: #fff;
-        cursor: pointer;
-        font-weight: 800;
-        white-space: nowrap;
-        box-shadow: 0 10px 20px rgba(15, 124, 128, 0.18);
+      .prompt-group {
+        margin-top: 26px;
       }
 
-      .copy-all:hover {
-        background: var(--accent-dark);
+      .group-header {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 20px;
+        margin-bottom: 14px;
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 12px;
+      }
+
+      .group-header h2 {
+        margin: 0;
+        font-size: 1.25rem;
+        letter-spacing: 0;
+      }
+
+      .group-header p {
+        max-width: 640px;
+        margin: 5px 0 0;
+        color: var(--muted);
+        font-size: 0.93rem;
+        line-height: 1.45;
       }
 
       .grid {
@@ -109,7 +119,7 @@
 
       .stage {
         display: flex;
-        min-height: 520px;
+        min-height: 540px;
         flex-direction: column;
         overflow: hidden;
         border: 1px solid var(--line);
@@ -124,7 +134,7 @@
 
       .stage__header {
         display: grid;
-        grid-template-columns: 44px 1fr auto;
+        grid-template-columns: 44px 1fr;
         align-items: center;
         gap: 12px;
         padding: 16px;
@@ -147,7 +157,7 @@
         min-width: 0;
       }
 
-      .stage__title h2 {
+      .stage__title h3 {
         margin: 0;
         font-size: 1.08rem;
         letter-spacing: 0;
@@ -159,28 +169,67 @@
         font-size: 0.88rem;
       }
 
-      .stage__copy {
+      .stage__toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        border-bottom: 1px solid var(--line);
+        background: #fbf7ed;
+        padding: 10px 12px;
+      }
+
+      .format-label {
+        display: inline-flex;
+        align-items: center;
+        min-height: 30px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: #fff;
+        color: var(--muted);
+        padding: 0 10px;
+        font-size: 0.78rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 8px;
+      }
+
+      .tool-button {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        min-width: 42px;
-        height: 38px;
+        gap: 7px;
+        min-height: 34px;
         border: 1px solid var(--line);
         border-radius: var(--radius);
         background: #ffffff;
         color: var(--ink);
-        cursor: pointer;
+        padding: 0 10px;
+        font-size: 0.86rem;
+        font-weight: 800;
       }
 
-      .stage__copy:hover {
+      .tool-button:hover {
         border-color: var(--accent);
         color: var(--accent-dark);
       }
 
-      .stage__copy svg,
-      .copy-all svg {
-        width: 18px;
-        height: 18px;
+      .tool-button--danger:hover {
+        border-color: var(--danger);
+        background: var(--danger-soft);
+        color: var(--danger);
+      }
+
+      .tool-button svg {
+        width: 17px;
+        height: 17px;
       }
 
       textarea {
@@ -227,13 +276,9 @@
       }
 
       @media (max-width: 920px) {
-        .topbar {
-          align-items: stretch;
+        .group-header {
+          align-items: flex-start;
           flex-direction: column;
-        }
-
-        .copy-all {
-          width: 100%;
         }
 
         .grid {
@@ -248,13 +293,26 @@
         }
 
         .stage__header {
-          grid-template-columns: 38px 1fr auto;
+          grid-template-columns: 38px 1fr;
           padding: 12px;
         }
 
         .stage__number {
           width: 38px;
           height: 38px;
+        }
+
+        .stage__toolbar {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .actions {
+          justify-content: stretch;
+        }
+
+        .tool-button {
+          flex: 1;
         }
 
         textarea {
@@ -268,233 +326,321 @@
   <body>
     <main class="page">
       <header class="topbar">
-        <div>
-          <p class="eyebrow">Full Stack Edition</p>
-          <h1>AI Developer Prompt Toolkit</h1>
-          <p class="subtitle">
-            Edit any prompt directly in the browser, copy one section at a time,
-            or copy the full toolkit after tailoring it to the task.
-          </p>
-        </div>
-        <button class="copy-all" type="button" data-copy-all>
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path
-              d="M8 8h10v12H8zM6 16H4V4h12v2"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-          Copy all prompts
-        </button>
+        <p class="eyebrow">Full Stack Edition</p>
+        <h1>AI Developer Prompt Toolkit</h1>
+        <p class="subtitle">
+          Edit prompts directly in the browser, keep changes across refreshes,
+          and copy only the prompt you need. Use reset when you want the clean
+          original version back.
+        </p>
       </header>
 
-      <section class="grid" aria-label="Prompt stages">
-        <article class="stage">
-          <div class="stage__header">
-            <div class="stage__number">1</div>
-            <div class="stage__title">
-              <h2>The Brief &amp; Alignment</h2>
-              <p>Run in a fresh chat before architecture is chosen.</p>
-            </div>
-            <button class="stage__copy" type="button" data-copy="stage-1" aria-label="Copy Stage 1">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  d="M8 8h10v12H8zM6 16H4V4h12v2"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
-            </button>
+      <section class="prompt-group" aria-labelledby="managed-flow-title">
+        <div class="group-header">
+          <div>
+            <h2 id="managed-flow-title">Managed Build Flow</h2>
+            <p>
+              A four-step sequence for turning an ambiguous task into an
+              approved plan, implementation, review, and handoff.
+            </p>
           </div>
-          <textarea id="stage-1" spellcheck="false">You are a fast, literal, and highly capable Full-Stack Developer. You are working under a Senior Engineer on an application using React 19, TypeScript, and Vite on the Frontend, and Node.js with clean architecture on the Backend.
+        </div>
 
-Your task is to help prepare an implementation strategy for the following task:
-[PASTE JIRA TICKET/DESCRIPTION/REQUIREMENTS HERE]
-
-Before you write any code or logic, you must provide THREE distinct implementation approaches to solve this problem across the full stack. For each approach, provide:
-1. A brief overview of the architecture (FE component structure and matching BE endpoints/services).
-2. The specific state management strategy. State must be kept as close to the FE component(s) as possible by default. Evaluate lifting state, persistence, or global stores ONLY if the lifecycle requires it (e.g., maintaining data after dismounting, surviving refreshes, or deep prop-drilling).
-3. The specific trade-offs (Pros & Cons regarding rendering performance, state proximity, data flow, and complexity).
-4. Potential risks or edge cases where this full-stack flow could break under unexpected state updates or network issues.
-
-Conclude by recommending one approach and explaining why it is the cleanest path forward. Do not execute or write implementation code yet. Await my architectural approval.</textarea>
-        </article>
-
-        <article class="stage">
-          <div class="stage__header">
-            <div class="stage__number">2</div>
-            <div class="stage__title">
-              <h2>Definition of Done</h2>
-              <p>Use after approving one architecture path.</p>
+        <div class="grid">
+          <article class="stage" data-prompt-card>
+            <div class="stage__header">
+              <div class="stage__number">1</div>
+              <div class="stage__title">
+                <h3>The Brief &amp; Alignment</h3>
+                <p>Run in a fresh chat before architecture is chosen.</p>
+              </div>
             </div>
-            <button class="stage__copy" type="button" data-copy="stage-2" aria-label="Copy Stage 2">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  d="M8 8h10v12H8zM6 16H4V4h12v2"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
-            </button>
-          </div>
-          <textarea id="stage-2" spellcheck="false">I approve Approach #[X]. Now, let's establish the strict Definition of Done (DoD) for this mission before you start building.
+            <div class="stage__toolbar">
+              <span class="format-label">Markdown prompt</span>
+              <div class="actions">
+                <button class="tool-button" type="button" data-copy="stage-1" aria-label="Copy The Brief and Alignment">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M8 8h10v12H8zM6 16H4V4h12v2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                  Copy
+                </button>
+                <button class="tool-button" type="button" data-reset="stage-1">Reset</button>
+                <button class="tool-button tool-button--danger" type="button" data-clear="stage-1">Clear</button>
+              </div>
+            </div>
+            <textarea id="stage-1" spellcheck="false">MODE: Planning only.
+Do not edit files, write implementation code, run destructive commands, install dependencies, or start a dev server. Your job is to understand the task, surface uncertainty, propose options, and wait for approval.
 
-As a Senior-level Full-Stack expert, your work must satisfy these criteria across both environments:
+You are a fast, literal, and highly capable Full-Stack Developer working under a Senior Engineer.
+
+Project stack and constraints:
+- Frontend: React 19, TypeScript, Vite.
+- Backend: Node.js using Clean Architecture.
+- Styling: SCSS with CSS Modules and `classnames`.
+- Default engineering bias: keep state close to the component, avoid magic strings, avoid inline styles, and avoid unnecessary new abstractions.
+
+Your task is to help prepare an implementation strategy for:
+{{TASK_DESCRIPTION}}
+
+Before writing code or logic, provide THREE distinct full-stack implementation approaches. For each approach, include:
+1. Architecture overview: frontend component structure plus matching backend endpoints, services, use-cases, or data-layer changes.
+2. State management strategy: keep state local by default. Evaluate lifting state, persistence, URL state, server cache, or global stores only when lifecycle requirements justify it.
+3. Trade-offs: rendering performance, state proximity, data flow clarity, testability, complexity, and delivery risk.
+4. Failure modes: edge cases involving async state, unexpected payloads, concurrency, network failures, permission issues, or stale data.
+5. Files likely touched: list likely frontend, backend, shared type, style, and test files.
+
+Output format:
+1. Clarifying questions: ask up to 5 focused questions only if ambiguity would materially change the architecture. If ambiguity is low-risk, state your assumption and continue.
+2. Approach A.
+3. Approach B.
+4. Approach C.
+5. Recommendation: choose the cleanest path and explain why.
+6. Assumptions and risks.
+
+Stop after the recommendation. Do not move to Definition of Done, execution, or code changes until I explicitly approve an approach.</textarea>
+          </article>
+
+          <article class="stage" data-prompt-card>
+            <div class="stage__header">
+              <div class="stage__number">2</div>
+              <div class="stage__title">
+                <h3>Definition of Done</h3>
+                <p>Use after approving one architecture path.</p>
+              </div>
+            </div>
+            <div class="stage__toolbar">
+              <span class="format-label">Markdown prompt</span>
+              <div class="actions">
+                <button class="tool-button" type="button" data-copy="stage-2" aria-label="Copy Definition of Done">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M8 8h10v12H8zM6 16H4V4h12v2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                  Copy
+                </button>
+                <button class="tool-button" type="button" data-reset="stage-2">Reset</button>
+                <button class="tool-button tool-button--danger" type="button" data-clear="stage-2">Clear</button>
+              </div>
+            </div>
+            <textarea id="stage-2" spellcheck="false">MODE: Definition of Done / Approval Gate.
+Do not edit files, write implementation code, run destructive commands, install dependencies, or start a dev server. Your job is to turn the approved plan into a strict execution contract and wait for my execution signal.
+
+I approve Approach {{APPROVED_APPROACH}}.
+
+Before you build, establish the strict Definition of Done for this mission. Treat this as the execution contract.
 
 [FRONTEND ARCHITECTURE]
-1. Core Tech & State: Pure TypeScript, leveraging clean React 19 patterns. Ensure state is encapsulated locally unless we explicitly agreed to store or persist it externally in Stage 1.
-2. Styling Architecture: Strict adherence to SCSS Files using CSS Modules. Import styles locally and use the `classnames` utility library to manage conditional classes cleanly. Absolutely NO inline styles are permitted. No magic strings-all static labels, keys, or configurations must be extracted into explicit constants.
-3. Component Design & UX: Highly modular components with a single responsibility. If asynchronous data is handled, you must elegantly manage and display loading, empty, and granular error states visually to the user.
-4. No Code Repeats: Keep code strictly DRY (Don't Repeat Yourself). Component logic and rendering should be cleanly factored.
+1. Core Tech & State: Use pure TypeScript and clean React 19 patterns. Keep state local unless Stage 1 explicitly justified lifting, persistence, URL state, server cache, or a global store.
+2. Styling Architecture: Use SCSS with CSS Modules. Import styles locally and use `classnames` for conditional classes. No inline styles. Extract static labels, keys, option lists, and configurations into explicit constants.
+3. Component Design & UX: Components must be modular and single-purpose. Async workflows must show polished loading, empty, success, and granular error states.
+4. No Code Repeats: Keep code DRY without creating abstractions that are broader than the task needs.
 
 [BACKEND ARCHITECTURE]
-5. Clean Node Node.js: Implement clean architecture. Separate routing/entry points, business logic (services/use-cases), and data layers strictly. No bloated controllers or mixed concerns.
-6. Unified Type Safety: The FE and BE must share the exact same Types/Interfaces for data transfer objects (DTOs) and API payloads. The frontend must consume backend-driven contractual types natively.
+5. Clean Node.js: Separate routing/entry points, business logic/services/use-cases, validation, and data access. Avoid bloated controllers and mixed concerns.
+6. Unified Type Safety: Frontend and backend must share exact DTO and API payload types when the repo structure allows it. Avoid `any` and unsafe type escapes.
 
 [LOGIC, ROBUSTNESS & ERROR HANDLING]
-7. Total Conditional Handling: Every single `if` statement MUST handle its corresponding `else` branch explicitly. No silent failures or dropped execution paths.
-8. Defensive Programming: Write dedicated error handling blocks, explicitly catch and log all operational errors with contextual detail, and defensively test for edge cases (e.g., null values, empty payloads, network timeouts).
+7. Total Conditional Handling: Every meaningful `if` must have an explicit `else` or a clearly justified early return. No silent dropped paths.
+8. Defensive Programming: Catch operational errors with contextual logging. Defensively handle null values, empty payloads, malformed data, permission failures, network timeouts, retries, and stale async results.
+9. Test Evidence: Add or update tests proportionate to risk. If tests are impossible in the current setup, explain the blocker and provide manual verification steps.
 
-Before you begin coding, restate this full-stack Definition of Done in your own words to verify your alignment. Then, wait for my signal to execute.</textarea>
-        </article>
+Output format:
+1. Restate the Definition of Done in your own words.
+2. List any remaining questions that could change the implementation.
+3. State the assumptions you will proceed with if I give the execution signal.
 
-        <article class="stage">
-          <div class="stage__header">
-            <div class="stage__number">3</div>
-            <div class="stage__title">
-              <h2>Execution &amp; Review Gate</h2>
-              <p>Use when the build should begin.</p>
+Stop after restating the Definition of Done, remaining questions, and assumptions. Do not start coding until I explicitly say to execute.</textarea>
+          </article>
+
+          <article class="stage" data-prompt-card>
+            <div class="stage__header">
+              <div class="stage__number">3</div>
+              <div class="stage__title">
+                <h3>Execution &amp; Review Gate</h3>
+                <p>Use when the build should begin.</p>
+              </div>
             </div>
-            <button class="stage__copy" type="button" data-copy="stage-3" aria-label="Copy Stage 3">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  d="M8 8h10v12H8zM6 16H4V4h12v2"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
-            </button>
-          </div>
-          <textarea id="stage-3" spellcheck="false">Execute the implementation now based on our agreed approach and Definition of Done. Provide the full code clean, commented, and strictly typed across both the Frontend and Backend files.
-
-Ensure the CSS Modules, classnames implementation, shared TypeScript interfaces, clean Node layers, strict `if/else` handling, and robust async/UX states match our style guide perfectly.
-
-Crucial: Immediately following your code blocks, shift your role to a skeptical Senior QA and Performance Reviewer. Audit your own full-stack code and explicitly answer:
-1. What assumptions did you make during this build that might be wrong?
-2. If a reviewer were to reject this implementation, what would be the most likely reason? (Look out for unnecessary re-renders, loose error catching, unhandled else clauses, code duplication, or type escapes like 'any').
-3. Score your output directly against each item in our full-stack Definition of Done.</textarea>
-        </article>
-
-        <article class="stage">
-          <div class="stage__header">
-            <div class="stage__number">4</div>
-            <div class="stage__title">
-              <h2>The Clean Handoff</h2>
-              <p>Use at a context reset or session handoff.</p>
+            <div class="stage__toolbar">
+              <span class="format-label">Markdown prompt</span>
+              <div class="actions">
+                <button class="tool-button" type="button" data-copy="stage-3" aria-label="Copy Execution and Review Gate">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M8 8h10v12H8zM6 16H4V4h12v2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                  Copy
+                </button>
+                <button class="tool-button" type="button" data-reset="stage-3">Reset</button>
+                <button class="tool-button tool-button--danger" type="button" data-clear="stage-3">Clear</button>
+              </div>
             </div>
-            <button class="stage__copy" type="button" data-copy="stage-4" aria-label="Copy Stage 4">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  d="M8 8h10v12H8zM6 16H4V4h12v2"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
-            </button>
-          </div>
-          <textarea id="stage-4" spellcheck="false">We are at a handoff point. Act as a technical project manager summarizing this session so a completely fresh, context-free AI session can continue the work flawlessly.
+            <textarea id="stage-3" spellcheck="false">MODE: Execution.
+You are now approved to edit files, run appropriate commands, and verify the implementation. Keep the work scoped to the approved approach and Definition of Done.
 
-Generate a clean Markdown Handoff Document including:
-1. The Original Goal & Context.
-2. Architectural Decisions Made (Approved FE patterns, state placement choices, CSS modules structure, Node backend layer separation, and shared contracts).
-3. Current Technical Constraints & State of the Code.
-4. Active or Unresolved Risks (Performance bottlenecks, unhandled edge cases, open type definitions).
-5. Exact Next Recommended Step for the incoming session.
-6. The specific evidence needed to prove the next step succeeds.
+Execute the implementation now based on our agreed approach and Definition of Done.
 
-Remove all conversational fluff and back-and-forth debugging history. Give me pure, actionable state.</textarea>
-        </article>
+Implementation constraints:
+- Prefer the smallest production-quality implementation that satisfies the requirement.
+- Do not introduce new libraries, global state, backend layers, or broad abstractions unless the existing codebase already uses them or the requirement clearly needs them.
+- Preserve existing behavior outside the approved task scope.
+- If you discover ambiguity while coding, ask focused questions only when the answer materially changes the implementation. Otherwise, state the assumption and continue.
 
-        <article class="stage stage--wide">
-          <div class="stage__header">
-            <div class="stage__number">5</div>
-            <div class="stage__title">
-              <h2>Interview Project Onboarding</h2>
-              <p>Use when receiving an interview assignment or unknown codebase.</p>
+Deliver the implementation with:
+1. Strict TypeScript across frontend, backend, and shared contracts.
+2. SCSS Modules with `classnames`; no inline styles.
+3. Local state by default, with any broader state lifecycle explicitly justified.
+4. Clean Node.js layer separation where backend changes are needed.
+5. Explicit loading, empty, success, and granular error states for async UI.
+6. Defensive error handling and contextual logging.
+7. Tests or clear verification evidence.
+
+After the implementation, switch roles to a skeptical Senior QA and Performance Reviewer. Audit your own work and answer:
+1. What assumptions did you make that might be wrong?
+2. What would be the most likely reason a reviewer would reject this implementation?
+3. Where could unnecessary re-renders, stale async state, loose error catching, duplicated code, or type escapes exist?
+4. Score the output against every Definition of Done item.
+5. List exact verification commands and expected results.</textarea>
+          </article>
+
+          <article class="stage" data-prompt-card>
+            <div class="stage__header">
+              <div class="stage__number">4</div>
+              <div class="stage__title">
+                <h3>The Clean Handoff</h3>
+                <p>Use at a context reset or session handoff.</p>
+              </div>
             </div>
-            <button class="stage__copy" type="button" data-copy="stage-5" aria-label="Copy Interview Project Onboarding">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  d="M8 8h10v12H8zM6 16H4V4h12v2"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
-            </button>
-          </div>
-          <textarea id="stage-5" spellcheck="false">You are the Lead Architect and Technical Project Manager for this interview project. I have just been handed this codebase/assignment, and I need a comprehensive, senior-level briefing to onboard me instantly so I can execute perfectly.
+            <div class="stage__toolbar">
+              <span class="format-label">Markdown prompt</span>
+              <div class="actions">
+                <button class="tool-button" type="button" data-copy="stage-4" aria-label="Copy The Clean Handoff">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M8 8h10v12H8zM6 16H4V4h12v2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                  Copy
+                </button>
+                <button class="tool-button" type="button" data-reset="stage-4">Reset</button>
+                <button class="tool-button tool-button--danger" type="button" data-clear="stage-4">Clear</button>
+              </div>
+            </div>
+            <textarea id="stage-4" spellcheck="false">MODE: Handoff.
+Do not add new implementation work unless explicitly asked. Your job is to preserve project state clearly enough for a fresh session to continue without guessing.
 
-Here are the assignment details, requirements, or code structure:
-[PASTE THE INTERVIEW PROJECT INSTRUCTIONS / REPO STRUCTURE / CODE HERE]
+We are at a handoff point. Act as a technical project manager summarizing this session so a completely fresh, context-free AI session can continue the work flawlessly.
+
+Generate a clean Markdown Handoff Document with these sections:
+1. Original Goal & Context.
+2. Approved Architecture: frontend patterns, state placement, styling structure, backend layer separation, shared contracts, and any rejected alternatives.
+3. Current Code State: exact files changed, important functions/components/endpoints, and known dependency or environment assumptions.
+4. Current Technical Constraints: repo conventions, testing limitations, lint/build constraints, API contracts, and style rules.
+5. Active or Unresolved Risks: performance bottlenecks, missing edge cases, unhandled states, open type definitions, uncertain requirements, or reviewer concerns.
+6. Exact Next Recommended Step: the single next action an incoming session should take.
+7. Success Evidence: commands, screenshots, tests, logs, or manual flows needed to prove the next step succeeds.
+
+Rules:
+- Remove conversational fluff and debugging history.
+- Preserve concrete decisions, file paths, commands, and verification results.
+- If anything is uncertain, label it clearly as an assumption or open question.
+- Give pure, actionable project state.</textarea>
+          </article>
+        </div>
+      </section>
+
+      <section class="prompt-group" aria-labelledby="standalone-title">
+        <div class="group-header">
+          <div>
+            <h2 id="standalone-title">Standalone Prompts</h2>
+            <p>
+              One-off prompts for interviews, unknown repositories, and live
+              assessment prep.
+            </p>
+          </div>
+        </div>
+
+        <div class="grid">
+          <article class="stage stage--wide" data-prompt-card>
+            <div class="stage__header">
+              <div class="stage__number">A</div>
+              <div class="stage__title">
+                <h3>Interview Project Onboarding</h3>
+                <p>Use when receiving an interview assignment or unknown codebase.</p>
+              </div>
+            </div>
+            <div class="stage__toolbar">
+              <span class="format-label">Markdown prompt</span>
+              <div class="actions">
+                <button class="tool-button" type="button" data-copy="interview-onboarding" aria-label="Copy Interview Project Onboarding">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M8 8h10v12H8zM6 16H4V4h12v2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                  Copy
+                </button>
+                <button class="tool-button" type="button" data-reset="interview-onboarding">Reset</button>
+                <button class="tool-button tool-button--danger" type="button" data-clear="interview-onboarding">Clear</button>
+              </div>
+            </div>
+            <textarea id="interview-onboarding" spellcheck="false">MODE: Onboarding and planning only.
+Do not implement, edit files, install dependencies, or run destructive commands yet. Give me a technical map, risks, exact files, likely commands, and clarification questions when uncertainty matters.
+
+You are the Lead Architect and Technical Project Manager for this interview project. I have just been handed this codebase or assignment, and I need a comprehensive senior-level briefing to onboard me instantly so I can execute cleanly.
+
+Here are the assignment details, requirements, repository structure, or code excerpts:
+{{INTERVIEW_PROJECT_MATERIALS}}
 
 ----------------------------------------------------------------------
-OPTIONAL EXTRA CONTEXT (My Tech Profile & Priorities):
-- My core focus is on high-quality, type-safe Front-End development (React 19/17, TypeScript, modular components, strict state proximity, SCSS with CSS Modules and classnames, no magic strings, no inline styles).
-- I am highly comfortable with Node.js backends utilizing Clean Architecture (clear separation of routes, services, and data layers) using unified, shared TypeScript types across FE/BE.
-- I place a heavy emphasis on production-ready robustness: strict if/else handling, defensive programming, explicit error catching/logging, and pristine UX states for async operations (loading, empty, granular error UI).
+OPTIONAL EXTRA CONTEXT: MY TECH PROFILE & PRIORITIES
+- My core focus is high-quality, type-safe frontend development: React 19/17, TypeScript, modular components, strict state proximity, SCSS with CSS Modules and `classnames`, no magic strings, and no inline styles.
+- I am comfortable with Node.js backends using Clean Architecture: clear separation of routes, services/use-cases, validation, and data layers with unified shared TypeScript contracts across frontend/backend.
+- I prioritize production-ready robustness: explicit condition handling, defensive programming, contextual error catching/logging, and polished async UX states for loading, empty, success, and granular error cases.
+- I prefer the smallest implementation that satisfies the assignment without overbuilding.
 ----------------------------------------------------------------------
 
-Analyze the provided project materials and output a single, comprehensive Markdown document covering the following five sections:
+If the assignment is ambiguous, ask up to 5 focused clarification questions only when the answers would materially change the execution plan. If the ambiguity is manageable, state your assumption and continue.
+
+Analyze the provided project materials and output a single comprehensive Markdown document covering:
 
 ### 1. Core Architecture & Tech Stack
-- Break down the exact tech stack being used (Frontend framework/version, bundler like Vite/Webpack, testing libraries, and Backend setup if applicable).
-- Explain the current architectural pattern of the repository (e.g., folder structure, where components live, where services/API logic live, and how data flows).
+- Break down the exact tech stack being used: frontend framework/version, bundler, styling system, testing libraries, backend setup, package manager, and build commands when visible.
+- Explain the repository architecture: folder structure, component locations, service/API boundaries, routing, data flow, shared types, and test organization.
 
-### 2. The "Where & What" (Your Execution Plan)
-- Identify the exact files I need to modify or create to fulfill the assignment requirements.
-- List the precise entry points, components, or backend endpoints that are the core focus of this mission.
-- Highlight what parts of the existing code I should NOT touch or alter to avoid breaking existing functionality.
+### 2. The "Where & What" Execution Plan
+- Identify the exact files I need to modify or create.
+- List the precise entry points, components, hooks, services, utilities, API clients, backend endpoints, or tests that matter.
+- Highlight what parts of the existing code I should avoid touching to reduce regression risk.
+- Suggest the smallest production-quality implementation path.
 
 ### 3. Implied Code Standards & Quality Expectations
-- Based on the existing codebase (or standard senior-level expectations for this stack), outline the coding style I must adhere to.
-- Detail how state management should be handled (e.g., local state boundaries vs. global stores), styling guidelines found in the project, and type-safety expectations.
+- Infer the coding style, naming conventions, component patterns, state management approach, styling rules, and type-safety expectations from the codebase.
+- Identify any hidden reviewer expectations common for this stack or interview format.
+- Call out anything that would look overengineered or underengineered.
 
 ### 4. Critical Edge Cases & Robustness Map
-- Map out the exact edge cases, network behaviors, or data states I must account for to make this production-ready (e.g., empty responses, slow networks, null/undefined values, API failures).
-- Detail where and how errors should be caught, logged, and surfaced to the UI elegantly.
+- Map the exact edge cases, network behaviors, data states, and user flows I must handle.
+- Specify where errors should be caught, logged, and surfaced in the UI.
+- Include async risks such as stale responses, loading flicker, empty responses, partial failures, null/undefined data, retries, and permission failures.
 
-### 5. Senior-Level "Bonus Points" Opportunities
-- Identify 2-3 specific architectural improvements or modern practices (e.g., optimization hooks, strict performance considerations, clean decoupling) that are not explicitly requested in the prompt but will make my submission stand out to a senior reviewer.
+### 5. Senior-Level Bonus Opportunities
+- Identify 2-3 specific improvements that are not explicitly required but would stand out to a senior reviewer.
+- Keep these scoped and pragmatic: performance, accessibility, test coverage, type safety, clean decoupling, or maintainability.
+
+### 6. Final Execution Checklist
+- Provide a concise checklist I can follow while coding.
+- Include likely verification commands and what successful evidence should look like.
 
 Be direct, highly technical, and omit conversational fluff. Give me pure, actionable engineering intelligence.</textarea>
-        </article>
+          </article>
+        </div>
       </section>
     </main>
 
     <div class="toast" role="status" aria-live="polite" data-toast>Copied</div>
 
     <script>
+      const STORAGE_PREFIX = "ai-prompt-toolkit:";
       const copyButtons = document.querySelectorAll("[data-copy]");
-      const copyAllButton = document.querySelector("[data-copy-all]");
+      const resetButtons = document.querySelectorAll("[data-reset]");
+      const clearButtons = document.querySelectorAll("[data-clear]");
+      const textareas = document.querySelectorAll("textarea");
       const toast = document.querySelector("[data-toast]");
+      const defaultPrompts = {};
 
       const showToast = (message) => {
         toast.textContent = message;
@@ -504,6 +650,8 @@ Be direct, highly technical, and omit conversational fluff. Give me pure, action
           toast.classList.remove("is-visible");
         }, 1400);
       };
+
+      const getStorageKey = (id) => `${STORAGE_PREFIX}${id}`;
 
       const copyTextWithFallback = (text) => {
         const fallbackTextarea = document.createElement("textarea");
@@ -532,19 +680,43 @@ Be direct, highly technical, and omit conversational fluff. Give me pure, action
         }
       };
 
-      copyButtons.forEach((button) => {
-        button.addEventListener("click", () => {
-          const textarea = document.getElementById(button.dataset.copy);
-          copyText(textarea.value, `Copied ${textarea.id.replace("-", " ")}`);
+      textareas.forEach((textarea) => {
+        defaultPrompts[textarea.id] = textarea.value;
+
+        const savedValue = window.localStorage.getItem(getStorageKey(textarea.id));
+        if (savedValue !== null) {
+          textarea.value = savedValue;
+        }
+
+        textarea.addEventListener("input", () => {
+          window.localStorage.setItem(getStorageKey(textarea.id), textarea.value);
         });
       });
 
-      copyAllButton.addEventListener("click", () => {
-        const allText = Array.from(document.querySelectorAll("textarea"))
-          .map((textarea) => textarea.value.trim())
-          .join("\n\n########################################################\n\n");
+      copyButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          const textarea = document.getElementById(button.dataset.copy);
+          copyText(textarea.value, "Prompt copied");
+        });
+      });
 
-        copyText(allText, "Copied all prompts");
+      resetButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          const textarea = document.getElementById(button.dataset.reset);
+          textarea.value = defaultPrompts[textarea.id];
+          window.localStorage.removeItem(getStorageKey(textarea.id));
+          showToast("Prompt reset");
+        });
+      });
+
+      clearButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          const textarea = document.getElementById(button.dataset.clear);
+          textarea.value = "";
+          window.localStorage.setItem(getStorageKey(textarea.id), "");
+          textarea.focus();
+          showToast("Prompt cleared");
+        });
       });
     </script>
   </body>
