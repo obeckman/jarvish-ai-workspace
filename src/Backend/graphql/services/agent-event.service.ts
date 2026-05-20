@@ -17,7 +17,7 @@ import {
   touchSession,
 } from "@/Backend/graphql/services/session.resolver.service";
 import { logger } from "@/Backend/utils/logger";
-import { EVENT_TYPES, STAGES } from "@/shared/jarvish.constants.ts";
+import { DEFAULT_USER_ID, EVENT_TYPES, STAGES } from "@/shared/jarvish.constants.ts";
 import { HumanMessage, type MessageContent, type ToolCall } from "@langchain/core/messages";
 
 type AgentEventPayload = {
@@ -70,6 +70,7 @@ export async function* streamAgentEvents({
     attachments: parsed.attachments,
     googleToken: parsed.googleToken,
     sessionId: parsed.sessionId,
+    userId: DEFAULT_USER_ID,
     metadata: { stage: STAGES.PREPARE, status: "Initializing..." },
   };
 

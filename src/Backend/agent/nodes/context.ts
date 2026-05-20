@@ -19,7 +19,7 @@ export async function contextNode(state: AgentStateType) {
   // Stage 1: Preparation / Memory Retrieval
   logger.info({ sessionId: state.sessionId, query }, "Retrieving memories for query");
 
-  const memories = await retrieveMemories(query, 5);
+  const memories = await retrieveMemories(query, 10, { userId: state.userId });
   logger.debug({ sessionId: state.sessionId, retrievedMemoriesCount: memories.length }, "Retrieved memories");
   return {
     memories: memories,

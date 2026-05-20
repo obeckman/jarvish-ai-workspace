@@ -1,7 +1,7 @@
 import { logger } from "@/Backend/utils/logger";
 import { AgentToolCall } from "@/Backend/agent/contracts/state.contract";
 import { AgentStateType } from "@/Backend/agent/state";
-import { addMemory, forgetMemory } from "@/Backend/services/memory/memory.service";
+import { addMemory, forgetMemory, MEMORY_TYPES } from "@/Backend/services/memory/memory.service";
 import { readFile, writeFile } from "@/Backend/services/tools/file.service";
 import { getGoogleDocContent, listCalendarEvents, searchGmailMessages, updateGoogleDoc } from "@/Backend/services/tools/google.service";
 import { checkInventory } from "@/Backend/services/tools/inventory.service";
@@ -42,9 +42,20 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
   [TOOL_NAMES.READ_PDF]: (call) => readPdf(ReadPdfToolArgsSchema.parse(call.args)),
   [TOOL_NAMES.READ_FILE]: (call) => readFile(ReadFileToolArgsSchema.parse(call.args)),
   [TOOL_NAMES.WRITE_FILE]: (call) => writeFile(WriteFileToolArgsSchema.parse(call.args)),
-  [TOOL_NAMES.ADD_MEMORY]: (call) => {
+  [TOOL_NAMES.ADD_MEMORY]: (call, state) => {
     const args = AddMemoryToolArgsSchema.parse(call.args);
-    return addMemory(args.fact, args.category ? { category: args.category } : {});
+    const createdAt = new Date().toISOString();
+    return addMemory(args.fact, {
+      ...(args.category ? { category: args.category } : {}),
+      type: MEMORY_TYPES.TOOL_FACT,
+      sourceKind: MEMORY_TYPES.TOOL_FACT,
+      userId: state.userId,
+      sessionId: state.sessionId,
+      timestamp: createdAt,
+      createdAt,
+      isActive: true,
+      isLatest: true,
+    });
   },
   [TOOL_NAMES.FORGET_MEMORY]: async (call) => {
     const args = ForgetMemoryToolArgsSchema.parse(call.args);

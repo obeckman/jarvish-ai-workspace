@@ -93,6 +93,14 @@ export const AgentState = Annotation.Root({ // Reintroduce Annotation.Root
     reducer: (x, y) => y ?? x,
     default: () => null,
   }),
+
+  /**
+   * Current authenticated user. Defaults at the API boundary until auth exists.
+   */
+  userId: Annotation<string>({
+    reducer: (x, y) => y ?? x,
+    default: () => "",
+  }),
 });
 
 /**

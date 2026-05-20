@@ -60,10 +60,10 @@ export class WeaviateVectorStore implements IVectorStore {
   /**
    * Adds a document to Weaviate with a manually provided vector.
    */
-  async add(text: string, embedding: number[], metadata: MemoryMetadata): Promise<void> {
+  async add(text: string, embedding: number[], metadata: MemoryMetadata): Promise<string> {
     try {
       const collection = this.client.collections.get(this.className);
-      await collection.data.insert({
+      return await collection.data.insert({
         properties: {
           text,
           metadata: JSON.stringify(metadata),
@@ -79,11 +79,11 @@ export class WeaviateVectorStore implements IVectorStore {
   /**
    * Performs a nearVector search to find semantically similar documents.
    */
-  async search(queryEmbedding: number[], topK: number): Promise<Memory[]> {
+  async search(queryEmbedding: number[], options: { limit: number }): Promise<Memory[]> {
     try {
       const collection = this.client.collections.get(this.className);
       const result = await collection.query.nearVector(queryEmbedding, {
-        limit: topK,
+        limit: options.limit,
         returnMetadata: ['distance'],
       });
       

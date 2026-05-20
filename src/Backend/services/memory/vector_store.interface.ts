@@ -12,6 +12,10 @@ export interface Memory {
   metadata?: MemoryMetadata;
 }
 
+export type MemorySearchOptions = {
+  limit: number;
+};
+
 /**
  * Standard interface for Vector Store implementations (e.g., Weaviate, Pinecone, Local).
  * This allows us to swap the underlying database without changing the agent logic.
@@ -28,14 +32,14 @@ export interface IVectorStore {
    * @param embedding The numerical vector representation of the text.
    * @param metadata Optional structured data (category, timestamp, etc.).
    */
-  add(text: string, embedding: number[], metadata: MemoryMetadata): Promise<void>;
+  add(text: string, embedding: number[], metadata: MemoryMetadata): Promise<string>;
 
   /**
    * Searches for the most semantically relevant documents using vector similarity.
    * @param queryEmbedding The numerical vector of the search query.
    * @param topK Number of results to return.
    */
-  search(queryEmbedding: number[], topK: number): Promise<Memory[]>;
+  search(queryEmbedding: number[], options: MemorySearchOptions): Promise<Memory[]>;
 
   /**
    * Removes a memory from the store by its ID.

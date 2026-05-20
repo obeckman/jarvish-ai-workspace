@@ -52,6 +52,7 @@ export const structuredFacts = sqliteTable('structured_facts', {
   fact: text('fact').notNull(),
   category: text('category').default('general'),
   confidence: integer('confidence').default(100), // e.g. 0-100
+  vectorMemoryId: text('vector_memory_id'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 });
 

@@ -8,6 +8,13 @@
       "when": 1777916239996,
       "tag": "0000_watery_spiral",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1779308781169,
+      "tag": "0001_add_structured_fact_vector_id",
+      "breakpoints": true
     }
   ]
 }

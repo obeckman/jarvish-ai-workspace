@@ -95,6 +95,8 @@ export const API_ENDPOINTS = {
   CONFIG: '/api/config',
 } as const;
 
+export const DEFAULT_USER_ID = 'developer';
+
 export const DISPLAY_TYPE ={
   TABLE: 'table',
   CHART: 'chart',

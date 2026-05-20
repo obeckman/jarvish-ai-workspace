@@ -13,6 +13,7 @@ import {
   StartResearchArgsSchema,
 } from "@/Backend/graphql/schemas/resolver.schema";
 import { generateTitle } from "@/Backend/services/titling.service";
+import { DEFAULT_USER_ID } from "@/shared/jarvish.constants";
 import { eq } from "drizzle-orm";
 
 export async function startResearch(_args: MutationStartResearchArgs): Promise<string> {
@@ -27,6 +28,7 @@ export async function createSession(args: MutationCreateSessionArgs): Promise<Se
   await db.insert(sessions).values({
     id,
     title: finalTitle,
+    userId: DEFAULT_USER_ID,
   });
 
   const [newSession] = await db.select().from(sessions).where(eq(sessions.id, id));

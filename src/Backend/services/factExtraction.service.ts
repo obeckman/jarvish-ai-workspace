@@ -2,14 +2,17 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { z } from "zod";
 import { REASONING_MODEL } from "@/Backend/agent/models";
 import parse from "partial-json-parser";
-import { addMemory } from "@/Backend/services/memory/memory.service"; // Import addMemory
+import { addMemory, MEMORY_TYPES } from "@/Backend/services/memory/memory.service"; // Import addMemory
 import { db } from "@/Backend/db";
 import { structuredFacts } from "@/Backend/db/schema";
 import { logger } from "@/Backend/utils/logger";
+import { and, eq, isNull, or } from "drizzle-orm";
 
 export type ExtractedFact = {
   fact: string;
   category: string;
+  status: "stored" | "duplicate" | "conflict";
+  conflictWith?: string;
 };
 
 const ExtractedFactSchema = z.object({
@@ -29,6 +32,7 @@ type FactExtractionHistoryMessage = {
  */
 export async function extractAndStoreFacts(
   sessionId: string,
+  userId: string,
   history: FactExtractionHistoryMessage[],
 ): Promise<ExtractedFact[]> {
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
@@ -74,28 +78,135 @@ export async function extractAndStoreFacts(
         category: factData?.category || "general",
       })));
 
+      const storedFacts: ExtractedFact[] = [];
+
       for (const factData of extractedFacts) {
         const factText = factData.fact;
         const category = factData.category;
-        await addMemory(factText, {
-          type: 'structured_fact',
+
+        const existingFacts = await db
+          .select()
+          .from(structuredFacts)
+          .where(and(
+            or(eq(structuredFacts.userId, userId), isNull(structuredFacts.userId)),
+            eq(structuredFacts.category, category),
+          ));
+
+        const duplicateFact = existingFacts.find((existingFact) => normalizeFact(existingFact.fact) === normalizeFact(factText));
+        if (duplicateFact) {
+          storedFacts.push({
+            fact: factText,
+            category,
+            status: "duplicate",
+          });
+          logger.info({ sessionId, userId, category, factText }, "[Fact Extraction] Duplicate fact skipped.");
+          continue;
+        }
+
+        const conflictingFact = findConflictingFact(existingFacts, factText, category);
+        if (conflictingFact) {
+          storedFacts.push({
+            fact: factText,
+            category,
+            status: "conflict",
+            conflictWith: conflictingFact.fact,
+          });
+          logger.warn({
+            sessionId,
+            userId,
+            category,
+            newFact: factText,
+            existingFact: conflictingFact.fact,
+          }, "[Fact Extraction] Potential fact conflict requires user clarification.");
+          continue;
+        }
+
+        const [insertedFact] = await db.insert(structuredFacts).values({
           sessionId,
-          category,
-          timestamp: new Date().toISOString(),
-        });
-        await db.insert(structuredFacts).values({
-          sessionId,
+          userId,
           fact: factText,
           category,
+        }).returning({ id: structuredFacts.id });
+
+        if (!insertedFact) {
+          logger.error({ sessionId, userId, category, factText }, "[Fact Extraction] SQLite insert did not return a fact ID.");
+          continue;
+        }
+
+        const createdAt = new Date().toISOString();
+        const vectorMemoryId = await addMemory(factText, {
+          type: MEMORY_TYPES.STRUCTURED_FACT,
+          sourceKind: MEMORY_TYPES.STRUCTURED_FACT,
+          sourceId: insertedFact.id,
+          structuredFactId: insertedFact.id,
+          userId,
+          sessionId,
+          category,
+          timestamp: createdAt,
+          createdAt,
+          isActive: true,
+          isLatest: true,
+        });
+
+        await db.update(structuredFacts)
+          .set({ vectorMemoryId })
+          .where(eq(structuredFacts.id, insertedFact.id));
+
+        storedFacts.push({
+          fact: factText,
+          category,
+          status: "stored",
         });
         logger.info(`[Fact Extraction] Stored fact: "${factText}" (Category: ${category}) in VectorDB and database.`);
       }
-      logger.info(`[Fact Extraction] Extracted and stored ${extractedFacts.length} new facts for session ${sessionId} in VectorDB.`);
-      return extractedFacts; // Return the extracted facts on success
+      logger.info(`[Fact Extraction] Extracted ${extractedFacts.length} facts for session ${sessionId}; stored ${storedFacts.filter(fact => fact.status === "stored").length}.`);
+      return storedFacts; // Return the extracted facts on success
     }
     return []; // Return empty array if no facts found
   } catch (error) {
     logger.error(error, "[Fact Extraction Error]");
     return []; // Return empty array on error
   }
+}
+
+function normalizeFact(fact: string): string {
+  return fact.trim().replace(/\s+/g, " ").toLocaleLowerCase();
+}
+
+function findConflictingFact(
+  existingFacts: Array<{ fact: string; category: string | null }>,
+  newFact: string,
+  category: string,
+): { fact: string } | undefined {
+  if (!isConflictSensitiveCategory(category)) {
+    return undefined;
+  }
+
+  const newSubject = getFactSubject(newFact);
+  if (!newSubject) {
+    return undefined;
+  }
+
+  return existingFacts.find((existingFact) => {
+    const existingSubject = getFactSubject(existingFact.fact);
+    if (!existingSubject) {
+      return false;
+    }
+
+    return existingSubject === newSubject && normalizeFact(existingFact.fact) !== normalizeFact(newFact);
+  });
+}
+
+function isConflictSensitiveCategory(category: string): boolean {
+  return ["personal_info", "preferences", "relationships"].includes(category);
+}
+
+function getFactSubject(fact: string): string | undefined {
+  const normalized = normalizeFact(fact);
+  const match = normalized.match(/^(.*?)(?:\s+is\s+|\s+are\s+|\s+lives\s+in\s+|\s+prefers\s+|\s+has\s+)/);
+  if (match?.[1]) {
+    return match[1].trim();
+  }
+
+  return undefined;
 }

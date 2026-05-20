@@ -1,5 +1,5 @@
 import { AgentStateType } from "@/Backend/agent/state";
-import { addMemory } from "@/Backend/services/memory/memory.service";
+import { addMemory, MEMORY_TYPES } from "@/Backend/services/memory/memory.service";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { ARCHIVE_MODEL } from "@/Backend/agent/models";
 import { PDFParse } from 'pdf-parse';
@@ -10,6 +10,7 @@ import { sessionSummaries } from "@/Backend/db/schema";
 import { STAGES, ROLES } from "@/shared/jarvish.constants";
 import { getMessageRole } from "./utils";
 import { logger } from "@/Backend/utils/logger";
+import { createHash, randomUUID } from "node:crypto";
 
 /**
  * Node: Memory Archiving
@@ -25,6 +26,7 @@ export async function archiveNode(state: AgentStateType) {
   let summary: { summaryTitle: string; userMessage: string; aiAnswer: string } | null = null;
   let extractedFacts: ExtractedFact[] = [];
   let indexedAttachments: string[] = [];
+  const userId = state.userId;
 
   // 1. Generate Session Summary for UI History (New Requirement)
   if (state.sessionId) {
@@ -58,7 +60,7 @@ export async function archiveNode(state: AgentStateType) {
         logger.info({ sessionId: state.sessionId, summaryTitle: summary.summaryTitle }, "Session summary stored");
       }
       // 5. Extract Static Facts
-      extractedFacts = await extractAndStoreFacts(state.sessionId, history);
+      extractedFacts = await extractAndStoreFacts(state.sessionId, userId, history);
       logger.debug({ sessionId: state.sessionId, extractedFactsCount: extractedFacts.length }, "Extracted facts");
 
     } catch (err) {
@@ -88,9 +90,13 @@ export async function archiveNode(state: AgentStateType) {
     Assistant: ${modelContent}`;
 
     await addMemory(conversationSummary, {
-      type: 'history',
+      type: MEMORY_TYPES.HISTORY,
+      sourceKind: MEMORY_TYPES.HISTORY,
       sessionId: state.sessionId,
-      timestamp: new Date().toISOString()
+      userId,
+      timestamp: new Date().toISOString(),
+      isActive: true,
+      isLatest: true,
     }).catch(err => logger.error({ sessionId: state.sessionId, error: err }, "Archive Node Error: Summary Archival"));
   } else {
     const roles = state.messages.map(m => getMessageRole(m));
@@ -128,12 +134,26 @@ export async function archiveNode(state: AgentStateType) {
         }
 
         if (contentToIndex) {
+          const normalizedName = normalizeFileName(att.name);
+          const contentHash = hashText(contentToIndex);
+          const documentGroupKey = hashText(`${userId}:${normalizedName}`);
+          const createdAt = new Date().toISOString();
           await addMemory(contentToIndex, {
-            type: 'attachment',
+            type: MEMORY_TYPES.ATTACHMENT,
+            sourceKind: MEMORY_TYPES.ATTACHMENT,
+            sourceId: randomUUID(),
             name: att.name,
+            normalizedName,
             mimeType: att.mimeType,
             sessionId: state.sessionId,
-            timestamp: new Date().toISOString()
+            userId,
+            contentHash,
+            documentGroupKey,
+            versionId: randomUUID(),
+            timestamp: createdAt,
+            createdAt,
+            isActive: true,
+            isLatest: true,
           });
           indexedAttachments.push(att.name); // Track indexed attachments
           logger.debug({ sessionId: state.sessionId, attachmentName: att.name }, "Indexed attachment");
@@ -151,8 +171,9 @@ export async function archiveNode(state: AgentStateType) {
     overallAgentSummary += `User Message: ${summary.userMessage}\n`;
     overallAgentSummary += `AI Answer: ${summary.aiAnswer}\n`;
 
-    if (extractedFacts.length > 0) {
-      overallAgentSummary += `Extracted Facts: ${extractedFacts.map((fact) => fact.fact).join('; ')}\n`;
+    const storedFacts = extractedFacts.filter((fact) => fact.status === "stored");
+    if (storedFacts.length > 0) {
+      overallAgentSummary += `Extracted Facts: ${storedFacts.map((fact) => fact.fact).join('; ')}\n`;
     }
     if (indexedAttachments.length > 0) {
       overallAgentSummary += `Indexed Attachments: ${indexedAttachments.join(', ')}\n`;
@@ -165,9 +186,13 @@ export async function archiveNode(state: AgentStateType) {
 
     try {
       await addMemory(overallAgentSummary, {
-        type: 'overall_session_summary',
+        type: MEMORY_TYPES.OVERALL_SESSION_SUMMARY,
+        sourceKind: MEMORY_TYPES.OVERALL_SESSION_SUMMARY,
         sessionId: state.sessionId,
+        userId,
         timestamp: new Date().toISOString(),
+        isActive: true,
+        isLatest: true,
       });
       logger.info({ sessionId: state.sessionId }, "Overall agent interaction summary added to vector store");
     } catch (err) {
@@ -175,12 +200,34 @@ export async function archiveNode(state: AgentStateType) {
     }
   }
 
+  const conflictCount = extractedFacts.filter((fact) => fact.status === "conflict").length;
+  const duplicateCount = extractedFacts.filter((fact) => fact.status === "duplicate").length;
+  const conflictSummary = extractedFacts
+    .filter((fact) => fact.status === "conflict")
+    .map((fact) => `"${fact.fact}" conflicts with "${fact.conflictWith || "an existing fact"}"`)
+    .join("; ");
+  const status = conflictCount > 0
+    ? `Jarvish indexed this session, but ${conflictCount} memory conflict${conflictCount === 1 ? "" : "s"} need clarification.`
+    : "Jarvish has remembered this session and indexed all documents. Confidence: 100%.";
+  const validationReason = conflictCount > 0
+    ? `Archive node skipped conflicting facts so the user can clarify which version is correct: ${conflictSummary}`
+    : `Archive node completed persistence and indexing flow. Duplicate facts skipped: ${duplicateCount}.`;
+
   return {
     metadata: {
       stage: STAGES.FINALIZE,
-      status: "Jarvish has remembered this session and indexed all documents. Confidence: 100%.",
-      confidence: 100,
-      validationReason: "Archive node completed persistence and indexing flow.",
+      status,
+      confidence: conflictCount > 0 ? 80 : 100,
+      validationReason,
     }
   };
+}
+
+function normalizeFileName(name: string): string {
+  const baseName = name.split(/[\\/]/).pop() || name;
+  return baseName.trim().replace(/\s+/g, " ").toLocaleLowerCase();
+}
+
+function hashText(value: string): string {
+  return createHash("sha256").update(value).digest("hex");
 }
