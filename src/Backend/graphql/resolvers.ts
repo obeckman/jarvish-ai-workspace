@@ -1,5 +1,4 @@
-import { EVENT_TYPES } from '@/shared/jarvish.constants.ts';
-import { Resolvers } from './__generated__/resolvers-types';
+import { AgentEvent, Resolvers } from './__generated__/resolvers-types';
 import {
   getSessionHistory,
   getSessions,
@@ -19,36 +18,37 @@ import {
 } from '@/Backend/graphql/services/mutation.resolver.service';
 import { streamAgentEvents } from '@/Backend/graphql/services/agent-event.service';
 
+type GraphQLContext = {
+  request: Request;
+};
+
 /**
  * GraphQL Resolvers
  * Maps the GraphQL operations to the underlying LangGraph logic.
  */
-export const resolvers: Resolvers = {
-  EventType: Object.fromEntries(
-    Object.entries(EVENT_TYPES)
-  ),
+export const resolvers: Resolvers<GraphQLContext> = {
   Query: {
     status: () => "Backend graphQL is healthy",
-    getSessions: async (_: any, args) => getSessions(args),
-    getSessionHistory: async (_: any, args) => getSessionHistory(args),
-    getSessionSummary: async (_: any, args) => getSessionSummary(args),
+    getSessions: async (_parent, args) => getSessions(args),
+    getSessionHistory: async (_parent, args) => getSessionHistory(args),
+    getSessionSummary: async (_parent, args) => getSessionSummary(args),
     getStructuredFacts: async () => getStructuredFacts()
   },
 
   Session: {
-    summary: async (parent: any) => getSessionSummaryBySessionId(parent.id)
+    summary: async (parent) => getSessionSummaryBySessionId(parent.id)
   },
 
   Mutation: {
-    startResearch: async (_: any, args) => startResearch(args),
-    createSession: async (_: any, args) => createSession(args),
-    deleteSession: async (_: any, args) => deleteSession(args),
-    deleteStructuredFact: async (_: any, args) => deleteStructuredFact(args)
+    startResearch: async (_parent, args) => startResearch(args),
+    createSession: async (_parent, args) => createSession(args),
+    deleteSession: async (_parent, args) => deleteSession(args),
+    deleteStructuredFact: async (_parent, args) => deleteStructuredFact(args)
   },
 
   Subscription: {
     agentEvents: {
-      subscribe: async function* (_: any, { query, history = [], attachments = [], sessionId }: any, context: any) {
+      subscribe: async function* (_parent, { query, history = [], attachments = [], sessionId }, context) {
         const googleToken = context.request.headers.get('x-google-token');
         yield* streamAgentEvents({
           query,
@@ -58,7 +58,7 @@ export const resolvers: Resolvers = {
           googleToken,
         });
       },
-      resolve: (payload: any) => payload.agentEvents
+      resolve: (payload: { agentEvents: AgentEvent }) => payload.agentEvents
     }
   }
 };

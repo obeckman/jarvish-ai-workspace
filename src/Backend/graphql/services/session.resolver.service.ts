@@ -7,7 +7,10 @@ import {
   QueryGetSessionsArgs,
   Session,
 } from "@/Backend/graphql/__generated__/resolvers-types";
-import { mapGraphMessageToGraphQLMessage } from "@/Backend/graphql/mappers/message.mapper";
+import {
+  mapGraphMessageToGraphQLMessage,
+  RawGraphMessage,
+} from "@/Backend/graphql/mappers/message.mapper";
 import { mapSessionRow } from "@/Backend/graphql/mappers/session.mapper";
 import {
   GetSessionsArgsSchema,
@@ -65,14 +68,17 @@ export async function getSessionHistory({ sessionId }: QueryGetSessionHistoryArg
   const parsed = SessionIdArgsSchema.parse({ sessionId });
   const graph = createAgentGraph(checkpointer);
   const state = await graph.getState({ configurable: { thread_id: parsed.sessionId } });
+  const values = state?.values as { messages?: unknown } | undefined;
 
-  if (!state?.values.messages) {
+  if (!Array.isArray(values?.messages)) {
+    logger.debug({ sessionId: parsed.sessionId }, "No message history found for session");
     return [];
   }
 
-  return state.values.messages.map((message: any) => {
+  return values.messages.map((message) => {
+    const graphMessage = message as RawGraphMessage;
     logger.debug({ message, sessionId: parsed.sessionId }, "Mapping message in getSessionHistory");
-    return mapGraphMessageToGraphQLMessage(message);
+    return mapGraphMessageToGraphQLMessage(graphMessage);
   });
 }
 

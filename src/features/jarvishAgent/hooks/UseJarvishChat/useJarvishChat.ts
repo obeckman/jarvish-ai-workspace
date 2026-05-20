@@ -1,8 +1,6 @@
 import React, { useCallback, useRef, useReducer } from 'react';
 import {
   Message,
-  GetSessionHistoryResponseSchema,
-  AgentEventsSubscriptionResponseSchema,
 } from '@/features/jarvishAgent/types';
 import {
 
@@ -25,13 +23,27 @@ import { parseAgentMessageContent } from '../../utils/parser';
 import { normalizeHistoryMessages } from '@/features/jarvishAgent/utils/messageNormalizer';
 import {
   AgentChatSubscriptionVariables,
+  GetSessionHistoryQuery,
   GetSessionHistoryQueryVariables
 } from '@/features/jarvishAgent/graphql/__generated__/graphql';
 
 
 import { chatReducer } from './state';
+import { parseAgentEventPayload } from '../../utils/eventMapper';
 // --- Reducer Definitions ---
 
+type GraphQLResponse<TData> = {
+  data?: TData;
+  errors?: Array<{ message?: string }>;
+};
+
+function getGraphQLErrorMessage(errors: GraphQLResponse<unknown>["errors"]): string {
+  if (!errors?.length) {
+    return 'Unknown GraphQL error';
+  }
+
+  return errors.map(error => error.message || 'GraphQL request failed').join('; ');
+}
 
 export const useJarvishChat = (
   currentSessionId: string | null,
@@ -54,12 +66,22 @@ export const useJarvishChat = (
           variables: { sessionId } as GetSessionHistoryQueryVariables
         })
       });
-      const result = await res.json();
-      const validatedResponse = GetSessionHistoryResponseSchema.parse(result.data);
-      if (validatedResponse.getSessionHistory) {
-        const history = normalizeHistoryMessages(validatedResponse.getSessionHistory);
+      if (!res.ok) {
+        throw new Error(`Failed to load session history: ${res.status}`);
+      }
+
+      const result = await res.json() as GraphQLResponse<GetSessionHistoryQuery>;
+
+      if (result.errors?.length) {
+        throw new Error(getGraphQLErrorMessage(result.errors));
+      }
+
+      if (result.data?.getSessionHistory) {
+        const history = normalizeHistoryMessages(result.data.getSessionHistory);
 
         dispatch({ type: STATE_ACTIONS.SET_MESSAGES, payload: history.length > 0 ? history : [] });
+      } else {
+        dispatch({ type: STATE_ACTIONS.SET_MESSAGES, payload: [] });
       }
 
     } catch (e) {
@@ -99,30 +121,23 @@ export const useJarvishChat = (
 
       try {
         //format BE might send JSON wrapped in markdown code blocks, we need to strip those before parsing
-        const result = JSON.parse(jsonStr, (key, value) => {
-          if (key === 'type' && typeof value === 'string') {
-            return value.toLowerCase();
-          }
-          return value;
-        });
+        const result = JSON.parse(jsonStr);
 
         // We validate the incoming event against our Zod schema to ensure it has the expected structure and types.
-        const validatedEvent = AgentEventsSubscriptionResponseSchema.parse(result.data);
-        const data = validatedEvent.agentEvents;
+        const data = parseAgentEventPayload(result.data);
         console.log(`processStreamLines : [SSE Event Received] Type: ${data.type} | Content: ${data.content}`, data);
 
-        // If the event doesn't match our expected schema, we skip processing it to avoid runtime errors. 
-        if (!data) continue;
-
-        if (data.type.toLowerCase() === EVENT_TYPES.STATUS) {
+        if (data.type === EVENT_TYPES.STATUS) {
           // Status events are simple text updates about what the agent is doing (e.g., "Searching for information", "Analyzing data", etc.).
           dispatch({ type: STATE_ACTIONS.SET_STATUS_MESSAGE, payload: data.content });
           dispatch({ type: STATE_ACTIONS.ADD_STATUS_LOG, payload: data.content });
 
-          if (data.stage) {
+          if (data.stage !== null) {
             dispatch({ type: STATE_ACTIONS.SET_CURRENT_STAGE, payload: data.stage });
+          } else {
+            console.debug('Status event arrived without a stage; keeping current stage.');
           }
-        } else if (data.type.toLowerCase() === EVENT_TYPES.REASONING) {
+        } else if (data.type === EVENT_TYPES.REASONING) {
           // Reasoning events contain the agent's internal thought process, which can be helpful for debugging or for users who want more transparency.
           dispatch({
             type: STATE_ACTIONS.ADD_MESSAGE, payload: {
@@ -133,7 +148,7 @@ export const useJarvishChat = (
               timestamp: Date.now()
             }
           });
-        } else if (data.type.toLowerCase() === EVENT_TYPES.MESSAGE) {
+        } else if (data.type === EVENT_TYPES.MESSAGE) {
           // Message events contain the actual content that the agent wants to communicate to the user.
           const newContentArray = parseAgentMessageContent(data.content);
           console.log(`processStreamLines : [Parsed Assistant Message Content]:`, newContentArray);
@@ -151,10 +166,16 @@ export const useJarvishChat = (
         } else if (data.type === EVENT_TYPES.ERROR) {
           // Error events indicate that something went wrong during the agent's processing. The content typically contains an error message that can be displayed to the user.
           dispatch({ type: STATE_ACTIONS.SET_ERROR_MESSAGE, payload: `Agent Error: ${data.content}` });
+        } else if (data.type === EVENT_TYPES.RETRY) {
+          dispatch({ type: STATE_ACTIONS.SET_STATUS_MESSAGE, payload: data.content || 'Retrying request...' });
+          dispatch({ type: STATE_ACTIONS.ADD_STATUS_LOG, payload: data.content || 'Retrying request...' });
+        } else {
+          dispatch({ type: STATE_ACTIONS.SET_ERROR_MESSAGE, payload: `Unsupported agent event type: ${data.type}` });
         }
       } catch (e) {
-        dispatch({ type: STATE_ACTIONS.SET_ERROR_MESSAGE, payload: `Failed to parse SSE JSON: ${jsonStr}` });
-        console.warn('processStreamLines : Failed to parse SSE JSON:', jsonStr);
+        const message = e instanceof Error ? e.message : 'Unknown parsing error';
+        dispatch({ type: STATE_ACTIONS.SET_ERROR_MESSAGE, payload: `Failed to parse SSE event: ${message}` });
+        console.warn('processStreamLines : Failed to parse SSE JSON:', { jsonStr, error: e });
       }
     }
   }, [])
@@ -272,7 +293,7 @@ export const useJarvishChat = (
       }
 
       endSendUserMessageSetUX();
-    } catch (error: any) {
+    } catch (error: unknown) {
 
       if (error instanceof Error && error.name === 'AbortError') return;
 

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { 
-  ROLES, BLOCK_TYPES, EVENT_TYPES, MessageRole, BlockType, DISPLAY_TYPE ,AGENT_STATUS,
+  ROLES, BLOCK_TYPES, MessageRole, BlockType, DISPLAY_TYPE ,AGENT_STATUS,
   AgentStatus
 } from '@/shared/jarvish.constants'
 import * as GQL from './graphql/__generated__/graphql';
@@ -97,51 +97,6 @@ export interface Attachment {
   mimeType: string;
 }
 
-// --- GraphQL Response Schemas ---
-
-// For GQL_QUERIES.GET_SESSION_HISTORY
-export const SessionHistoryItemSchema = z.object({
-  type: z.enum(EVENT_TYPES),//EventTypeKeySchema,
-  role: z.enum(ROLES),
-  content: z.string(), // Backend sends string, will be parsed into MessageContent in frontend
-});
-export const GetSessionHistoryResponseSchema = z.object({
-  getSessionHistory: z.array(SessionHistoryItemSchema),
-});
-
-// For GQL_SUBSCRIPTIONS.AGENT_CHAT (agentEvents field)
-export const AgentEventDataSchema = z.object({
-  type: z.enum(EVENT_TYPES),//EventTypeKeySchema,
-  content: z.string(), // Raw content from SSE, might be JSON string
-  stage: z.number().nullable(),
-});
-
-export const AgentEventsSubscriptionResponseSchema = z.object({
-  agentEvents: AgentEventDataSchema,
-});
-
-// For GQL_QUERIES.GET_SESSION_SUMMARY
-export const GetSessionSummaryResponseSchema = z.object({
-  getSessionSummary: z.object({
-    summaryTitle: z.string(),
-    userMessage: z.string(),
-    aiAnswer: z.string(),
-    createdAt: z.string(),
-    sessionId: z.string(),
-  }).nullable(), // It can return null if not yet generated
-});
-
-// For GQL_QUERIES.GET_STRUCTURED_FACTS
-export const GetStructuredFactsResponseSchema = z.object({
-  getStructuredFacts: z.array(z.object({
-    id: z.string(),
-    fact: z.string(),
-    category: z.string(),
-    confidence: z.number(),
-    createdAt: z.string(),
-  })),
-});
-
 export interface ChatState {
   messages: Message[];
   input: string;
@@ -172,5 +127,4 @@ export type ChatAction =
   | { type: typeof STATE_ACTIONS.SET_REASONING_VISIBLE; payload: boolean }
   | { type: typeof STATE_ACTIONS.SET_LAST_SENT_QUERY; payload: string }
   | { type: typeof STATE_ACTIONS.RESET_CHAT };
-
 

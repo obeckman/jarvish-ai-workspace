@@ -1,8 +1,12 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { GetSessionSummaryResponseSchema, Session } from '@/features/jarvishAgent/types';
+import { Session } from '@/features/jarvishAgent/types';
 import { STORAGE_KEYS, API_ENDPOINTS } from "@/shared/jarvish.constants";
 import {GQL_QUERIES, GQL_MUTATIONS, UI_STRINGS} from '@/features/jarvishAgent/constants'
-import { GetSessionsQuery, GetSessionsQueryVariables } from '@/features/jarvishAgent/graphql/__generated__/graphql'
+import {
+  GetSessionSummaryQuery,
+  GetSessionsQuery,
+  GetSessionsQueryVariables,
+} from '@/features/jarvishAgent/graphql/__generated__/graphql'
 
 
 export const useJarvishSessions = (searchTerm: string) => {
@@ -66,15 +70,24 @@ export const useJarvishSessions = (searchTerm: string) => {
           variables: { sessionId }
         })
       });
-      const result = await res.json();
-      const validatedResponse = GetSessionSummaryResponseSchema.parse(result.data);
+      if (!res.ok) {
+        throw new Error(`Summary request failed with status ${res.status}`);
+      }
 
-      if (validatedResponse.getSessionSummary) {
-        const summary = validatedResponse.getSessionSummary;
+      const result: { data?: GetSessionSummaryQuery; errors?: Array<{ message?: string }> } = await res.json();
+
+      if (result.errors?.length) {
+        throw new Error(result.errors.map(error => error.message || 'GraphQL summary error').join('; '));
+      }
+
+      if (result.data?.getSessionSummary) {
+        const summary = result.data.getSessionSummary;
         setSessions(prev => prev.map(s =>
           s.id === sessionId ? { ...s, summary: summary } : s
         ));
         return summary;
+      } else {
+        return null;
       }
     } catch (e) {
       console.error("Fetching summary failed", e);

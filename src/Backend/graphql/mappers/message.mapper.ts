@@ -8,7 +8,7 @@ type InputHistoryMessage = {
   content?: string | null;
 };
 
-type RawGraphMessage = {
+export type RawGraphMessage = {
   content?: unknown;
   name?: string;
   role?: string;

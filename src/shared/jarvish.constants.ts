@@ -20,6 +20,7 @@ export const EVENT_TYPES = {
   MESSAGE: 'message',
   REASONING: 'reasoning',
   ERROR: 'error',
+  RETRY: 'retry',
 } as const;
 
 export const STAGES = {
@@ -103,4 +104,3 @@ export type AgentStatus = typeof AGENT_STATUS[keyof typeof AGENT_STATUS];
 export type MessageRole = typeof ROLES[keyof typeof ROLES];
 export type BlockType = typeof BLOCK_TYPES[keyof typeof BLOCK_TYPES];
 export type EventType = typeof EVENT_TYPES[keyof typeof EVENT_TYPES];
-

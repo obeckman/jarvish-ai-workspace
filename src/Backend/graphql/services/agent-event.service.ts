@@ -1,5 +1,9 @@
 import { createAgentGraph } from "@/Backend/agent/graph";
-import { SubscriptionAgentEventsArgs } from "@/Backend/graphql/__generated__/resolvers-types";
+import {
+  AgentEvent,
+  SubscriptionAgentEventsArgs,
+} from "@/Backend/graphql/__generated__/resolvers-types";
+import { mapDomainEventTypeToGraphQL } from "@/Backend/graphql/mappers/event.mapper";
 import {
   mapInputToLangChainMessages,
   shouldStreamMessageFromNode,
@@ -17,11 +21,7 @@ import { EVENT_TYPES, STAGES } from "@/shared/jarvish.constants.ts";
 import { HumanMessage } from "@langchain/core/messages";
 
 type AgentEventPayload = {
-  agentEvents: {
-    type: string;
-    content?: string;
-    stage?: number;
-  };
+  agentEvents: Pick<AgentEvent, "type" | "content" | "stage">;
 };
 
 type StreamAgentEventsInput = SubscriptionAgentEventsArgs & {
@@ -104,8 +104,9 @@ export async function* streamAgentEvents({
     const message = error instanceof Error ? error.message : "Unknown graph execution error";
     yield {
       agentEvents: {
-        type: EVENT_TYPES.ERROR,
+        type: mapDomainEventTypeToGraphQL(EVENT_TYPES.ERROR),
         content: message,
+        stage: null,
       },
     };
   }
@@ -115,9 +116,9 @@ function* mapNodeUpdateToEvents(nodeName: string, update: GraphStreamUpdate): Ge
   if (update.metadata?.status) {
     yield {
       agentEvents: {
-        type: EVENT_TYPES.STATUS,
+        type: mapDomainEventTypeToGraphQL(EVENT_TYPES.STATUS),
         content: update.metadata.status,
-        stage: update.metadata.stage,
+        stage: update.metadata.stage ?? null,
       },
     };
   }
@@ -133,8 +134,11 @@ function* mapNodeUpdateToEvents(nodeName: string, update: GraphStreamUpdate): Ge
 
     yield {
       agentEvents: {
-        type: shouldStreamMessageFromNode(nodeName) ? EVENT_TYPES.MESSAGE : EVENT_TYPES.REASONING,
+        type: mapDomainEventTypeToGraphQL(
+          shouldStreamMessageFromNode(nodeName) ? EVENT_TYPES.MESSAGE : EVENT_TYPES.REASONING,
+        ),
         content: stringifyMessageContent(message.content),
+        stage: null,
       },
     };
   }
