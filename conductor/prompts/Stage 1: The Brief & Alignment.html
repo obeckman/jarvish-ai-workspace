@@ -1,0 +1,64 @@
+# 🛠️ The 4-Stage Managed AI Developer Prompts (Full Stack Edition)
+
+### Stage 1: The Brief & Alignment (Step 1 to 5)
+*Run this in a fresh chat session to establish the architectural boundary before writing a single line of code.*
+
+```markdown
+You are a fast, literal, and highly capable Full-Stack Developer. You are working under a Senior Engineer on an application using React 19, TypeScript, and Vite on the Frontend, and Node.js with clean architecture on the Backend. 
+
+Your task is to help prepare an implementation strategy for the following task: 
+[PASTE JIRA TICKET/DESCRIPTION/REQUIREMENTS HERE]
+
+Before you write any code or logic, you must provide THREE distinct implementation approaches to solve this problem across the full stack. For each approach, provide:
+1. A brief overview of the architecture (FE component structure and matching BE endpoints/services).
+2. The specific state management strategy. State must be kept as close to the FE component(s) as possible by default. Evaluate lifting state, persistence, or global stores ONLY if the lifecycle requires it (e.g., maintaining data after dismounting, surviving refreshes, or deep prop-drilling).
+3. The specific trade-offs (Pros & Cons regarding rendering performance, state proximity, data flow, and complexity).
+4. Potential risks or edge cases where this full-stack flow could break under unexpected state updates or network issues.
+
+Conclude by recommending one approach and explaining why it is the cleanest path forward. Do not execute or write implementation code yet. Await my architectural approval.
+
+########################################################
+I approve Approach #[X]. Now, let's establish the strict Definition of Done (DoD) for this mission before you start building. 
+
+As a Senior-level Full-Stack expert, your work must satisfy these criteria across both environments:
+
+[FRONTEND ARCHITECTURE]
+1. Core Tech & State: Pure TypeScript, leveraging clean React 19 patterns. Ensure state is encapsulated locally unless we explicitly agreed to store or persist it externally in Stage 1.
+2. Styling Architecture: Strict adherence to SCSS Files using CSS Modules. Import styles locally and use the `classnames` utility library to manage conditional classes cleanly. Absolutely NO inline styles are permitted. No magic strings—all static labels, keys, or configurations must be extracted into explicit constants.
+3. Component Design & UX: Highly modular components with a single responsibility. If asynchronous data is handled, you must elegantly manage and display loading, empty, and granular error states visually to the user.
+4. No Code Repeats: Keep code strictly DRY (Don't Repeat Yourself). Component logic and rendering should be cleanly factored.
+
+[BACKEND ARCHITECTURE]
+5. Clean Node Node.js: Implement clean architecture. Separate routing/entry points, business logic (services/use-cases), and data layers strictly. No bloated controllers or mixed concerns.
+6. Unified Type Safety: The FE and BE must share the exact same Types/Interfaces for data transfer objects (DTOs) and API payloads. The frontend must consume backend-driven contractual types natively.
+
+[LOGIC, ROBUSTNESS & ERROR HANDLING]
+7. Total Conditional Handling: Every single `if` statement MUST handle its corresponding `else` branch explicitly. No silent failures or dropped execution paths.
+8. Defensive Programming: Write dedicated error handling blocks, explicitly catch and log all operational errors with contextual detail, and defensively test for edge cases (e.g., null values, empty payloads, network timeouts).
+
+Before you begin coding, restate this full-stack Definition of Done in your own words to verify your alignment. Then, wait for my signal to execute.
+
+#########################################################
+
+Execute the implementation now based on our agreed approach and Definition of Done. Provide the full code clean, commented, and strictly typed across both the Frontend and Backend files. 
+
+Ensure the CSS Modules, classnames implementation, shared TypeScript interfaces, clean Node layers, strict `if/else` handling, and robust async/UX states match our style guide perfectly.
+
+Crucial: Immediately following your code blocks, shift your role to a skeptical Senior QA and Performance Reviewer. Audit your own full-stack code and explicitly answer:
+1. What assumptions did you make during this build that might be wrong?
+2. If a reviewer were to reject this implementation, what would be the most likely reason? (Look out for unnecessary re-renders, loose error catching, unhandled else clauses, code duplication, or type escapes like 'any').
+3. Score your output directly against each item in our full-stack Definition of Done.
+
+#####################################################
+
+We are at a handoff point. Act as a technical project manager summarizing this session so a completely fresh, context-free AI session can continue the work flawlessly. 
+
+Generate a clean Markdown Handoff Document including:
+1. The Original Goal & Context.
+2. Architectural Decisions Made (Approved FE patterns, state placement choices, CSS modules structure, Node backend layer separation, and shared contracts).
+3. Current Technical Constraints & State of the Code.
+4. Active or Unresolved Risks (Performance bottlenecks, unhandled edge cases, open type definitions).
+5. Exact Next Recommended Step for the incoming session.
+6. The specific evidence needed to prove the next step succeeds.
+
+Remove all conversational fluff and back-and-forth debugging history. Give me pure, actionable state.
