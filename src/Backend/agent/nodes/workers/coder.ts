@@ -3,7 +3,6 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { AgentStateType } from "@/Backend/agent/state";
 import { REASONING_MODEL } from "@/Backend/agent/models";
 import { STAGES, NODE_NAMES } from "@/shared/jarvish.constants";
-import { normalizeWorkerContent } from "@/Backend/agent/workers/worker-response";
 import { mapStateToGeminiHistory } from "../utils";
 import { AIMessage } from "@langchain/core/messages";
 import { 
@@ -13,6 +12,11 @@ import {
   forgetMemoryDeclaration,
   inventoryToolDeclaration
 } from "@/Backend/agent/nodes/registry";
+import {
+  createClarificationBlockContent,
+  formatConfidenceStatus,
+  validateOrRepairNodeResponse,
+} from "@/Backend/agent/validation/node-response.validator";
 
 /**
  * Node: Coder Worker
@@ -65,7 +69,28 @@ export async function coderWorkerNode(state: AgentStateType) {
 
     let content = response.text();
     const toolCalls = response.functionCalls();
-    content = normalizeWorkerContent(content, Boolean(toolCalls?.length));
+    let confidence = toolCalls?.length ? 100 : 0;
+    let validationReason = toolCalls?.length
+      ? "Coder Worker returned tool calls."
+      : "Coder Worker response has not been validated yet.";
+
+    if (content && !toolCalls?.length) {
+      const validation = await validateOrRepairNodeResponse(content, async (repairPrompt) => {
+        logger.warn({ sessionId: state.sessionId }, "Coder Worker response failed validation; requesting repair");
+        const repairResult = await chat.sendMessage(repairPrompt);
+        return repairResult.response.text();
+      });
+
+      content = validation.content;
+      confidence = validation.confidence;
+      validationReason = validation.reason;
+    } else if (toolCalls?.length) {
+      logger.debug({ sessionId: state.sessionId, toolCallsCount: toolCalls.length }, "Coder Worker requested tools");
+    } else {
+      content = createClarificationBlockContent("Coder Worker returned no content and no tool calls.");
+      confidence = 0;
+      validationReason = "Coder Worker returned no content and no tool calls.";
+    }
 
     return {
       messages: [new AIMessage({
@@ -74,7 +99,12 @@ export async function coderWorkerNode(state: AgentStateType) {
         name: "coder_worker"
       })],
       lastWorker: NODE_NAMES.CODER_WORKER,
-      metadata: { stage: STAGES.RESEARCH, status: "Coder Worker is analyzing code..." }
+      metadata: {
+        stage: STAGES.RESEARCH,
+        status: formatConfidenceStatus("Coder Worker is analyzing code...", confidence, validationReason),
+        confidence,
+        validationReason,
+      }
     };
   } catch (error) {
     logger.error({ sessionId: state.sessionId, error }, "Node: Coder Worker | Error during processing");

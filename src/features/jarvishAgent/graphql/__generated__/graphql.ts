@@ -85,7 +85,7 @@ export type AgentChatSubscriptionVariables = Exact<{
 }>;
 
 
-export type AgentChatSubscription = { agentEvents: { type: EventType, content: string | null, stage: number | null } };
+export type AgentChatSubscription = { agentEvents: { type: EventType, content: string | null, stage: number | null, metadata: unknown } };
 
 export class TypedDocumentString<TResult, TVariables>
   extends String
@@ -210,6 +210,7 @@ export const AgentChatDocument = new TypedDocumentString(`
     type
     content
     stage
+    metadata
   }
 }
     `) as unknown as TypedDocumentString<AgentChatSubscription, AgentChatSubscriptionVariables>;

@@ -1,14 +1,17 @@
 import { logger } from "@/Backend/utils/logger";
 import { GoogleGenerativeAI, SchemaType, type Part } from "@google/generative-ai";
-import parse from "partial-json-parser";
 import { AgentStateType } from "@/Backend/agent/state";
 import { REASONING_MODEL } from "@/Backend/agent/models";
-import { STAGES, BLOCK_TYPES, ROLES, NODE_NAMES } from "@/shared/jarvish.constants";;
-import { AgentMessageBlocksSchema} from "@/Backend/agent/schema";
+import { STAGES, BLOCK_TYPES, NODE_NAMES } from "@/shared/jarvish.constants";;
 import { mapStateToGeminiHistory } from "./utils";
 import { AIMessage } from "@langchain/core/messages";
-import { HumanMessage, ToolMessage, BaseMessage } from "@langchain/core/messages";
+import { HumanMessage } from "@langchain/core/messages";
 import { getAgentMessageName } from "@/Backend/agent/contracts/message.contract";
+import {
+  createClarificationBlockContent,
+  formatConfidenceStatus,
+  validateOrRepairNodeResponse,
+} from "@/Backend/agent/validation/node-response.validator";
 /**
  * Node: Supervisor
  * Responsibilities:
@@ -125,48 +128,34 @@ export async function supervisorNode(state: AgentStateType) {
 
   let content = response.text();
   const toolCalls = response.functionCalls();
+  let confidence = toolCalls?.length ? 100 : 0;
+  let validationReason = toolCalls?.length
+    ? "Supervisor returned tool calls for delegation."
+    : "Supervisor response has not been validated yet.";
 
   // --- UI Block Validation ---
   if (content && !toolCalls?.length) {
-    try {
-      let cleaned = content.trim();
-      if (cleaned.startsWith('```')) {
-        const firstNewline = cleaned.indexOf('\n');
-        if (firstNewline !== -1) cleaned = cleaned.substring(firstNewline + 1);
-        if (cleaned.endsWith('```')) cleaned = cleaned.substring(0, cleaned.length - 3).trim();
-      }
+    const validation = await validateOrRepairNodeResponse(content, async (repairPrompt) => {
+      logger.warn({ sessionId: state.sessionId }, "Supervisor response failed validation; requesting repair");
+      const repairResult = await chat.sendMessage(repairPrompt);
+      return repairResult.response.text();
+    });
 
-      const firstBracket = cleaned.indexOf('[');
-      const firstBrace = cleaned.indexOf('{');
-      let startIdx = -1;
-      if (firstBracket !== -1 && (firstBrace === -1 || firstBracket < firstBrace)) startIdx = firstBracket;
-      else if (firstBrace !== -1) startIdx = firstBrace;
-
-      if (startIdx !== -1) {
-        const lastBracket = cleaned.lastIndexOf(']');
-        const lastBrace = cleaned.lastIndexOf('}');
-        const endIdx = Math.max(lastBracket, lastBrace);
-
-        if (endIdx > startIdx) {
-          const jsonPotential = cleaned.substring(startIdx, endIdx + 1);
-          logger.debug({ sessionId: state.sessionId, jsonPotential }, "Extracted JSON potential from response");
-          const parsed = parse(jsonPotential);
-          logger.debug({ sessionId: state.sessionId, parsed }, "Parsed JSON from response");
-          const blocksArray = Array.isArray(parsed) ? parsed : [parsed];
-          const validation = AgentMessageBlocksSchema.safeParse(blocksArray);
-          
-          if (validation.success) {
-            content = JSON.stringify(validation.data);
-          }
-        }
-      } else {
-        content = JSON.stringify([{ type: BLOCK_TYPES.TEXT, content }]);
-      }
-    } catch (e) {
-      if (!content.startsWith('[') && !content.startsWith('{')) {
-        content = JSON.stringify([{ type: BLOCK_TYPES.TEXT, content }]);
-      }
+    if (validation.valid) {
+      content = validation.content;
+      confidence = validation.confidence;
+      validationReason = validation.reason;
+    } else {
+      content = validation.content;
+      confidence = validation.confidence;
+      validationReason = validation.reason;
     }
+  } else if (toolCalls?.length) {
+    logger.debug({ sessionId: state.sessionId, toolCallsCount: toolCalls.length }, "Supervisor delegated with tool calls");
+  } else {
+    content = createClarificationBlockContent("Supervisor returned no content and no delegation.");
+    confidence = 0;
+    validationReason = "Supervisor returned no content and no delegation.";
   }
   
   return {
@@ -176,7 +165,12 @@ export async function supervisorNode(state: AgentStateType) {
       tool_calls: toolCalls,
       name: "supervisor"
     })],
-    metadata: { stage: STAGES.SYNTHESIZE, status: "Supervisor is orchestrating..." }
+    metadata: {
+      stage: STAGES.SYNTHESIZE,
+      status: formatConfidenceStatus("Supervisor is orchestrating...", confidence, validationReason),
+      confidence,
+      validationReason,
+    }
   };
 }
   catch (error) {

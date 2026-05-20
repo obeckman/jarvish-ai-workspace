@@ -1,10 +1,14 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { AgentStateType } from "@/Backend/agent/state";
 import { REASONING_MODEL } from "@/Backend/agent/models";
-import { BLOCK_TYPES, ROLES, STAGES } from "@/shared/jarvish.constants";;
+import { BLOCK_TYPES, STAGES } from "@/shared/jarvish.constants";;
 import { mapStateToGeminiHistory } from "./utils";
 import { AIMessage } from "@langchain/core/messages";
 import { logger } from "@/Backend/utils/logger";
+import {
+  formatConfidenceStatus,
+  validateOrRepairNodeResponse,
+} from "@/Backend/agent/validation/node-response.validator";
 
 /**
  * Node: Clarification
@@ -45,18 +49,25 @@ export async function clarificationNode(state: AgentStateType) {
   const response = result.response;
   
   let content = response.text();
+  const validation = await validateOrRepairNodeResponse(content, async (repairPrompt) => {
+    logger.warn({ sessionId: state.sessionId }, "Clarification response failed validation; requesting repair");
+    const repairResult = await chat.sendMessage(repairPrompt);
+    return repairResult.response.text();
+  });
   
-  // Fallback wrapper if model doesn't output JSON blocks
-  if (!content.trim().startsWith('[')) {
-    content = JSON.stringify([{ type: BLOCK_TYPES.TEXT, content: content }]);
-  }
+  content = validation.content;
   
   return {
     messages: [new AIMessage({
       content: content,
       name: "clarification_agent"
     })],
-    metadata: { stage: STAGES.SYNTHESIZE, status: "Awaiting user clarification..." },
+    metadata: {
+      stage: STAGES.SYNTHESIZE,
+      status: formatConfidenceStatus("Awaiting user clarification...", validation.confidence, validation.reason),
+      confidence: validation.confidence,
+      validationReason: validation.reason,
+    },
     toolConfidence: null // Reset for the next run
   };
 }

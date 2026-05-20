@@ -990,6 +990,50 @@
   }
 }
 
+.summarySectionSpaced {
+  margin-top: 2rem;
+}
+
+.summaryHeadingRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 1rem;
+}
+
+.summaryIconSmall {
+  background: var(--jarvish-accent);
+  padding: 6px;
+  border-radius: 8px;
+  display: flex;
+  color: var(--jarvish-bg);
+}
+
+.summaryHeading {
+  margin: 0 !important;
+  color: var(--jarvish-text-primary) !important;
+}
+
+.summaryActionButton {
+  margin-top: 2rem;
+  max-width: 300px;
+}
+
+.placeholderIconCircle {
+  background: rgba(56, 189, 248, 0.1);
+  padding: 20px;
+  border-radius: 50%;
+  margin-bottom: 1rem;
+  display: flex;
+  color: var(--jarvish-accent);
+}
+
+.messageList {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
 .copyBtnInline {
   background: rgba(56, 189, 248, 0.1);
   color: var(--jarvish-accent);

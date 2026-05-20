@@ -34,6 +34,10 @@ export const QueryAttachmentsToolArgsSchema = z.object({
   query: z.string().min(1),
 });
 
+export const InventoryToolArgsSchema = z.object({
+  sku: z.string().min(1),
+});
+
 export const ListCalendarEventsToolArgsSchema = z.object({
   maxResults: z.number().int().positive().optional(),
 });

@@ -17,10 +17,12 @@ const AgentEventTransportSchema = z.object({
   type: z.string(),
   content: z.string().nullable(),
   stage: z.number().int().nullable(),
+  metadata: z.unknown().optional().nullable(),
 }) satisfies z.ZodType<{
   type: string;
   content: AgentChatSubscription["agentEvents"]["content"];
   stage: AgentChatSubscription["agentEvents"]["stage"];
+  metadata?: AgentChatSubscription["agentEvents"]["metadata"];
 }>;
 
 const AgentChatSubscriptionTransportSchema = z.object({
@@ -31,6 +33,7 @@ export type DomainAgentEvent = {
   type: DomainEventType;
   content: string;
   stage: number | null;
+  metadata: AgentChatSubscription["agentEvents"]["metadata"] | null | undefined;
 };
 
 export function mapGraphQLEventTypeToDomain(type: string): DomainEventType | null {
@@ -55,5 +58,6 @@ export function parseAgentEventPayload(payload: unknown): DomainAgentEvent {
     type: domainType,
     content: parsedPayload.agentEvents.content ?? "",
     stage: parsedPayload.agentEvents.stage,
+    metadata: parsedPayload.agentEvents.metadata,
   };
 }

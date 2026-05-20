@@ -1,5 +1,6 @@
 import React, { useCallback, useRef, useReducer } from 'react';
 import {
+  ChatState,
   Message,
 } from '@/features/jarvishAgent/types';
 import {
@@ -54,6 +55,11 @@ export const useJarvishChat = (
 
   const abortControllerRef = useRef<AbortController | null>(null);
   const readerRef = useRef<ReadableStreamDefaultReader | null>(null);
+  const stateRef = useRef<ChatState>(state);
+
+  React.useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
 
   const loadSessionHistory = useCallback(async (sessionId: string) => {
     try {
@@ -102,16 +108,42 @@ export const useJarvishChat = (
     }
     dispatch({ type: STATE_ACTIONS.SET_STATUS, payload: AGENT_STATUS.IDLE });
 
-    const completedSteps = state.statusLogs.filter(log => !log.includes('thinking')).join('\n');
-    const recoveryNote = `\n\n[RECOVERY: Interrupted at Stage ${state.currentStage}. \nProgress made:\n${completedSteps}\n\nPlease resume from the next step.]`;
-    dispatch({ type: STATE_ACTIONS.SET_INPUT, payload: state.lastSentQuery + recoveryNote });
+    const latestState = stateRef.current;
+    const completedSteps = latestState.statusLogs.filter(log => !log.includes('thinking')).join('\n');
+    const recoveryNote = `\n\n[RECOVERY: Interrupted at Stage ${latestState.currentStage}. \nProgress made:\n${completedSteps}\n\nPlease resume from the next step.]`;
+    dispatch({ type: STATE_ACTIONS.SET_INPUT, payload: latestState.lastSentQuery + recoveryNote });
     dispatch({ type: STATE_ACTIONS.SET_CURRENT_STAGE, payload: 0 });
     dispatch({ type: STATE_ACTIONS.SET_ATTACHMENTS, payload: [] });
 
     dispatch({ type: STATE_ACTIONS.SET_STATUS_MESSAGE, payload: 'Request stopped. Progress saved to editor.' });
     setTimeout(() => dispatch({ type: STATE_ACTIONS.SET_STATUS_MESSAGE, payload: null }), 3000);
 
-  }, [state.currentStage, state.lastSentQuery, state.statusLogs]);
+  }, []);
+
+  const addConfidenceMessageIfPresent = React.useCallback((metadata: unknown) => {
+    if (!metadata || typeof metadata !== 'object') {
+      return;
+    }
+
+    const confidence = (metadata as { confidence?: unknown }).confidence;
+    if (typeof confidence !== 'number') {
+      return;
+    }
+
+    const validationReason = (metadata as { validationReason?: unknown }).validationReason;
+    const reason = typeof validationReason === 'string' ? validationReason : undefined;
+
+    dispatch({
+      type: STATE_ACTIONS.ADD_MESSAGE,
+      payload: {
+        id: `confidence-${Date.now()}-${Math.random()}`,
+        type: BLOCK_TYPES.REASONING,
+        role: ROLES.REASONING,
+        content: UI_STRINGS.CONFIDENCE_NOTE(confidence, reason),
+        timestamp: Date.now(),
+      },
+    });
+  }, []);
 
   const processStreamLines = React.useCallback((assistantMsgId: string, lines: string[]) => {
     for (const line of lines) {
@@ -131,6 +163,7 @@ export const useJarvishChat = (
           // Status events are simple text updates about what the agent is doing (e.g., "Searching for information", "Analyzing data", etc.).
           dispatch({ type: STATE_ACTIONS.SET_STATUS_MESSAGE, payload: data.content });
           dispatch({ type: STATE_ACTIONS.ADD_STATUS_LOG, payload: data.content });
+          addConfidenceMessageIfPresent(data.metadata);
 
           if (data.stage !== null) {
             dispatch({ type: STATE_ACTIONS.SET_CURRENT_STAGE, payload: data.stage });
@@ -139,6 +172,7 @@ export const useJarvishChat = (
           }
         } else if (data.type === EVENT_TYPES.REASONING) {
           // Reasoning events contain the agent's internal thought process, which can be helpful for debugging or for users who want more transparency.
+          addConfidenceMessageIfPresent(data.metadata);
           dispatch({
             type: STATE_ACTIONS.ADD_MESSAGE, payload: {
               id: `reason-content-${Date.now()}-${Math.random()}`,
@@ -150,6 +184,7 @@ export const useJarvishChat = (
           });
         } else if (data.type === EVENT_TYPES.MESSAGE) {
           // Message events contain the actual content that the agent wants to communicate to the user.
+          addConfidenceMessageIfPresent(data.metadata);
           const newContentArray = parseAgentMessageContent(data.content);
           console.log(`processStreamLines : [Parsed Assistant Message Content]:`, newContentArray);
           newContentArray.forEach(newContentMessage => {
@@ -165,6 +200,7 @@ export const useJarvishChat = (
           dispatch({ type: STATE_ACTIONS.SET_STATUS, payload: AGENT_STATUS.RESPONDING });
         } else if (data.type === EVENT_TYPES.ERROR) {
           // Error events indicate that something went wrong during the agent's processing. The content typically contains an error message that can be displayed to the user.
+          addConfidenceMessageIfPresent(data.metadata);
           dispatch({ type: STATE_ACTIONS.SET_ERROR_MESSAGE, payload: `Agent Error: ${data.content}` });
         } else if (data.type === EVENT_TYPES.RETRY) {
           dispatch({ type: STATE_ACTIONS.SET_STATUS_MESSAGE, payload: data.content || 'Retrying request...' });
@@ -178,7 +214,7 @@ export const useJarvishChat = (
         console.warn('processStreamLines : Failed to parse SSE JSON:', { jsonStr, error: e });
       }
     }
-  }, [])
+  }, [addConfidenceMessageIfPresent])
 
   const startSendUserMessageSetUX = useCallback((queryToSend: string, overrideQuery?: string) => {
     dispatch({ type: STATE_ACTIONS.SET_ERROR_MESSAGE, payload: null });
@@ -225,31 +261,34 @@ export const useJarvishChat = (
 
   const sendUserMessage = useCallback(async (sessionId: string, overrideQuery?: string) => {
 
-    const queryToSend = overrideQuery || state.input;
-    if (!queryToSend.trim() || state.status !== AGENT_STATUS.IDLE) return;
+    const latestState = stateRef.current;
+    const queryToSend = overrideQuery || latestState.input;
+    if (!queryToSend.trim() || latestState.status !== AGENT_STATUS.IDLE) return;
 
     startSendUserMessageSetUX(queryToSend);
 
-    abortControllerRef.current = new AbortController();
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
     const sendUserMessageHeaders = await getSendUserMessageHeaders();
+    let activeReader: ReadableStreamDefaultReader<Uint8Array> | null = null;
 
     try {
 
       const response = await fetch(API_ENDPOINTS.GRAPHQL, {
         method: 'POST',
         headers: sendUserMessageHeaders,
-        signal: abortControllerRef.current.signal,// the app can triggers this signal to instantly kill the network request.
+        signal: abortController.signal,// the app can triggers this signal to instantly kill the network request.
         body: JSON.stringify({
           //Contains the standard GraphQL structure: query (the schema name) and variables
           query: GQL_SUBSCRIPTIONS.AGENT_CHAT,
           variables: {
             query: queryToSend,
-            history: state.messages.map(m => ({
+            history: latestState.messages.map(m => ({
               //Grabs the chat history from the state, maps the roles strictly to what the backend expects
               role: m.role === ROLES.USER ? ROLES.USER : ROLES.ASSISTANT,
               content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content)
             })),
-            attachments: state.attachments.map(a => ({
+            attachments: latestState.attachments.map(a => ({
               name: a.name,
               data: a.data,
               mimeType: a.mimeType
@@ -265,6 +304,7 @@ export const useJarvishChat = (
       // The backend sends a stream of events (SSE), so we read it incrementally
       // we grab a reader that allows us to read incoming chunks of data sequentially.
       const reader = response.body.getReader();
+      activeReader = reader;
       readerRef.current = reader;
       // We use a TextDecoder to convert the binary stream into text
       const decoder = new TextDecoder();
@@ -300,10 +340,14 @@ export const useJarvishChat = (
       dispatch({ type: STATE_ACTIONS.SET_STATUS, payload: AGENT_STATUS.ERROR });
       dispatch({ type: STATE_ACTIONS.SET_ERROR_MESSAGE, payload: error instanceof Error ? error.message : 'An unexpected error occurred' });
     } finally {
-      abortControllerRef.current = null;
-      readerRef.current = null;
+      if (abortControllerRef.current === abortController) {
+        abortControllerRef.current = null;
+      }
+      if (readerRef.current === activeReader) {
+        readerRef.current = null;
+      }
     }
-  }, [googleToken, state.input, state.messages, state.attachments, state.status, checkAndRefreshToken]);
+  }, [endSendUserMessageSetUX, getSendUserMessageHeaders, processStreamLines, startSendUserMessageSetUX]);
 
   const addAttachment = useCallback((file: File) => {
     if (file.size > 10 * 1024 * 1024) {

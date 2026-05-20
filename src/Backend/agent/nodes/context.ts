@@ -31,7 +31,9 @@ export async function contextNode(state: AgentStateType) {
     ],
     metadata: { 
       stage: STAGES.PREPARE, 
-      status: `Retrieved ${memories.length} relevant memories from vector DB.` 
+      status: `Retrieved ${memories.length} relevant memories from vector DB. Confidence: 100%.`,
+      confidence: 100,
+      validationReason: "Context node completed memory retrieval.",
     }
   };
 }

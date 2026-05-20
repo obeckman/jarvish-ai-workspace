@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ActionBlockSchema, DataBlockSchema } from '../../types';
+import { ActionBlockSchema, DataBlockSchema, DraftBlockSchema } from '@/shared/jarvish.blocks';
 import { DISPLAY_TYPE, BLOCK_TYPES } from '@/shared/jarvish.constants';
 
 // Define specific prop interfaces for each block type, mirroring their .tsx files,
@@ -54,6 +54,7 @@ export interface DraftBlockComponentProps {
   type: typeof BLOCK_TYPES.DRAFT;
   title?: string;
   content: string;
+  metadata?: z.infer<typeof DraftBlockSchema>['metadata'];
   onAction?: (label: string) => void;
 }
 

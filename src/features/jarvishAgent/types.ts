@@ -1,9 +1,13 @@
 import { z } from 'zod';
 import { 
-  ROLES, BLOCK_TYPES, MessageRole, BlockType, DISPLAY_TYPE ,AGENT_STATUS,
+  ROLES, MessageRole, BlockType, AGENT_STATUS,
   AgentStatus
 } from '@/shared/jarvish.constants'
 import * as GQL from './graphql/__generated__/graphql';
+import {
+  AgentMessageBlockSchema,
+  type AgentMessageBlock,
+} from '@/shared/jarvish.blocks';
 
 
 
@@ -13,67 +17,11 @@ export type Session = GQL.SessionFieldsFragment;
 export type StructuredFact = GQL.FactFieldsFragment;
 export type SessionSummary = NonNullable<GQL.SessionFieldsFragment['summary']>;
 
-// --- Block Schemas ---
-
-export const TextBlockSchema = z.object({
-  type: z.literal(BLOCK_TYPES.TEXT),
-  content: z.string(),
-});
-
-export const CodeBlockSchema = z.object({
-  type: z.literal(BLOCK_TYPES.CODE),
-  language: z.string().optional(),
-  content: z.string(),
-});
-
-export const ReasoningBlockSchema = z.object({
-  type: z.literal(BLOCK_TYPES.REASONING),
-  title: z.string().optional(),
-  content: z.string(), // Supports Markdown
-});
-
-export const ActionBlockSchema = z.object({
-  type: z.literal(BLOCK_TYPES.ACTION),
-  actionId: z.string(),
-  label: z.string(),
-  payload: z.record(z.string(), z.unknown()).optional(),
-  disabled: z.boolean().optional(),
-  loading: z.boolean().optional(),
-});
-
-export const DataBlockSchema = z.object({
-  type: z.literal(BLOCK_TYPES.DATA),
-  displayType: z.enum(Object.values(DISPLAY_TYPE)),
-  title: z.string().optional(),
-  data: z.unknown().describe('Data for rendering, can be any JSON-serializable structure.'),
-});
-
-export const DocumentBlockSchema = z.object({
-  type: z.literal(BLOCK_TYPES.DOCUMENT),
-  title: z.string().optional(),
-  content: z.string(), // Live draft content
-});
-
-export const DraftBlockSchema = z.object({
-  type: z.literal(BLOCK_TYPES.DRAFT),
-  title: z.string().optional(),
-  content: z.string(),
-});
-
-export const AgentMessageBlockSchema = z.discriminatedUnion('type', [
-  TextBlockSchema,
-  CodeBlockSchema,
-  ReasoningBlockSchema,
-  ActionBlockSchema,
-  DataBlockSchema,
-  DocumentBlockSchema,
-  DraftBlockSchema,
-]);
-
 import { AnyBlockComponentProps } from './components/Blocks/blockProps';
 import { STATE_ACTIONS, UI_STRINGS } from './constants';
 
-export type AgentMessageBlock = z.infer<typeof AgentMessageBlockSchema>;
+export { AgentMessageBlockSchema };
+export type { AgentMessageBlock };
 
 export type { AnyBlockComponentProps };
 
@@ -127,4 +75,3 @@ export type ChatAction =
   | { type: typeof STATE_ACTIONS.SET_REASONING_VISIBLE; payload: boolean }
   | { type: typeof STATE_ACTIONS.SET_LAST_SENT_QUERY; payload: string }
   | { type: typeof STATE_ACTIONS.RESET_CHAT };
-

@@ -21,7 +21,7 @@ import { EVENT_TYPES, STAGES } from "@/shared/jarvish.constants.ts";
 import { HumanMessage } from "@langchain/core/messages";
 
 type AgentEventPayload = {
-  agentEvents: Pick<AgentEvent, "type" | "content" | "stage">;
+  agentEvents: Pick<AgentEvent, "type" | "content" | "stage" | "metadata">;
 };
 
 type StreamAgentEventsInput = SubscriptionAgentEventsArgs & {
@@ -34,6 +34,8 @@ type GraphStreamUpdate = {
   metadata?: {
     status?: string;
     stage?: number;
+    confidence?: number;
+    validationReason?: string;
   };
   messages?: Array<{
     content?: unknown;
@@ -107,6 +109,7 @@ export async function* streamAgentEvents({
         type: mapDomainEventTypeToGraphQL(EVENT_TYPES.ERROR),
         content: message,
         stage: null,
+        metadata: { confidence: 0, validationReason: message },
       },
     };
   }
@@ -119,6 +122,10 @@ function* mapNodeUpdateToEvents(nodeName: string, update: GraphStreamUpdate): Ge
         type: mapDomainEventTypeToGraphQL(EVENT_TYPES.STATUS),
         content: update.metadata.status,
         stage: update.metadata.stage ?? null,
+        metadata: {
+          confidence: update.metadata.confidence ?? null,
+          validationReason: update.metadata.validationReason ?? null,
+        },
       },
     };
   }
@@ -139,6 +146,7 @@ function* mapNodeUpdateToEvents(nodeName: string, update: GraphStreamUpdate): Ge
         ),
         content: stringifyMessageContent(message.content),
         stage: null,
+        metadata: null,
       },
     };
   }

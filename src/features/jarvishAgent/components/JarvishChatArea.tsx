@@ -138,19 +138,18 @@ export const JarvishChatArea: React.FC<JarvishChatAreaProps> = ({
                 </button>
               </div>
 
-              <div className={styles.summarySection} style={{ marginTop: '2rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>
-                  <div style={{ background: 'var(--jarvish-accent)', padding: '6px', borderRadius: '8px', display: 'flex' }}>
-                    <Bot size={16} color="var(--jarvish-bg)" />
+              <div className={cn(styles.summarySection, styles.summarySectionSpaced)}>
+                <div className={styles.summaryHeadingRow}>
+                  <div className={styles.summaryIconSmall}>
+                    <Bot size={16} />
                   </div>
-                  <strong style={{ margin: 0, color: 'var(--jarvish-text-primary)' }}>Synthesized Findings</strong>
+                  <strong className={styles.summaryHeading}>Synthesized Findings</strong>
                 </div>
                 <Markdown content={summary.aiAnswer} />
               </div>
 
               <button
-                className={styles.newChatBtn}
-                style={{ marginTop: '2rem', maxWidth: '300px' }}
+                className={cn(styles.newChatBtn, styles.summaryActionButton)}
                 onClick={() => setShowFullConversation(true)}
               >
                 Continue Research in Chat <ArrowRight size={16} />
@@ -160,8 +159,8 @@ export const JarvishChatArea: React.FC<JarvishChatAreaProps> = ({
         ) : (
           <div className={styles.summaryPlaceholder}>
             <div className={styles.placeholderCard}>
-              <div style={{ background: 'rgba(56, 189, 248, 0.1)', padding: '20px', borderRadius: '50%', marginBottom: '1rem', display: 'flex' }}>
-                <FileText size={48} color="var(--jarvish-accent)" />
+              <div className={styles.placeholderIconCircle}>
+                <FileText size={48} />
               </div>
               <h3>No summary yet</h3>
               <p>Start a conversation to generate a research summary, or switch to Chat View to see individual messages.</p>
@@ -192,8 +191,8 @@ export const JarvishChatArea: React.FC<JarvishChatAreaProps> = ({
       {!currentSessionId ? (
         <div className={styles.summaryPlaceholder}>
           <div className={styles.placeholderCard}>
-            <div style={{ background: 'rgba(56, 189, 248, 0.1)', padding: '20px', borderRadius: '50%', marginBottom: '1rem', display: 'flex' }}>
-              <Bot size={48} color="var(--jarvish-accent)" />
+            <div className={styles.placeholderIconCircle}>
+              <Bot size={48} />
             </div>
             <h3>Ready for Research</h3>
             <p>Select a previous session from the sidebar or start a brand new one to begin your research journey.</p>
@@ -229,7 +228,7 @@ export const JarvishChatArea: React.FC<JarvishChatAreaProps> = ({
             </div>
           )}
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <div className={styles.messageList}>
             {renderMessages()}
           </div>
         </>

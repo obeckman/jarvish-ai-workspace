@@ -11,6 +11,11 @@ import {
   readPdfDeclaration, 
   queryAttachmentsDeclaration
 } from "@/Backend/agent/nodes/registry";
+import {
+  createClarificationBlockContent,
+  formatConfidenceStatus,
+  validateOrRepairNodeResponse,
+} from "@/Backend/agent/validation/node-response.validator";
 
 /**
  * Node: Research Worker
@@ -67,15 +72,44 @@ export async function researchWorkerNode(state: AgentStateType) {
     const result = await chat.sendMessage(lastMsg.parts);
     const response = result.response;
     logger.debug({ sessionId: state.sessionId, rawResponse: response.text() }, "Research Worker | Raw response text");
+    const toolCalls = response.functionCalls();
+    let content = response.text();
+    let confidence = toolCalls?.length ? 100 : 0;
+    let validationReason = toolCalls?.length
+      ? "Research Worker returned tool calls."
+      : "Research Worker response has not been validated yet.";
+
+    if (content && !toolCalls?.length) {
+      const validation = await validateOrRepairNodeResponse(content, async (repairPrompt) => {
+        logger.warn({ sessionId: state.sessionId }, "Research Worker response failed validation; requesting repair");
+        const repairResult = await chat.sendMessage(repairPrompt);
+        return repairResult.response.text();
+      });
+
+      content = validation.content;
+      confidence = validation.confidence;
+      validationReason = validation.reason;
+    } else if (toolCalls?.length) {
+      logger.debug({ sessionId: state.sessionId, toolCallsCount: toolCalls.length }, "Research Worker requested tools");
+    } else {
+      content = createClarificationBlockContent("Research Worker returned no content and no tool calls.");
+      confidence = 0;
+      validationReason = "Research Worker returned no content and no tool calls.";
+    }
     
     return {
       messages: [new AIMessage({
-        content: response.text(),
-        tool_calls: response.functionCalls(),
+        content,
+        tool_calls: toolCalls,
         name: "research_worker"
       })],
       lastWorker: NODE_NAMES.RESEARCH_WORKER,
-      metadata: { stage: STAGES.RESEARCH, status: "Research Worker is investigating..." }
+      metadata: {
+        stage: STAGES.RESEARCH,
+        status: formatConfidenceStatus("Research Worker is investigating...", confidence, validationReason),
+        confidence,
+        validationReason,
+      }
     };
   } catch (error) {
     logger.error({ sessionId: state.sessionId, error }, "Node: Research Worker | Error during processing");

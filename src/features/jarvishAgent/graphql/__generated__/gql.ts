@@ -24,7 +24,7 @@ type Documents = {
     "\n    mutation CreateSession($id: String!, $title: String!, $initialQuery: String) { \n      createSession(id: $id, title: $title, initialQuery: $initialQuery) { id title } \n    }\n  ": typeof types.CreateSessionDocument,
     "\n    mutation DeleteSession($id: String!) { \n      deleteSession(id: $id) \n    }\n  ": typeof types.DeleteSessionDocument,
     "\n    mutation DeleteStructuredFact($id: String!) {\n      deleteStructuredFact(id: $id)\n    }\n  ": typeof types.DeleteStructuredFactDocument,
-    "\n    subscription AgentChat($query: String!, $history: [MessageInput!]!, $attachments: [AttachmentInput!], $sessionId: String) {\n      agentEvents(query: $query, history: $history, attachments: $attachments, sessionId: $sessionId) {\n        type\n        content\n        stage\n      }\n    }\n  ": typeof types.AgentChatDocument,
+    "\n    subscription AgentChat($query: String!, $history: [MessageInput!]!, $attachments: [AttachmentInput!], $sessionId: String) {\n      agentEvents(query: $query, history: $history, attachments: $attachments, sessionId: $sessionId) {\n        type\n        content\n        stage\n        metadata\n      }\n    }\n  ": typeof types.AgentChatDocument,
 };
 const documents: Documents = {
     "\n    fragment SessionFields on Session {\n      id\n      title\n      createdAt\n      updatedAt\n      summary {\n        summaryTitle\n        userMessage\n        aiAnswer\n        createdAt\n        sessionId\n      }\n    }\n  ": types.SessionFieldsFragmentDoc,
@@ -36,7 +36,7 @@ const documents: Documents = {
     "\n    mutation CreateSession($id: String!, $title: String!, $initialQuery: String) { \n      createSession(id: $id, title: $title, initialQuery: $initialQuery) { id title } \n    }\n  ": types.CreateSessionDocument,
     "\n    mutation DeleteSession($id: String!) { \n      deleteSession(id: $id) \n    }\n  ": types.DeleteSessionDocument,
     "\n    mutation DeleteStructuredFact($id: String!) {\n      deleteStructuredFact(id: $id)\n    }\n  ": types.DeleteStructuredFactDocument,
-    "\n    subscription AgentChat($query: String!, $history: [MessageInput!]!, $attachments: [AttachmentInput!], $sessionId: String) {\n      agentEvents(query: $query, history: $history, attachments: $attachments, sessionId: $sessionId) {\n        type\n        content\n        stage\n      }\n    }\n  ": types.AgentChatDocument,
+    "\n    subscription AgentChat($query: String!, $history: [MessageInput!]!, $attachments: [AttachmentInput!], $sessionId: String) {\n      agentEvents(query: $query, history: $history, attachments: $attachments, sessionId: $sessionId) {\n        type\n        content\n        stage\n        metadata\n      }\n    }\n  ": types.AgentChatDocument,
 };
 
 /**
@@ -78,7 +78,7 @@ export function graphql(source: "\n    mutation DeleteStructuredFact($id: String
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n    subscription AgentChat($query: String!, $history: [MessageInput!]!, $attachments: [AttachmentInput!], $sessionId: String) {\n      agentEvents(query: $query, history: $history, attachments: $attachments, sessionId: $sessionId) {\n        type\n        content\n        stage\n      }\n    }\n  "): typeof import('./graphql').AgentChatDocument;
+export function graphql(source: "\n    subscription AgentChat($query: String!, $history: [MessageInput!]!, $attachments: [AttachmentInput!], $sessionId: String) {\n      agentEvents(query: $query, history: $history, attachments: $attachments, sessionId: $sessionId) {\n        type\n        content\n        stage\n        metadata\n      }\n    }\n  "): typeof import('./graphql').AgentChatDocument;
 
 
 export function graphql(source: string) {

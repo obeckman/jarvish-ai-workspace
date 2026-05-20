@@ -3,7 +3,6 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { AgentStateType } from "@/Backend/agent/state";
 import { REASONING_MODEL } from "@/Backend/agent/models";
 import { STAGES, NODE_NAMES } from "@/shared/jarvish.constants";
-import { normalizeWorkerContent } from "@/Backend/agent/workers/worker-response";
 import { mapStateToGeminiHistory } from "../utils";
 import { AIMessage } from "@langchain/core/messages";
 import { 
@@ -12,6 +11,11 @@ import {
   googleDocsDeclaration,
   updateGoogleDocDeclaration
 } from "@/Backend/agent/nodes/registry";
+import {
+  createClarificationBlockContent,
+  formatConfidenceStatus,
+  validateOrRepairNodeResponse,
+} from "@/Backend/agent/validation/node-response.validator";
 
 /**
  * Node: Google Worker
@@ -61,7 +65,28 @@ export async function googleWorkerNode(state: AgentStateType) {
 
     let content = response.text();
     const toolCalls = response.functionCalls();
-    content = normalizeWorkerContent(content, Boolean(toolCalls?.length));
+    let confidence = toolCalls?.length ? 100 : 0;
+    let validationReason = toolCalls?.length
+      ? "Google Worker returned tool calls."
+      : "Google Worker response has not been validated yet.";
+
+    if (content && !toolCalls?.length) {
+      const validation = await validateOrRepairNodeResponse(content, async (repairPrompt) => {
+        logger.warn({ sessionId: state.sessionId }, "Google Worker response failed validation; requesting repair");
+        const repairResult = await chat.sendMessage(repairPrompt);
+        return repairResult.response.text();
+      });
+
+      content = validation.content;
+      confidence = validation.confidence;
+      validationReason = validation.reason;
+    } else if (toolCalls?.length) {
+      logger.debug({ sessionId: state.sessionId, toolCallsCount: toolCalls.length }, "Google Worker requested tools");
+    } else {
+      content = createClarificationBlockContent("Google Worker returned no content and no tool calls.");
+      confidence = 0;
+      validationReason = "Google Worker returned no content and no tool calls.";
+    }
 
     return {
       messages: [new AIMessage({
@@ -70,7 +95,12 @@ export async function googleWorkerNode(state: AgentStateType) {
         name: "google_worker"
       })],
       lastWorker: NODE_NAMES.GOOGLE_WORKER,
-      metadata: { stage: STAGES.RESEARCH, status: "Google Worker is searching..." }
+      metadata: {
+        stage: STAGES.RESEARCH,
+        status: formatConfidenceStatus("Google Worker is searching...", confidence, validationReason),
+        confidence,
+        validationReason,
+      }
     };
   } catch (error) {
     logger.error({ sessionId: state.sessionId, error }, "Node: Google Worker | Error during processing");

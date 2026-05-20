@@ -4,6 +4,7 @@ import { AgentStateType } from "@/Backend/agent/state";
 import { addMemory, forgetMemory } from "@/Backend/services/memory/memory.service";
 import { readFile, writeFile } from "@/Backend/services/tools/file.service";
 import { getGoogleDocContent, listCalendarEvents, searchGmailMessages, updateGoogleDoc } from "@/Backend/services/tools/google.service";
+import { checkInventory } from "@/Backend/services/tools/inventory.service";
 import { readPdf } from "@/Backend/services/tools/pdf.service";
 import { searchWeb } from "@/Backend/services/tools/search.service";
 import { fetchWebPage } from "@/Backend/services/tools/web.service";
@@ -14,6 +15,7 @@ import {
   FetchWebPageToolArgsSchema,
   ForgetMemoryToolArgsSchema,
   GoogleDocToolArgsSchema,
+  InventoryToolArgsSchema,
   ListCalendarEventsToolArgsSchema,
   QueryAttachmentsToolArgsSchema,
   ReadFileToolArgsSchema,
@@ -23,12 +25,15 @@ import {
   WebSearchToolArgsSchema,
   WriteFileToolArgsSchema,
 } from "@/Backend/agent/tools/tool.schemas";
+import { validateToolOutput } from "@/Backend/agent/validation/tool-output.validator";
 
 type ToolHandler = (call: AgentToolCall, state: AgentStateType) => Promise<unknown>;
 
 type ToolExecutionResult = {
   output: unknown;
   confidence: number;
+  valid: boolean;
+  reason: string;
 };
 
 const TOOL_HANDLERS: Record<string, ToolHandler> = {
@@ -50,6 +55,7 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
     const args = QueryAttachmentsToolArgsSchema.parse(call.args);
     return queryProcessedAttachments(args.query, state);
   },
+  [TOOL_NAMES.CHECK_INVENTORY]: (call) => checkInventory(InventoryToolArgsSchema.parse(call.args)),
   [TOOL_NAMES.LIST_CALENDAR]: (call, state) => listCalendarEvents(
     requireGoogleToken(state),
     ListCalendarEventsToolArgsSchema.parse(call.args),
@@ -78,28 +84,49 @@ export async function executeAgentTool(
     return {
       output: `Error: Tool '${call.name}' not recognized.`,
       confidence: 0,
+      valid: false,
+      reason: "Tool was not registered.",
     };
   }
 
   try {
     logger.debug({ sessionId: state.sessionId, toolName: call.name, toolArgs: call.args }, "Executing tool");
     const output = await handler(call, state);
+    const validation = validateToolOutput(call.name, output);
+
+    if (!validation.valid) {
+      logger.warn(
+        { sessionId: state.sessionId, toolName: call.name, reason: validation.reason, confidence: validation.confidence },
+        "Tool output failed validation",
+      );
+    } else {
+      logger.debug(
+        { sessionId: state.sessionId, toolName: call.name, reason: validation.reason, confidence: validation.confidence },
+        "Tool output passed validation",
+      );
+    }
+
     return {
       output,
-      confidence: scoreToolConfidence(output),
+      confidence: validation.confidence,
+      valid: validation.valid,
+      reason: validation.reason,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown tool execution error";
     logger.error({ sessionId: state.sessionId, toolName: call.name, error }, "Error executing tool");
     return {
-      output: `Error executing tool: ${error.message}`,
+      output: `Error executing tool: ${message}`,
       confidence: 0,
+      valid: false,
+      reason: message,
     };
   }
 }
 
-export function formatToolNote(call: AgentToolCall, output: unknown, confidence: number): string {
+export function formatToolNote(call: AgentToolCall, output: unknown, confidence: number, reason: string): string {
   const safeOutput = typeof output === "string" ? output : (JSON.stringify(output) || "");
-  return `[Source: ${call.name} | Conf: ${confidence}%] ${safeOutput.substring(0, 500)}...`;
+  return `[Source: ${call.name} | Conf: ${confidence}% | ${reason}] ${safeOutput.substring(0, 500)}...`;
 }
 
 function requireGoogleToken(state: AgentStateType): string {
@@ -108,23 +135,4 @@ function requireGoogleToken(state: AgentStateType): string {
   }
 
   return state.googleToken;
-}
-
-function scoreToolConfidence(output: unknown): number {
-  const outputStr = String(output);
-
-  if (!output || outputStr.trim() === "") {
-    return 0;
-  }
-
-  const lowerOutput = outputStr.toLowerCase();
-  if (lowerOutput.includes("error:") || lowerOutput.includes("failed to")) {
-    return 0;
-  }
-
-  if (lowerOutput.includes("no results found") || lowerOutput.includes("could not find")) {
-    return 50;
-  }
-
-  return 100;
 }

@@ -11,6 +11,10 @@ import { STAGES, ROLES } from "@/shared/jarvish.constants";
 import { getMessageRole } from "./utils";
 import { logger } from "@/Backend/utils/logger";
 
+type ExtractedFactSummary = {
+  fact?: unknown;
+};
+
 /**
  * Node: Memory Archiving
  * Responsibilities:
@@ -23,7 +27,7 @@ import { logger } from "@/Backend/utils/logger";
 export async function archiveNode(state: AgentStateType) {
   logger.debug({ sessionId: state.sessionId, messagesCount: state.messages.length }, "Node: Archive");
   let summary: { summaryTitle: string; userMessage: string; aiAnswer: string } | null = null;
-  let extractedFacts: any[] = [];
+  let extractedFacts: ExtractedFactSummary[] = [];
   let indexedAttachments: string[] = [];
 
   // 1. Generate Session Summary for UI History (New Requirement)
@@ -152,7 +156,7 @@ export async function archiveNode(state: AgentStateType) {
     overallAgentSummary += `AI Answer: ${summary.aiAnswer}\n`;
 
     if (extractedFacts.length > 0) {
-      overallAgentSummary += `Extracted Facts: ${extractedFacts.map((f: any) => f.fact).join('; ')}\n`;
+      overallAgentSummary += `Extracted Facts: ${extractedFacts.map((fact) => String(fact.fact ?? "")).join('; ')}\n`;
     }
     if (indexedAttachments.length > 0) {
       overallAgentSummary += `Indexed Attachments: ${indexedAttachments.join(', ')}\n`;
@@ -176,7 +180,11 @@ export async function archiveNode(state: AgentStateType) {
   }
 
   return {
-    metadata: { stage: STAGES.FINALIZE, status: "Jarvish has remembered this session and indexed all documents." }
+    metadata: {
+      stage: STAGES.FINALIZE,
+      status: "Jarvish has remembered this session and indexed all documents. Confidence: 100%.",
+      confidence: 100,
+      validationReason: "Archive node completed persistence and indexing flow.",
+    }
   };
 }
-

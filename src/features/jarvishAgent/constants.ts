@@ -24,6 +24,11 @@ export const UI_STRINGS = {
   STATUS_RETRIEVING: 'Retrieving Memories...',
   STATUS_ORCHESTRATING: 'Orchestrating Context...',
   STATUS_EXECUTING: 'Executing Task...',
+  CONFIDENCE_NOTE: (confidence: number, reason?: string) => (
+    reason
+      ? `Confidence: ${confidence}%. ${reason}`
+      : `Confidence: ${confidence}%.`
+  ),
 } as const;
 
 export const GQL_FRAGMENTS = {
@@ -109,6 +114,7 @@ export const GQL_SUBSCRIPTIONS = {
         type
         content
         stage
+        metadata
       }
     }
   `),
