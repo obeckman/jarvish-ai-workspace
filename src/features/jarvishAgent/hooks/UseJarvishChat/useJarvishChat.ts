@@ -23,6 +23,11 @@ import {
 import { parseAgentMessageContent } from '../../utils/parser';
 import { normalizeHistoryMessages } from '@/features/jarvishAgent/utils/messageNormalizer';
 import {
+  createAssistantMessageId,
+  createReasoningMessageId,
+  createUserMessageId,
+} from '@/features/jarvishAgent/utils/messageIds';
+import {
   AgentChatSubscriptionVariables,
   GetSessionHistoryQuery,
   GetSessionHistoryQueryVariables
@@ -56,6 +61,7 @@ export const useJarvishChat = (
   const abortControllerRef = useRef<AbortController | null>(null);
   const readerRef = useRef<ReadableStreamDefaultReader | null>(null);
   const stateRef = useRef<ChatState>(state);
+  const reasoningMessageSequenceRef = useRef(0);
 
   React.useEffect(() => {
     stateRef.current = state;
@@ -178,9 +184,11 @@ export const useJarvishChat = (
         } else if (data.type === EVENT_TYPES.REASONING) {
           // Reasoning events contain the agent's internal thought process, which can be helpful for debugging or for users who want more transparency.
           recordConfidenceIfPresent(data.metadata);
+          const sequence = reasoningMessageSequenceRef.current;
+          reasoningMessageSequenceRef.current += 1;
           dispatch({
             type: STATE_ACTIONS.ADD_MESSAGE, payload: {
-              id: `reason-content-${Date.now()}-${Math.random()}`,
+              id: createReasoningMessageId(assistantMsgId, sequence),
               type: BLOCK_TYPES.REASONING,
               role: ROLES.REASONING,
               content: data.content,
@@ -228,12 +236,13 @@ export const useJarvishChat = (
     dispatch({ type: STATE_ACTIONS.SET_CONFIDENCE_SUMMARY, payload: null });
     dispatch({ type: STATE_ACTIONS.SET_REASONING_VISIBLE, payload: true });
 
+    const userMessageTimestamp = Date.now();
     const userMessageBlock: Message = {
       type: BLOCK_TYPES.TEXT,
-      id: Date.now().toString(),
+      id: createUserMessageId(userMessageTimestamp),
       role: ROLES.USER,
       content: queryToSend,
-      timestamp: Date.now()
+      timestamp: userMessageTimestamp
     };
 
     dispatch({ type: STATE_ACTIONS.ADD_MESSAGE, payload: userMessageBlock });
@@ -275,6 +284,7 @@ export const useJarvishChat = (
 
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
+    reasoningMessageSequenceRef.current = 0;
     const sendUserMessageHeaders = await getSendUserMessageHeaders();
     let activeReader: ReadableStreamDefaultReader<Uint8Array> | null = null;
 
@@ -315,7 +325,7 @@ export const useJarvishChat = (
       // We use a TextDecoder to convert the binary stream into text
       const decoder = new TextDecoder();
 
-      const assistantMsgId = (Date.now() + 1).toString();
+      const assistantMsgId = createAssistantMessageId(Date.now());
 
       let buffer = '';
       while (true) {

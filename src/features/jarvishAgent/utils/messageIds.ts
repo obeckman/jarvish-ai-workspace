@@ -2,8 +2,8 @@ export function createHistoryMessageId(messageIndex: number, blockIndex: number)
   return `history-${messageIndex}-${blockIndex}`;
 }
 
-export function createReasoningMessageId(timestamp: number, sequence: number): string {
-  return `reasoning-${timestamp}-${sequence}`;
+export function createReasoningMessageId(parentMessageId: string, sequence: number): string {
+  return `reasoning-${parentMessageId}-${sequence}`;
 }
 
 export function createAssistantMessageId(timestamp: number): string {
