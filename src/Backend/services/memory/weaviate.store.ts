@@ -34,25 +34,37 @@ export class WeaviateVectorStore implements IVectorStore {
 
       if (!exists) {
         logger.info(`[Weaviate] Creating collection: ${this.className}`);
-        await this.client.collections.create({
-          name: this.className,
-          properties: [
-            {
-              name: 'text',
-              dataType: 'text',
-              description: 'The content of the memory',
-            },
-            {
-              name: 'metadata',
-              dataType: 'text', // Metadata is stored as a JSON string for flexibility
-              description: 'JSON stringified metadata',
-            },
-          ],
-          // In v3, we provide vectors manually, so we don't need a default vectorizer module
-        });
+        try {
+          await this.client.collections.create({
+            name: this.className,
+            properties: [
+              {
+                name: 'text',
+                dataType: 'text',
+                description: 'The content of the memory',
+              },
+              {
+                name: 'metadata',
+                dataType: 'text', // Metadata is stored as a JSON string for flexibility
+                description: 'JSON stringified metadata',
+              },
+            ],
+            // In v3, we provide vectors manually, so we don't need a default vectorizer module
+          });
+          logger.info(`[Weaviate] Collection ${this.className} created successfully.`);
+        } catch (createError: any) {
+          // If the error is "already exists", we can ignore it
+          if (createError?.message?.includes('already exists')) {
+            logger.info(`[Weaviate] Collection ${this.className} already exists (handled race condition).`);
+          } else {
+            throw createError;
+          }
+        }
+      } else {
+        logger.info(`[Weaviate] Collection ${this.className} already exists.`);
       }
     } catch (error) {
-      logger.error(error,'[Weaviate Schema Error]');
+      logger.error(error, '[Weaviate Schema Error]');
       throw error;
     }
   }
