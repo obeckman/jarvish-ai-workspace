@@ -57,6 +57,7 @@ export const JarvishAgent: React.FC = () => {
     status,
     statusMessage,
     statusLogs,
+    confidenceSummary,
     currentStage,
     attachments,
     errorMessage,
@@ -201,6 +202,7 @@ export const JarvishAgent: React.FC = () => {
               messages={messages}
               status={status}
               statusMessage={statusMessage}
+              confidenceSummary={confidenceSummary}
               errorMessage={errorMessage}
               currentStage={currentStage}
               isReasoningVisible={isReasoningVisible}

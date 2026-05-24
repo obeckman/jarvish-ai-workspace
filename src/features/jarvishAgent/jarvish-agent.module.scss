@@ -894,6 +894,58 @@
   box-shadow: var(--shadow-sm);
 }
 
+.confidenceSummary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 0.75rem 1rem;
+  margin: -1rem 0 1.5rem 0;
+  border: 1px solid var(--jarvish-glass-border);
+  border-radius: var(--radius-lg);
+  background: rgba(15, 23, 42, 0.45);
+  color: var(--jarvish-text-secondary);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.confidenceHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--jarvish-accent);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+
+.confidenceValues {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 600;
+  color: var(--jarvish-text-primary);
+  flex-shrink: 0;
+}
+
+.confidenceReason {
+  min-width: 0;
+  color: var(--jarvish-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lowConfidence {
+  border-color: rgba(251, 191, 36, 0.32);
+  background: rgba(251, 191, 36, 0.08);
+
+  .confidenceHeader {
+    color: #fbbf24;
+  }
+}
+
 .stage {
   flex: 1;
   height: 6px;

@@ -28,6 +28,28 @@ export const chatReducer = (state: jarvishAgentTypes.ChatState, action: jarvishA
       return { ...state, statusLogs: [...state.statusLogs, action.payload] };
     case STATE_ACTIONS.SET_STATUS_LOGS:
       return { ...state, statusLogs: action.payload };
+    case STATE_ACTIONS.SET_CONFIDENCE_SUMMARY:
+      return { ...state, confidenceSummary: action.payload };
+    case STATE_ACTIONS.RECORD_CONFIDENCE_OBSERVATION: {
+      const currentSummary = state.confidenceSummary;
+      const shouldReplaceLowest = !currentSummary
+        || action.payload.confidence <= currentSummary.lowest;
+      const lowest = shouldReplaceLowest
+        ? action.payload.confidence
+        : currentSummary.lowest;
+      const reason = shouldReplaceLowest
+        ? action.payload.reason
+        : currentSummary.reason;
+
+      return {
+        ...state,
+        confidenceSummary: {
+          latest: action.payload.confidence,
+          lowest,
+          reason,
+        },
+      };
+    }
     case STATE_ACTIONS.SET_CURRENT_STAGE:
       return { ...state, currentStage: action.payload };
     case STATE_ACTIONS.SET_ATTACHMENTS:

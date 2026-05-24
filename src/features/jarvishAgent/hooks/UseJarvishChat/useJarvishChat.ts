@@ -114,30 +114,38 @@ export const useJarvishChat = (
     dispatch({ type: STATE_ACTIONS.SET_INPUT, payload: latestState.lastSentQuery + recoveryNote });
     dispatch({ type: STATE_ACTIONS.SET_CURRENT_STAGE, payload: 0 });
     dispatch({ type: STATE_ACTIONS.SET_ATTACHMENTS, payload: [] });
+    dispatch({ type: STATE_ACTIONS.SET_CONFIDENCE_SUMMARY, payload: null });
 
     dispatch({ type: STATE_ACTIONS.SET_STATUS_MESSAGE, payload: 'Request stopped. Progress saved to editor.' });
     setTimeout(() => dispatch({ type: STATE_ACTIONS.SET_STATUS_MESSAGE, payload: null }), 3000);
 
   }, []);
 
-  const addConfidenceMessageIfPresent = React.useCallback((metadata: AgentEventMetadata | null | undefined) => {
+  const recordConfidenceIfPresent = React.useCallback((metadata: AgentEventMetadata | null | undefined) => {
     if (!metadata) {
       return;
     }
 
     const { confidence, validationReason } = metadata;
-    if (typeof confidence !== 'number') {
+    if (confidence === null || confidence === undefined) {
+      return;
+    }
+
+    if (typeof confidence !== 'number' || !Number.isFinite(confidence)) {
+      console.warn('Ignoring invalid confidence metadata:', metadata);
+      return;
+    }
+
+    if (confidence < 0 || confidence > 100) {
+      console.warn('Ignoring out-of-range confidence metadata:', metadata);
       return;
     }
 
     dispatch({
-      type: STATE_ACTIONS.ADD_MESSAGE,
+      type: STATE_ACTIONS.RECORD_CONFIDENCE_OBSERVATION,
       payload: {
-        id: `confidence-${Date.now()}-${Math.random()}`,
-        type: BLOCK_TYPES.REASONING,
-        role: ROLES.REASONING,
-        content: UI_STRINGS.CONFIDENCE_NOTE(confidence, validationReason ?? undefined),
-        timestamp: Date.now(),
+        confidence,
+        reason: validationReason?.trim() || null,
       },
     });
   }, []);
@@ -160,7 +168,7 @@ export const useJarvishChat = (
           // Status events are simple text updates about what the agent is doing (e.g., "Searching for information", "Analyzing data", etc.).
           dispatch({ type: STATE_ACTIONS.SET_STATUS_MESSAGE, payload: data.content });
           dispatch({ type: STATE_ACTIONS.ADD_STATUS_LOG, payload: data.content });
-          addConfidenceMessageIfPresent(data.metadata);
+          recordConfidenceIfPresent(data.metadata);
 
           if (data.stage !== null) {
             dispatch({ type: STATE_ACTIONS.SET_CURRENT_STAGE, payload: data.stage });
@@ -169,7 +177,7 @@ export const useJarvishChat = (
           }
         } else if (data.type === EVENT_TYPES.REASONING) {
           // Reasoning events contain the agent's internal thought process, which can be helpful for debugging or for users who want more transparency.
-          addConfidenceMessageIfPresent(data.metadata);
+          recordConfidenceIfPresent(data.metadata);
           dispatch({
             type: STATE_ACTIONS.ADD_MESSAGE, payload: {
               id: `reason-content-${Date.now()}-${Math.random()}`,
@@ -181,7 +189,7 @@ export const useJarvishChat = (
           });
         } else if (data.type === EVENT_TYPES.MESSAGE) {
           // Message events contain the actual content that the agent wants to communicate to the user.
-          addConfidenceMessageIfPresent(data.metadata);
+          recordConfidenceIfPresent(data.metadata);
           const newContentArray = parseAgentMessageContent(data.content);
           console.log(`processStreamLines : [Parsed Assistant Message Content]:`, newContentArray);
           newContentArray.forEach(newContentMessage => {
@@ -197,7 +205,7 @@ export const useJarvishChat = (
           dispatch({ type: STATE_ACTIONS.SET_STATUS, payload: AGENT_STATUS.RESPONDING });
         } else if (data.type === EVENT_TYPES.ERROR) {
           // Error events indicate that something went wrong during the agent's processing. The content typically contains an error message that can be displayed to the user.
-          addConfidenceMessageIfPresent(data.metadata);
+          recordConfidenceIfPresent(data.metadata);
           dispatch({ type: STATE_ACTIONS.SET_ERROR_MESSAGE, payload: `Agent Error: ${data.content}` });
         } else if (data.type === EVENT_TYPES.RETRY) {
           dispatch({ type: STATE_ACTIONS.SET_STATUS_MESSAGE, payload: data.content || 'Retrying request...' });
@@ -211,12 +219,13 @@ export const useJarvishChat = (
         console.warn('processStreamLines : Failed to parse SSE JSON:', { jsonStr, error: e });
       }
     }
-  }, [addConfidenceMessageIfPresent])
+  }, [recordConfidenceIfPresent])
 
   const startSendUserMessageSetUX = useCallback((queryToSend: string, overrideQuery?: string) => {
     dispatch({ type: STATE_ACTIONS.SET_ERROR_MESSAGE, payload: null });
     dispatch({ type: STATE_ACTIONS.SET_LAST_SENT_QUERY, payload: queryToSend });
     dispatch({ type: STATE_ACTIONS.SET_STATUS_LOGS, payload: [] });
+    dispatch({ type: STATE_ACTIONS.SET_CONFIDENCE_SUMMARY, payload: null });
     dispatch({ type: STATE_ACTIONS.SET_REASONING_VISIBLE, payload: true });
 
     const userMessageBlock: Message = {
@@ -380,6 +389,7 @@ export const useJarvishChat = (
     status: state.status,
     statusMessage: state.statusMessage,
     statusLogs: state.statusLogs,
+    confidenceSummary: state.confidenceSummary,
     currentStage: state.currentStage,
     attachments: state.attachments,
     errorMessage: state.errorMessage,

@@ -7,19 +7,22 @@ import {
   FileText,
   ArrowRight,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Gauge
 } from 'lucide-react';
 import cn from 'classnames';
 import styles from '@/features/jarvishAgent/jarvish-agent.module.scss';
-import { Message, Session } from '@/features/jarvishAgent/types';
-import { ROLES ,AGENT_STATUS, STAGES, AgentStatus, BLOCK_TYPES} from '@/shared/jarvish.constants';
+import type { ConfidenceSummary, Message, Session } from '@/features/jarvishAgent/types';
+import { ROLES ,AGENT_STATUS, STAGES, AgentStatus, BLOCK_TYPES, TOOL_CONFIDENCE_THRESHOLD} from '@/shared/jarvish.constants';
 import { ChatMessage } from './Blocks/ChatMessage';
 import { Markdown } from '@/components/shared/Markdown/Markdown';
+import { UI_STRINGS } from '@/features/jarvishAgent/constants';
 
 interface JarvishChatAreaProps {
   messages: Message[];
   status: AgentStatus;
   statusMessage: string | null;
+  confidenceSummary: ConfidenceSummary | null;
   errorMessage: string | null;
   currentStage: number;
   isReasoningVisible: boolean;
@@ -36,6 +39,7 @@ export const JarvishChatArea: React.FC<JarvishChatAreaProps> = ({
   messages,
   status,
   statusMessage,
+  confidenceSummary,
   errorMessage,
   currentStage,
   isReasoningVisible,
@@ -207,6 +211,7 @@ export const JarvishChatArea: React.FC<JarvishChatAreaProps> = ({
             <div className={cn(styles.stage, { [styles.active]: currentStage === STAGES.FINALIZE, [styles.completed]: currentStage >= STAGES.FINALIZE })} />
           </div>
 
+          <ConfidenceSummaryStrip confidenceSummary={confidenceSummary} />
 
 
           {status === AGENT_STATUS.THINKING && (
@@ -236,3 +241,37 @@ export const JarvishChatArea: React.FC<JarvishChatAreaProps> = ({
     </div>
   );
 };
+
+interface ConfidenceSummaryStripProps {
+  confidenceSummary: ConfidenceSummary | null;
+}
+
+const ConfidenceSummaryStrip: React.FC<ConfidenceSummaryStripProps> = ({ confidenceSummary }) => {
+  if (!confidenceSummary) {
+    return null;
+  }
+
+  const isLowConfidence = confidenceSummary.lowest < TOOL_CONFIDENCE_THRESHOLD;
+
+  return (
+    <div className={cn(styles.confidenceSummary, { [styles.lowConfidence]: isLowConfidence })}>
+      <div className={styles.confidenceHeader}>
+        <Gauge size={14} />
+        <span>{UI_STRINGS.CONFIDENCE_SUMMARY_TITLE}</span>
+      </div>
+      <div className={styles.confidenceValues}>
+        <span>{UI_STRINGS.CONFIDENCE_LATEST_LABEL}: {formatConfidencePercent(confidenceSummary.latest)}</span>
+        <span>{UI_STRINGS.CONFIDENCE_LOWEST_LABEL}: {formatConfidencePercent(confidenceSummary.lowest)}</span>
+      </div>
+      {confidenceSummary.reason && (
+        <div className={styles.confidenceReason}>
+          {UI_STRINGS.CONFIDENCE_REASON_LABEL}: {confidenceSummary.reason}
+        </div>
+      )}
+    </div>
+  );
+};
+
+function formatConfidencePercent(confidence: number): string {
+  return `${confidence}%`;
+}

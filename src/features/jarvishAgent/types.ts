@@ -45,12 +45,24 @@ export interface Attachment {
   mimeType: string;
 }
 
+export interface ConfidenceSummary {
+  latest: number;
+  lowest: number;
+  reason: string | null;
+}
+
+export interface ConfidenceObservation {
+  confidence: number;
+  reason: string | null;
+}
+
 export interface ChatState {
   messages: Message[];
   input: string;
   status: AgentStatus;
   statusMessage: string | null;
   statusLogs: string[];
+  confidenceSummary: ConfidenceSummary | null;
   currentStage: number;
   attachments: Attachment[];
   errorMessage: string | null;
@@ -67,6 +79,8 @@ export type ChatAction =
   | { type: typeof STATE_ACTIONS.SET_STATUS_MESSAGE; payload: string | null }
   | { type: typeof STATE_ACTIONS.ADD_STATUS_LOG; payload: string }
   | { type: typeof STATE_ACTIONS.SET_STATUS_LOGS; payload: string[] }
+  | { type: typeof STATE_ACTIONS.SET_CONFIDENCE_SUMMARY; payload: ConfidenceSummary | null }
+  | { type: typeof STATE_ACTIONS.RECORD_CONFIDENCE_OBSERVATION; payload: ConfidenceObservation }
   | { type: typeof STATE_ACTIONS.SET_CURRENT_STAGE; payload: number }
   | { type: typeof STATE_ACTIONS.SET_ATTACHMENTS; payload: Attachment[] }
   | { type: typeof STATE_ACTIONS.ADD_ATTACHMENT; payload: Attachment }

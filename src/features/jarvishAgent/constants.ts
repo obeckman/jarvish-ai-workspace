@@ -29,6 +29,10 @@ export const UI_STRINGS = {
       ? `Confidence: ${confidence}%. ${reason}`
       : `Confidence: ${confidence}%.`
   ),
+  CONFIDENCE_SUMMARY_TITLE: 'Confidence',
+  CONFIDENCE_LATEST_LABEL: 'Latest',
+  CONFIDENCE_LOWEST_LABEL: 'Lowest',
+  CONFIDENCE_REASON_LABEL: 'Reason',
 } as const;
 
 export const GQL_FRAGMENTS = {
@@ -130,6 +134,8 @@ export const STATE_ACTIONS = {
   SET_STATUS_MESSAGE: 'SET_STATUS_MESSAGE',
   ADD_STATUS_LOG: 'ADD_STATUS_LOG',
   SET_STATUS_LOGS: 'SET_STATUS_LOGS',
+  SET_CONFIDENCE_SUMMARY: 'SET_CONFIDENCE_SUMMARY',
+  RECORD_CONFIDENCE_OBSERVATION: 'RECORD_CONFIDENCE_OBSERVATION',
   SET_CURRENT_STAGE: 'SET_CURRENT_STAGE',
   SET_ATTACHMENTS: 'SET_ATTACHMENTS',
   ADD_ATTACHMENT: 'ADD_ATTACHMENT',
@@ -146,6 +152,7 @@ export const INITIAL_CHAT_STATE: ChatState = {
   status: AGENT_STATUS.IDLE,
   statusMessage: null,
   statusLogs: [],
+  confidenceSummary: null,
   currentStage: 0,
   attachments: [],
   errorMessage: null,
