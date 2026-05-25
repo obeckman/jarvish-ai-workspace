@@ -158,6 +158,14 @@ export const JarvishAgent: React.FC = () => {
     setAuthError(null);
   }, [clearMessages, setErrorMessage, setAuthError]);
 
+  const handleGoogleLogin = useCallback(async () => {
+    try {
+      await loginWithGoogle();
+    } catch {
+      // useGoogleAuth owns the user-facing auth error state.
+    }
+  }, [loginWithGoogle]);
+
   const handleCopyToInput = useCallback((text: string) => {
     setInput(text);
   }, [setInput]);
@@ -185,7 +193,7 @@ export const JarvishAgent: React.FC = () => {
           showFullConversation={showFullConversation}
           setShowFullConversation={setShowFullConversation}
           googleToken={googleToken}
-          onLogin={loginWithGoogle}
+          onLogin={handleGoogleLogin}
           onLogout={logout}
           onResetUI={handleResetUI}
           viewMode={viewMode}

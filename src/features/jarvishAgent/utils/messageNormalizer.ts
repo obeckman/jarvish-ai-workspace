@@ -2,21 +2,43 @@ import { Message } from "@/features/jarvishAgent/types";
 import { GetSessionHistoryQuery } from "@/features/jarvishAgent/graphql/__generated__/graphql";
 import { createHistoryMessageId } from "@/features/jarvishAgent/utils/messageIds";
 import { parseAgentMessageContent } from "@/features/jarvishAgent/utils/parser";
-import { ROLES, type MessageRole } from "@/shared/jarvish.constants";
+import { BLOCK_TYPES, ROLES, type MessageRole } from "@/shared/jarvish.constants";
 
 type HistoryMessageInput = GetSessionHistoryQuery["getSessionHistory"][number];
 
 export function normalizeHistoryMessages(historyMessages: HistoryMessageInput[]): Message[] {
-  return historyMessages.flatMap((historyMessage, messageIndex) => {
+  return historyMessages.map((historyMessage, messageIndex) => {
     const blocks = parseAgentMessageContent(String(historyMessage.content));
     const role = normalizeHistoryRole(historyMessage.role);
+    const firstBlock = blocks[0];
 
-    return blocks.map((block, blockIndex) => ({
-      id: createHistoryMessageId(messageIndex, blockIndex),
+    if (role === ROLES.USER && firstBlock?.type === BLOCK_TYPES.TEXT) {
+      return {
+        id: createHistoryMessageId(messageIndex, 0),
+        type: BLOCK_TYPES.TEXT,
+        content: firstBlock.content,
+        timestamp: messageIndex,
+        role,
+      };
+    }
+
+    if (role === ROLES.REASONING && firstBlock?.type === BLOCK_TYPES.TEXT) {
+      return {
+        id: createHistoryMessageId(messageIndex, 0),
+        type: BLOCK_TYPES.REASONING,
+        content: firstBlock.content,
+        timestamp: messageIndex,
+        role,
+      };
+    }
+
+    return {
+      id: createHistoryMessageId(messageIndex, 0),
+      type: BLOCK_TYPES.TEXT,
+      content: blocks,
       timestamp: messageIndex,
-      ...block,
       role,
-    }));
+    };
   });
 }
 

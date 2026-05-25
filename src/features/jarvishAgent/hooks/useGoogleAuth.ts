@@ -1,21 +1,23 @@
 import { useState, useCallback, useEffect } from 'react';
 import { STORAGE_KEYS } from "@/shared/jarvish.constants";
 
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim() ?? '';
+const GOOGLE_CLIENT_ID_ERROR = 'Google Client ID not configured. Set VITE_GOOGLE_CLIENT_ID in the client environment.';
+
 export const useGoogleAuth = () => {
   const [googleToken, setGoogleToken] = useState<string | null>(localStorage.getItem(STORAGE_KEYS.GOOGLE_TOKEN));
   const [expiresAt, setExpiresAt] = useState<number | null>(
     Number(localStorage.getItem('google_token_expires_at')) || null
   );
-  const [clientId, setClientId] = useState<string | null>(null);
+  const [clientId] = useState<string | null>(GOOGLE_CLIENT_ID || null);
   const [authError, setAuthError] = useState<string | null>(null);
-
-  // ... (fetchConfig effect)
 
   const loginWithGoogle = useCallback((isSilent = false): Promise<string | null> => {
     return new Promise((resolve, reject) => {
       setAuthError(null);
       if (!clientId) {
-        reject("Google Client ID not set.");
+        setAuthError(GOOGLE_CLIENT_ID_ERROR);
+        reject(GOOGLE_CLIENT_ID_ERROR);
         return;
       }
 

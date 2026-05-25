@@ -200,15 +200,14 @@ export const useJarvishChat = (
           recordConfidenceIfPresent(data.metadata);
           const newContentArray = parseAgentMessageContent(data.content);
           console.log(`processStreamLines : [Parsed Assistant Message Content]:`, newContentArray);
-          newContentArray.forEach(newContentMessage => {
-            dispatch({
-              type: STATE_ACTIONS.ADD_MESSAGE, payload: {
-                id: assistantMsgId,
-                timestamp: Date.now(),
-                ...newContentMessage,
-                role: ROLES.AGENT,
-              }
-            });
+          dispatch({
+            type: STATE_ACTIONS.ADD_MESSAGE, payload: {
+              id: assistantMsgId,
+              type: BLOCK_TYPES.TEXT,
+              role: ROLES.AGENT,
+              content: newContentArray,
+              timestamp: Date.now(),
+            }
           });
           dispatch({ type: STATE_ACTIONS.SET_STATUS, payload: AGENT_STATUS.RESPONDING });
         } else if (data.type === EVENT_TYPES.ERROR) {

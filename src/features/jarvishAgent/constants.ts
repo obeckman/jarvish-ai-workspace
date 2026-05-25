@@ -17,7 +17,7 @@ export const UI_STRINGS = {
   NEW_RESEARCH_PREFIX: 'New Research',
   DELETE_CONFIRMATION: 'Are you sure you want to delete this session?',
   FILE_LARGE_ERROR: 'File too large. Max 10MB per file.',
-  GOOGLE_CLIENT_ID_ERROR: 'Google Client ID not loaded from server.',
+  GOOGLE_CLIENT_ID_ERROR: 'Google Client ID not configured in the client environment.',
   GOOGLE_SDK_ERROR: 'Google Identity Services SDK not loaded.',
   RECOVERY_NOTE: (stage: number) => `\n\n[RECOVERY: Interrupted at Stage ${stage}. \nProgress made:\n{steps}\n\nPlease resume from the next step.]`,
   CONTEXT_AGENT_PLACEHOLDER: "Ask about inventory (e.g., 'Do we have SHOE-123 in stock?')",
