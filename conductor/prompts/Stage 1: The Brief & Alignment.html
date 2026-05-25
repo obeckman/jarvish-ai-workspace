@@ -374,6 +374,9 @@ Choose exactly one mode based on the task:
 - Use MODE A for new features, refactors, architecture decisions, or technical requirements.
 - Use MODE B for bugs, regressions, broken behavior, flaky behavior, or unexplained runtime failures.
 
+Task or bug report:
+{{TASK_OR_BUG_DESCRIPTION}}
+
 If the task is a bug, do not run MODE A first. Start with MODE B.
 
 ----------------------------------------------------------------------
@@ -392,8 +395,8 @@ Project stack and constraints:
 - Contract rule: when frontend and backend share payloads, identify the single source of truth for DTOs, schemas, constants, and runtime validators. Prefer one shared contract or generated types over parallel definitions.
 - Type-boundary rule: avoid `any` and avoid broad `unknown` inside trusted application logic. Use `unknown` only at untrusted runtime boundaries such as JSON parsing, external API responses, caught errors, model/tool output, and streamed transport payloads, then narrow immediately with explicit guards, generated types, or Zod schemas.
 
-Your task is to help prepare an implementation strategy for:
-{{TASK_DESCRIPTION}}
+Your task is to help prepare an implementation strategy
+
 
 Before writing code or logic, provide THREE distinct full-stack implementation approaches. For each approach, include:
 1. Architecture overview: frontend component structure plus matching backend endpoints, services, use-cases, or data-layer changes.
