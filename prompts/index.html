@@ -732,6 +732,31 @@ Analyze the provided project materials and output a single comprehensive Markdow
 
 Be direct, highly technical, and omit conversational fluff. Give me pure, actionable engineering intelligence.</textarea>
           </article>
+
+          <article class="stage stage--wide" data-prompt-card>
+            <div class="stage__header">
+              <div class="stage__number">B</div>
+              <div class="stage__title">
+                <h3>Skill Capture</h3>
+                <p>Use after a useful workflow should become reusable repo knowledge.</p>
+              </div>
+            </div>
+            <div class="stage__toolbar">
+              <span class="format-label">Markdown prompt</span>
+              <div class="actions">
+                <button class="tool-button" type="button" data-copy="skill-capture" aria-label="Copy Skill Capture">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M8 8h10v12H8zM6 16H4V4h12v2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                  Copy
+                </button>
+                <button class="tool-button" type="button" data-reset="skill-capture">Reset</button>
+                <button class="tool-button tool-button--danger" type="button" data-clear="skill-capture">Clear</button>
+              </div>
+            </div>
+            <textarea id="skill-capture" spellcheck="false">Please summarize this as a reusable skill and add it to the repo's skills directory.
+Also update the root SKILL.md index with a one-line trigger description.</textarea>
+          </article>
         </div>
       </section>
     </main>
