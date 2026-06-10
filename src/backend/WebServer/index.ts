@@ -14,6 +14,12 @@ export function runWebServer() {
   app.use(express.json({ limit: '20mb' }));
 
   // 2. Legacy Support Endpoints
+  app.get('/api/health', (_req: Request, res: Response) => {
+    res.json({
+      status: 'ok'
+    });
+  });
+
   app.get('/api/config', (req: Request, res: Response) => {
     res.json({
       googleClientId: process.env.GOOGLE_CLIENT_ID || ''

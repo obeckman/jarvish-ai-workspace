@@ -67,7 +67,7 @@ npm install
 npm start
 ```
 
-`npm start` runs GraphQL codegen first, then starts the backend and frontend together. The frontend defaults to `http://localhost:5173` and will fall forward if that port is busy. The backend GraphQL endpoint runs on `http://localhost:3000/graphql`.
+`npm start` runs GraphQL codegen first, starts the backend, waits for `/api/health`, and then starts the frontend. The frontend defaults to `http://localhost:5173` and will fall forward if that port is busy. The backend GraphQL endpoint runs on `http://localhost:3000/graphql`.
 
 For frontend-only review:
 
