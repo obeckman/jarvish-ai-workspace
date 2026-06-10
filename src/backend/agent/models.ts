@@ -10,3 +10,5 @@ export const REASONING_MODEL = process.env.GEMINI_REASONING_MODEL || "gemini-2.5
 export const PROCESSING_MODEL = process.env.GEMINI_PROCESSING_MODEL || REASONING_MODEL;
 export const TOOL_EXECUTION_MODEL = process.env.GEMINI_TOOL_EXECUTION_MODEL || REASONING_MODEL;
 export const ARCHIVE_MODEL = process.env.GEMINI_ARCHIVE_MODEL || REASONING_MODEL;
+export const EMBEDDING_MODEL = process.env.GEMINI_EMBEDDING_MODEL || "gemini-embedding-001";
+export const EMBEDDING_PROVIDER = process.env.EMBEDDING_PROVIDER || "local";

@@ -7,6 +7,7 @@ import Database from 'better-sqlite3'
 import { validateNodeResponseContent } from '@/backend/agent/validation/node-response.validator'
 import { validateToolOutput } from '@/backend/agent/validation/tool-output.validator'
 import { createGeminiErrorBlockContent, getGeminiErrorDetails } from '@/backend/services/gemini-error'
+import { addMemory, retrieveMemories, setVectorStore } from '@/backend/services/memory/memory.service'
 import { SQLiteVectorStore } from '@/backend/services/memory/sqlite-vector.store'
 import { parseAgentMessageContent } from '@/frontend/features/jarvishAgent/utils/parser'
 import { parseAgentEventPayload } from '@/frontend/features/jarvishAgent/utils/eventMapper'
@@ -112,11 +113,33 @@ async function testSQLiteVectorStore() {
   }
 }
 
+async function testLocalEmbeddingMemoryService() {
+  const directory = mkdtempSync(join(tmpdir(), 'jarvish-memory-service-'))
+  const database = new Database(join(directory, 'memory-service-smoke.db'))
+
+  try {
+    const store = new SQLiteVectorStore(database)
+    await store.ensureSchema()
+    setVectorStore(store)
+
+    const id = await addMemory('local pizza preference memory', { type: 'smoke', userId: 'test-user' })
+    const results = await retrieveMemories('pizza preference', 1, { userId: 'test-user' })
+
+    assert.equal(typeof id, 'string')
+    assert.equal(results.length, 1)
+    assert.equal(results[0].text, 'local pizza preference memory')
+  } finally {
+    database.close()
+    rmSync(directory, { recursive: true, force: true })
+  }
+}
+
 testAgentMessageParser()
 testAgentEventMapping()
 testNodeResponseValidation()
 testToolOutputValidation()
 testGeminiErrorFormatting()
 await testSQLiteVectorStore()
+await testLocalEmbeddingMemoryService()
 
 console.log('Jarvish smoke checks passed')

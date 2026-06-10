@@ -36,7 +36,7 @@ export async function archiveNode(state: AgentStateType) {
         const role = getMessageRole(m);
         const content = typeof m.content === 'string' ? m.content : JSON.stringify(m.content);
         return {
-          role: (role === ROLES.USER || role === ROLES.HUMAN) ? ROLES.USER : ROLES.ASSISTANT,
+          role: isUserRole(role) ? ROLES.USER : ROLES.ASSISTANT,
           content: content
         };
       });
@@ -60,8 +60,12 @@ export async function archiveNode(state: AgentStateType) {
         logger.info({ sessionId: state.sessionId, summaryTitle: summary.summaryTitle }, "Session summary stored");
       }
       // 5. Extract Static Facts
-      extractedFacts = await extractAndStoreFacts(state.sessionId, userId, history);
-      logger.debug({ sessionId: state.sessionId, extractedFactsCount: extractedFacts.length }, "Extracted facts");
+      if (process.env.ARCHIVE_AI_ENRICHMENT_ENABLED === "true") {
+        extractedFacts = await extractAndStoreFacts(state.sessionId, userId, history);
+        logger.debug({ sessionId: state.sessionId, extractedFactsCount: extractedFacts.length }, "Extracted facts");
+      } else {
+        logger.debug({ sessionId: state.sessionId }, "Fact extraction skipped because archive AI enrichment is disabled.");
+      }
 
     } catch (err) {
       logger.error({ sessionId: state.sessionId, error: err }, "Archive Node Error: Session Summary");
@@ -71,12 +75,12 @@ export async function archiveNode(state: AgentStateType) {
   // 2. Archive Conversation Summary to Vector Store
   const lastUserMessage = state.messages.findLast(m => {
     const r = getMessageRole(m);
-    return r === ROLES.USER || r === ROLES.HUMAN;
+    return isUserRole(r);
   });
 
   const lastModelMessage = state.messages.findLast(m => {
     const r = getMessageRole(m);
-    return r === ROLES.ASSISTANT || r === ROLES.AGENT || r === ROLES.MODEL;
+    return isAssistantRole(r);
   });
 
   if (lastUserMessage && lastModelMessage) {
@@ -230,4 +234,12 @@ function normalizeFileName(name: string): string {
 
 function hashText(value: string): string {
   return createHash("sha256").update(value).digest("hex");
+}
+
+function isUserRole(role: string): boolean {
+  return role === ROLES.USER || role === ROLES.HUMAN;
+}
+
+function isAssistantRole(role: string): boolean {
+  return role === ROLES.ASSISTANT || role === ROLES.AGENT || role === ROLES.MODEL || role === "ai";
 }

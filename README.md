@@ -93,6 +93,10 @@ GEMINI_REASONING_MODEL=optional, defaults to gemini-2.5-flash
 GEMINI_PROCESSING_MODEL=optional, defaults to GEMINI_REASONING_MODEL
 GEMINI_TOOL_EXECUTION_MODEL=optional, defaults to GEMINI_REASONING_MODEL
 GEMINI_ARCHIVE_MODEL=optional, defaults to GEMINI_REASONING_MODEL
+GEMINI_EMBEDDING_MODEL=optional, defaults to gemini-embedding-001 when EMBEDDING_PROVIDER=gemini
+EMBEDDING_PROVIDER=optional, local by default; set to gemini for Gemini embeddings
+ARCHIVE_AI_ENRICHMENT_ENABLED=optional, false by default; enables model-based summaries and fact extraction
+SHADOW_TOOLING_ENABLED=optional, false by default; enables model-based prefetch predictions
 VITE_GOOGLE_CLIENT_ID=optional for frontend Google auth
 GOOGLE_CLIENT_ID=optional backend config endpoint value
 SERPER_API_KEY=optional web search provider

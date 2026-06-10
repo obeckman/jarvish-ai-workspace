@@ -1,7 +1,11 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { createHash } from 'node:crypto';
+import { EMBEDDING_MODEL, EMBEDDING_PROVIDER } from '@/backend/agent/models';
+import { getGeminiErrorDetails } from '@/backend/services/gemini-error';
 import { IVectorStore, Memory, MemoryMetadata } from '@/backend/services/memory/vector_store.interface';
 import { logger } from '@/backend/utils/logger';
 let vectorStore: IVectorStore | null = null;
+let warnedAboutGeminiEmbeddingFallback = false;
 
 export const MAX_MEMORY_CANDIDATES = 50;
 export const DEFAULT_MEMORY_CONTEXT_LIMIT = 10;
@@ -52,12 +56,7 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000): Pr
 export async function addMemory(text: string, metadata: MemoryMetadata = {}): Promise<string> {
   if (!vectorStore) throw new Error('Vector store not initialized');
 
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-  const model = genAI.getGenerativeModel({ model: "gemini-embedding-001" });
-  
-  // Generate embedding for the text
-  const result = await withRetry(() => model.embedContent(text));
-  const embedding = result.embedding.values;
+  const embedding = await embedText(text);
 
   // Save to the specific store implementation
   return await vectorStore.add(text, embedding, metadata);
@@ -84,12 +83,7 @@ export async function retrieveMemories(
   }
 
   try {
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-    const model = genAI.getGenerativeModel({ model: "gemini-embedding-001" });
-    
-    // Convert query text into a vector
-    const result = await withRetry(() => model.embedContent(query));
-    const queryVector = result.embedding.values;
+    const queryVector = await embedText(query);
 
     const candidateLimit = getCandidateLimit(topK, options.candidateLimit);
 
@@ -109,9 +103,49 @@ export async function retrieveMemories(
     
     return filtered;
   } catch (error) {
-    logger.error(error, `[Memory Service Error]`);
+    const details = getGeminiErrorDetails(error);
+    const level = details.isAuthOrPermissionError ? 'warn' : 'error';
+    logger[level]({ error: details }, `[Memory Service] Retrieval skipped.`);
     return [];
   }
+}
+
+async function embedText(text: string): Promise<number[]> {
+  if (EMBEDDING_PROVIDER !== 'gemini') {
+    return createLocalEmbedding(text);
+  }
+
+  try {
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+    const model = genAI.getGenerativeModel({ model: EMBEDDING_MODEL });
+    const result = await withRetry(() => model.embedContent(text));
+    return result.embedding.values;
+  } catch (error) {
+    const details = getGeminiErrorDetails(error);
+    if (!warnedAboutGeminiEmbeddingFallback) {
+      logger.warn({ error: details }, '[Memory Service] Gemini embeddings unavailable; using local fallback embeddings.');
+      warnedAboutGeminiEmbeddingFallback = true;
+    }
+    return createLocalEmbedding(text);
+  }
+}
+
+function createLocalEmbedding(text: string): number[] {
+  const dimensions = 128;
+  const vector = Array.from({ length: dimensions }, () => 0);
+  const tokens = text
+    .toLocaleLowerCase()
+    .match(/[\p{L}\p{N}_]+/gu) || [];
+
+  for (const token of tokens) {
+    const digest = createHash('sha256').update(token).digest();
+    const index = digest[0] % dimensions;
+    const sign = digest[1] % 2 === 0 ? 1 : -1;
+    vector[index] += sign;
+  }
+
+  const magnitude = Math.hypot(...vector);
+  return magnitude === 0 ? vector : vector.map((value) => value / magnitude);
 }
 
 /**

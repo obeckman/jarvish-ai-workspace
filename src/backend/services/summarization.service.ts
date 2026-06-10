@@ -5,6 +5,10 @@ import { logger } from '@/backend/utils/logger';
 import { getGeminiErrorDetails } from "@/backend/services/gemini-error";
 
 export async function summarizeSession(history: { role: string, content: string }[]) {
+  if (process.env.ARCHIVE_AI_ENRICHMENT_ENABLED !== "true") {
+    return createFallbackSummary(history);
+  }
+
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
   const model = genAI.getGenerativeModel({ 
     model: REASONING_MODEL,
@@ -40,16 +44,20 @@ export async function summarizeSession(history: { role: string, content: string 
     return parsed;
   } catch (e) {
     logger.warn({ error: getGeminiErrorDetails(e) }, "[Summarization Warning] Falling back to deterministic summary.");
-    return {
-      summaryTitle: "Conversation Summary",
-      userMessage: history.find(m => {
-        const r = (m.role || "");
-        return r === ROLES.USER || r === ROLES.HUMAN;
-      })?.content?.substring(0, 100) || "N/A",
-      aiAnswer: [...history].reverse().find(m => {
-        const r = (m.role || "");
-        return r === ROLES.AGENT || r === ROLES.ASSISTANT || r === ROLES.MODEL ;
-      })?.content?.substring(0, 100) || "N/A"
-    };
+    return createFallbackSummary(history);
   }
+}
+
+function createFallbackSummary(history: { role: string, content: string }[]) {
+  return {
+    summaryTitle: "Conversation Summary",
+    userMessage: history.find(m => {
+      const r = (m.role || "");
+      return r === ROLES.USER || r === ROLES.HUMAN;
+    })?.content?.substring(0, 100) || "N/A",
+    aiAnswer: [...history].reverse().find(m => {
+      const r = (m.role || "");
+      return r === ROLES.AGENT || r === ROLES.ASSISTANT || r === ROLES.MODEL || r === "ai";
+    })?.content?.substring(0, 100) || "N/A"
+  };
 }

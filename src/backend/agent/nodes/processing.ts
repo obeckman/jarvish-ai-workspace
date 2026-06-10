@@ -8,6 +8,7 @@ import { AIMessage } from "@langchain/core/messages";
 import { logger } from "@/backend/utils/logger";
 import { ProcessedAttachment } from "@/backend/agent/contracts/state.contract";
 import { validateToolOutput } from "@/backend/agent/validation/tool-output.validator";
+import { getGeminiErrorDetails } from "@/backend/services/gemini-error";
 
 /**
  * Node: Attachment & Shadow Tooling Processing
@@ -61,7 +62,7 @@ export async function processingNode(state: AgentStateType) {
   }
 
   // 2. Shadow Tooling: Predict and pre-execute
-  if (query && query.length > 10) {
+  if (process.env.SHADOW_TOOLING_ENABLED === 'true' && query && query.length > 10) {
     try {
       const shadowPrompt = `Analyze the user's query and predict if specific tools will DEFINITELY be needed.
       Query: "${query}"
@@ -94,11 +95,13 @@ export async function processingNode(state: AgentStateType) {
         validationReasons.push("Shadow tooling determined no pre-execution was needed.");
       }
     } catch (e) {
-      logger.warn({ sessionId: state.sessionId, error: e }, "Shadow Tooling Warning");
+      logger.warn({ sessionId: state.sessionId, error: getGeminiErrorDetails(e) }, "Shadow Tooling Warning");
       validationReasons.push("Shadow tooling failed and was skipped.");
     }
   } else {
-    validationReasons.push("Query was too short for shadow tooling.");
+    validationReasons.push(process.env.SHADOW_TOOLING_ENABLED === 'true'
+      ? "Query was too short for shadow tooling."
+      : "Shadow tooling is disabled for this environment.");
   }
 
   const messages = [];

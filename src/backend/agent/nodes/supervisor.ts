@@ -31,7 +31,24 @@ export async function supervisorNode(state: AgentStateType) {
       logger.debug({ sessionId: state.sessionId, workerName: lastMessageName }, "Worker response detected. Ending turn.");
       return {}; // Return empty object to avoid re-broadcasting the message.
     }
-  logger.info({ sessionId: state.sessionId, messages: state.messages }, "[Agent Graph] Node: Supervisor | State messages param:");
+  const directAnswer = getDeterministicAnswer(state);
+  if (directAnswer) {
+    return {
+      messages: [new AIMessage({
+        content: JSON.stringify([{ type: BLOCK_TYPES.TEXT, content: directAnswer }]),
+        tool_calls: [],
+        name: "supervisor"
+      })],
+      metadata: {
+        stage: STAGES.SYNTHESIZE,
+        status: "Supervisor answered deterministically. Confidence: 100%.",
+        confidence: 100,
+        validationReason: "Simple date/time request handled without a model provider call.",
+      }
+    };
+  }
+
+  logger.debug({ sessionId: state.sessionId, messagesCount: state.messages.length }, "[Agent Graph] Node: Supervisor | State received");
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
   
   // Format memories for context
@@ -175,8 +192,7 @@ export async function supervisorNode(state: AgentStateType) {
       validationReason,
     }
   };
-}
-  catch (error) {
+} catch (error) {
     const geminiError = getGeminiErrorDetails(error);
     logger.error({ sessionId: state.sessionId, error: geminiError }, "Node: Supervisor | Error during processing");
     return {
@@ -193,4 +209,39 @@ export async function supervisorNode(state: AgentStateType) {
       }
     };
   }
+}
+
+function getDeterministicAnswer(state: AgentStateType): string | null {
+  const lastUserMessage = [...state.messages].reverse().find((message) => message instanceof HumanMessage);
+  const query = typeof lastUserMessage?.content === "string" ? lastUserMessage.content.trim().toLowerCase() : "";
+
+  if (!query) {
+    return null;
+  }
+
+  const now = new Date();
+  const localTime = now.toLocaleString(undefined, {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZoneName: "short",
+  });
+
+  if (/^(what'?s|what is|tell me)\s+(the\s+)?date\??$/.test(query) || /^date\??$/.test(query)) {
+    return `Today is ${now.toLocaleDateString(undefined, {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    })}.`;
+  }
+
+  if (/^(what'?s|what is|tell me)\s+(the\s+)?time\??$/.test(query) || /^time\??$/.test(query)) {
+    return `The current local time is ${localTime}.`;
+  }
+
+  return null;
 }
