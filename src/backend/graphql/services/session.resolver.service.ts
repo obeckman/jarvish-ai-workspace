@@ -21,6 +21,7 @@ import { SqliteSaver } from "@langchain/langgraph-checkpoint-sqlite";
 import { desc, eq, like, or } from "drizzle-orm";
 
 const checkpointer = new SqliteSaver(sqlite);
+const MAX_HISTORY_LOG_MESSAGES = 20;
 
 export function getCheckpointer() {
   return checkpointer;
@@ -75,9 +76,19 @@ export async function getSessionHistory({ sessionId }: QueryGetSessionHistoryArg
     return [];
   }
 
+  const messageSummaries = values.messages
+    .slice(0, MAX_HISTORY_LOG_MESSAGES)
+    .map((message, index) => summarizeHistoryMessage(message as RawGraphMessage, index));
+
+  logger.debug({
+    sessionId: parsed.sessionId,
+    messagesCount: values.messages.length,
+    messages: messageSummaries,
+    truncatedMessages: Math.max(values.messages.length - MAX_HISTORY_LOG_MESSAGES, 0),
+  }, "Mapping session history messages");
+
   return values.messages.map((message) => {
     const graphMessage = message as RawGraphMessage;
-    logger.debug({ message, sessionId: parsed.sessionId }, "Mapping message in getSessionHistory");
     return mapGraphMessageToGraphQLMessage(graphMessage);
   });
 }
@@ -87,4 +98,35 @@ export async function touchSession(sessionId: string): Promise<void> {
   await db.update(sessions)
     .set({ updatedAt: new Date() })
     .where(eq(sessions.id, parsed.sessionId));
+}
+
+function summarizeHistoryMessage(message: RawGraphMessage, index: number) {
+  return {
+    index,
+    type: message.type,
+    role: message.role || message.lc_kwargs?.role,
+    name: message.name || message.lc_kwargs?.name,
+    content: summarizeContentShape(message.content),
+    toolCallsCount: message.tool_calls?.length ?? 0,
+  };
+}
+
+function summarizeContentShape(content: RawGraphMessage["content"]) {
+  if (typeof content === "string") {
+    return {
+      kind: "string",
+      length: content.length,
+    };
+  }
+
+  if (Array.isArray(content)) {
+    return {
+      kind: "array",
+      parts: content.length,
+    };
+  }
+
+  return {
+    kind: content === undefined || content === null ? "empty" : typeof content,
+  };
 }
