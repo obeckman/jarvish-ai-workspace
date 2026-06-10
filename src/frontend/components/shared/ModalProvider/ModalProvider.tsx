@@ -16,7 +16,7 @@ type ModalConfig = {
 
 const modalContext = React.createContext<ModalContextValue | undefined>(undefined)
 
-const ModalRenderer = React.memo(({ modalConfig: { id, content, onClose } }: { modalConfig: ModalConfig }) => {
+const ModalRenderer = React.memo(({ modalConfig: { content, onClose } }: { modalConfig: ModalConfig }) => {
     const { closeModal } = useModalContext()
 
     const InnerCloseModel = () => {
@@ -52,7 +52,7 @@ export const ModalContextProvider = ({ children }: { children: ReactNode }) => {
         })
     }, [])
 
-    const value = React.useMemo(() => ({ openModal, closeModal }), [])
+    const value = React.useMemo(() => ({ openModal, closeModal }), [openModal, closeModal])
 
     return (<modalContext.Provider value={value} >
         {children}
@@ -94,4 +94,3 @@ export const ModalOpener = () => {
         <button onClick={openModalA}>open modal A</button>
     )
 }
-

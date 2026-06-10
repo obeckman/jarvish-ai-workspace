@@ -32,7 +32,7 @@ export function parseAgentMessageContent(content: string): AgentMessageBlock[] {
     // Try standard JSON.parse first for efficiency and correctness
     const parsed = JSON.parse(cleaned);
     return processParsedResult(parsed);
-  } catch (e) {
+  } catch {
     // If all parsing fails, return as a text block
     return cleaned ? [{ type: BLOCK_TYPES.TEXT, content: cleaned }] : [];
   }

@@ -83,7 +83,7 @@ export const TwoWayBinding  = ({conversionMap, initialBaseValue=0, children}: Tw
 const contextValue = React.useMemo(() =>({
         setValue,
         getValue,
-    }), [baseValue, conversionMap]);
+    }), [setValue, getValue]);
 
     return <TwoWayBindingContext.Provider value={contextValue}>
         {children}

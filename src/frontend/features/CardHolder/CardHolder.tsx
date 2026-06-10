@@ -63,6 +63,9 @@ export const CardItem = (props: CardItemProps) => {
   return (
     <div id={`Card-${type}`} className="card-wrapper">
       <div >{type}</div>
+      <div>{pay === 0 ? 'Free' : `$${pay}`}</div>
+      {isStar && <strong>Popular</strong>}
+      <button type="button">{action.title}</button>
     </div>
   );
 };

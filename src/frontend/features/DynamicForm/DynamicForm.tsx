@@ -42,16 +42,6 @@ export const DynamicForm = ({ children, onSubmit }: DynamicFormProps) => {
         delete validationMapRef.current[name];
     }, []);
 
-    const validateInputs = React.useCallback(() => {
-        console.debug('@@@ DynamicForm validateInputs', formValuesStateRef.current, validationMapRef.current);
-        let isAnyErrors = false
-        Object.entries(validationMapRef.current).forEach(([name, validationInfo]) => {
-            const res = validateInput(name, formValuesStateRef.current[name]);
-            if (!res) isAnyErrors = true;
-        })
-        return !isAnyErrors;
-    }, []);
-
     const validateInput = React.useCallback((name: string, value: string) => {
         console.debug('@@@ DynamicForm validateInput', name, value);
         const validationInfo = validationMapRef.current[name];
@@ -79,6 +69,16 @@ export const DynamicForm = ({ children, onSubmit }: DynamicFormProps) => {
 
         return errors.length === 0;
     }, []);
+
+    const validateInputs = React.useCallback(() => {
+        console.debug('@@@ DynamicForm validateInputs', formValuesStateRef.current, validationMapRef.current);
+        let isAnyErrors = false
+        Object.keys(validationMapRef.current).forEach((name) => {
+            const res = validateInput(name, formValuesStateRef.current[name]);
+            if (!res) isAnyErrors = true;
+        })
+        return !isAnyErrors;
+    }, [validateInput]);
 
     const handleSubmit = React.useCallback(async (e?: React.SyntheticEvent) => {
         if (e && e.preventDefault) {
@@ -124,13 +124,7 @@ export const useDynamicFormInputData = (name: string, validationInfo: Validation
     const { isSubmitting, validationErrors, registerInput, unregisterInput, setFormValues, validateInput } = useDynamicForm()
     const [isDirty, setIsDirty] = React.useState(false);
 
-    const validationInfoMemoized = React.useMemo(() => validationInfo, [
-        validationInfo.fieldName,
-        validationInfo.required,
-        validationInfo.defaultValue,
-        validationInfo.pattern,
-        validationInfo.patternMessage
-    ]);
+    const validationInfoMemoized = React.useMemo(() => validationInfo, [validationInfo]);
 
     React.useEffect(() => {
         if (name && validationInfoMemoized) {
@@ -146,7 +140,7 @@ export const useDynamicFormInputData = (name: string, validationInfo: Validation
     const isValidationError = React.useMemo(() =>
         validationErrors.length > 0 &&
         validationErrors.some((validationError) => validationError.fieldName === name)
-        , [validationErrors]);
+        , [name, validationErrors]);
 
 
     const validationErrorMessage = React.useMemo(() => {
@@ -157,7 +151,7 @@ export const useDynamicFormInputData = (name: string, validationInfo: Validation
             return '';
         }
 
-    }, [isValidationError]);
+    }, [isValidationError, name, validationErrors]);
 
     const setValue = React.useCallback((value: string) => {
         if (isDirty) {
@@ -188,7 +182,7 @@ export const DynamicFormInput = (props: DynamicFormInputProps) => {
     const { isSubmitting, isValidationError, validationErrorMessage, setValue, onBlur } = useDynamicFormInputData(name, validationInfo as ValidationConfig)
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
+        const { value } = e.target;
         setValue(value);
     };
 

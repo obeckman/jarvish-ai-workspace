@@ -1,9 +1,7 @@
 import React from 'react';
 import { Sparkles, ChevronDown } from 'lucide-react';
-import cn from 'classnames';
 import styles from '../../jarvish-agent.module.scss';
 import { Markdown } from '@/frontend/components/shared/Markdown/Markdown';
-import {EVENT_TYPES } from '@/shared/jarvish.constants';
 
 interface ReasoningBlockProps {
   content: string;

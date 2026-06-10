@@ -32,7 +32,7 @@ export const UserListContainer = () => {
     setUsers(prev => isRefresh ? (items) : [...prev, ...items]);
     cursorRef.current = nextCursor
     setCursor(nextCursor);
-  }, []);
+  }, [getPaginatedData]);
 
   // Use our BroadcastChannel hook to listen for changes from other tabs
   // When a 'users' update is broadcast, we refresh the first page
@@ -40,7 +40,7 @@ export const UserListContainer = () => {
 
   React.useEffect(()=> {
     fetchData()
-  },[])
+  },[fetchData])
 
   return (
     <div>

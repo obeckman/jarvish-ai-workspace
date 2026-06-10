@@ -40,12 +40,14 @@ const useSetActiveTabContext = () => {
         if (onChange) {
             onChange(activeTab);
         }
-    }, [activeTab,]);
+    }, [activeTab, onChange]);
     
     return( 
         <SetActiveTabContext.Provider value={SetActiveTabContextValue}>
             <ActiveTabContext.Provider value={activeTabContextValue}>
+              <div className={className}>
                 {children}
+              </div>
             </ActiveTabContext.Provider>
         </SetActiveTabContext.Provider>
     )
@@ -90,4 +92,3 @@ Tabs.Content = TabsContent;
 return Tabs;
 }
 export default createTabSystem;
-

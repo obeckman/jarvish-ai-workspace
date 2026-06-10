@@ -93,7 +93,7 @@ const useInfiniteScroll = (maxItemsToRender = 5) => {
                         setIsError(false);
                     })
             }
-            catch (error) {
+            catch {
                 setIsError(true);
             }
             finally {
@@ -137,7 +137,7 @@ const useInfiniteScroll = (maxItemsToRender = 5) => {
 
     const memoReturnValue = React.useMemo(() =>
         ({ itemsToRender, observerNextCallback, paddingTop, isError, isLoading, observerPrevCallback }),
-        [itemsToRender, observerNextCallback, isError, isLoading, observerPrevCallback]
+        [itemsToRender, observerNextCallback, paddingTop, isError, isLoading, observerPrevCallback]
     );
 
     return memoReturnValue;
@@ -148,7 +148,7 @@ const InfiniteScrollItem = ({ id, name }: InfiniteScrollItemType) => {
     return <div>{`name - ${name} id - ${id}`}</div>
 }
 
-const InfiniteScrollPlaceholderItem = ({ id, name }: InfiniteScrollItemType) => {
+const InfiniteScrollPlaceholderItem = ({ id: _id, name: _name }: InfiniteScrollItemType) => {
 
     return <div>loading...</div>
 }

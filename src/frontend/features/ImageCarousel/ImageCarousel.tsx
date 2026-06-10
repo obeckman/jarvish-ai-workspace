@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 
 interface ImageProps {
@@ -21,25 +21,12 @@ const useLeastRecentlyUsedCache = (limit: number = 10) => {
     const limitRef = useRef(limit)
 
     useEffect(() => {
+        const imageCache = imageCacheRef.current
         // avoid memory leaks 
-        return () => imageCacheRef.current?.clear()
+        return () => imageCache.clear()
     }, [])
 
     useEffect(() => { limitRef.current = limit }, [limit])
-
-    const get = React.useCallback((key: string) => {
-        if (!imageCacheRef.current) {
-            console.error('get: ref was not created yet')
-            return
-        }
-        const value = imageCacheRef.current.get(key)
-        if (!value) return value
-
-        // Accessing an item makes it "Most Recently Used". We must move it to the end of the Map.
-        imageCacheRef.current.delete(key)
-        imageCacheRef.current.set(key, value)
-        return value
-    }, [])
 
     const set = React.useCallback((key: string, value: HTMLImageElement) => {
         if (!imageCacheRef.current) {
@@ -70,7 +57,7 @@ const useLeastRecentlyUsedCache = (limit: number = 10) => {
         return imageCacheRef.current.has(key)
     }, [])
 
-    const preloadImage = (src: string): Promise<void> => {
+    const preloadImage = React.useCallback((src: string): Promise<void> => {
         // we use the Cache for this main reasons :
         // 1) prevent unnecessary network calls
         // 2) preFetch and preDecode our images for better UX
@@ -101,7 +88,7 @@ const useLeastRecentlyUsedCache = (limit: number = 10) => {
                     reject(err);
                 });
         });
-    };
+    }, [has, set]);
 
 
     return { preloadImage }

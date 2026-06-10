@@ -74,7 +74,7 @@ export const useResilientFetch = <T,>(props: Partial<UseResilientFetchProps<T>>)
             const data = await response.json();
             setResults(data);
             setIsLoading(false);
-        } catch (error) {
+        } catch {
             
             if (resilientSettingsRef.current.currentTryCount < resilientSettingsRef.current.maxRetryCount) {
                 const initialRetryDelay = resilientSettingsRef.current.initialRetryDelay;

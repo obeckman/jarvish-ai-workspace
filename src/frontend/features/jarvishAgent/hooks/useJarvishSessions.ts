@@ -12,7 +12,6 @@ import {
 export const useJarvishSessions = (searchTerm: string) => {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(localStorage.getItem(STORAGE_KEYS.SESSION_ID));
-  const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [isFetchingSessions, setIsFetchingSessions] = useState(false);
   const [isPolling, setIsPolling] = useState(false);
@@ -48,7 +47,6 @@ export const useJarvishSessions = (searchTerm: string) => {
         
         const nextOffset = newOffset + fetched.length;
         offsetRef.current = nextOffset;
-        setOffset(nextOffset);
         
         setHasMore(fetched.length === limit);
       }

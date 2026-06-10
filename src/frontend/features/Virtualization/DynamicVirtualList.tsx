@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 
 interface DynamicVirtualListProps {
   items: unknown[];
@@ -45,27 +45,27 @@ export const DynamicVirtualList: React.FC<DynamicVirtualListProps> = ({
     // Initialize Observer on mount
     resizeObserver.current = new ResizeObserver((entries) => {
       // This runs whenever an observed item changes size
-      let needsUpdate = false;
-      const newHeightMap = { ...heightMap }; // Copy current map (closure stale? use ref in real prod)
-
-      // Note: In a production app, we would use a Ref for heightMap to avoid 
-      // stale closures in this callback, but strictly for this example we simplify.
-      // We are just illustrating the measurement logic.
+      const measuredHeights: Record<number, number> = {};
 
       for (const entry of entries) {
         const index = parseInt(entry.target.getAttribute('data-index') || '0', 10);
         const height = entry.contentRect.height;
 
-        if (newHeightMap[index] !== height) {
-          newHeightMap[index] = height;
-          needsUpdate = true;
-        }
+        measuredHeights[index] = height;
       }
 
-      if (needsUpdate) {
-        // In reality, use functional state update to merge safely
-        setHeightMap((prev) => ({ ...prev, ...newHeightMap }));
-      }
+      setHeightMap((prev) => {
+        let needsUpdate = false;
+        const next = { ...prev };
+        Object.entries(measuredHeights).forEach(([index, height]) => {
+          const numericIndex = Number(index);
+          if (next[numericIndex] !== height) {
+            next[numericIndex] = height;
+            needsUpdate = true;
+          }
+        });
+        return needsUpdate ? next : prev;
+      });
     });
 
     return () => resizeObserver.current?.disconnect();

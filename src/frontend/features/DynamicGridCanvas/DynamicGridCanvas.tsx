@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef } from 'react';
 
 // Define the shape of our grid items for type safety
 interface GridItem {

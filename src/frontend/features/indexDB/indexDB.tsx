@@ -127,7 +127,7 @@ export const useDBStore = ({
       request.onsuccess = () => resolve(request.result || null);
       request.onerror = () => reject(request.error);
     })
-  }, [storeName])
+  }, [db, storeName])
 
   const putData = React.useCallback(<T,>(data: T) => {
 
@@ -144,7 +144,7 @@ export const useDBStore = ({
       request.onerror = () => reject(request.error);
     });
 
-  }, [storeName])
+  }, [db, storeName])
 
   const getPaginatedData = React.useCallback(async <T,>(
     pageSize: number,
@@ -178,11 +178,10 @@ export const useDBStore = ({
 
       request.onerror = () => reject(request.error);
     })
-  }, [storeName])
+  }, [db, storeName])
 
   return { getDataByIndex, putData, getPaginatedData };
 }
-
 
 
 

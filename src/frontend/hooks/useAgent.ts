@@ -63,7 +63,7 @@ export function useAgent() {
                 status: AGENT_STATUS.RESPONDING
               }));
             }
-          } catch (e) {
+          } catch {
             console.error("Failed to parse chunk", line);
           }
         }

@@ -44,7 +44,7 @@ export function useOnScreen(
     return () => {
       observer.disconnect();
     };
-  }, [ref?.current, rootMargin, threshold, triggerOnce]); // Re-run if options change
+  }, [ref, rootMargin, threshold, triggerOnce]); // Re-run if options change
 
   return isIntersecting;
 }
@@ -97,13 +97,13 @@ const useInfiniteFetch = <T,>(
         } finally {
             isFetchItemsRef.current = false
         }
-    }, [integrationAPIconfig, paginationInfo.nextPage, serverBaseURL, endpoint, method, transformDataResponse, limit]);
+    }, [paginationInfo.nextPage, serverBaseURL, endpoint, method, transformDataResponse, limit]);
 
     React.useEffect(() => {
         if (items.length === 0) {
             fetchItems();
         }
-    }, []);
+    }, [fetchItems, items.length]);
 
     React.useEffect(() => {
         if (isSentinelOnScreen) {

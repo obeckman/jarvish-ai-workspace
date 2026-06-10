@@ -8,8 +8,8 @@
 // "Design a solution to handle granular, role-based visibility for UI components across a massive enterprise application. The solution must support nested permissions and dynamic role updates without causing a 'prop-drilling' nightmare or triggering unnecessary re-renders of the entire DOM tree when a user's permission state changes."
 // The Trap: This sounds like a simple conditional rendering task. A junior will jump straight to if (user.role === 'admin'). A senior knows this is a Cross-Cutting Concern—a logic layer that needs to be applied globally without bloating the business logic of individual components.
 
-import React, { use, useEffect } from 'react';
-import {PermissionsTypes,PermissionsType, UserRole, UserRoles, AccessControlWrapperProps, UserInfo } from './types';
+import React, { useEffect } from 'react';
+import {PermissionsTypes,PermissionsType, UserRoles, AccessControlWrapperProps, UserInfo } from './types';
 import './AccessControlWrapper.css';
 
 

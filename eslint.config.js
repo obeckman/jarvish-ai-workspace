@@ -33,7 +33,11 @@ export default defineConfig([
     },
     rules: {
       'no-unused-vars': 'off',
-      '@typescript-eslint/no-unused-vars': ['warn', { varsIgnorePattern: '^[A-Z_]', argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': ['warn', {
+        varsIgnorePattern: '^[A-Z_]',
+        argsIgnorePattern: '^_',
+        caughtErrorsIgnorePattern: '^_',
+      }],
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-empty-object-type': 'off',
       'no-fallthrough': 'warn',

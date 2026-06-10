@@ -1,6 +1,6 @@
 import {SubmitResponse, SubmitFunctionMap} from './types';
 
-export const submitFunctionForDemo = <T>(data: T) => {
+export const submitFunctionForDemo = <T>(_data: T) => {
                 const promise = new Promise<SubmitResponse>((resolve, reject) => {
                     setTimeout(() => {
                         

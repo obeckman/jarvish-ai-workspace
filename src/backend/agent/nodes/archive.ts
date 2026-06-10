@@ -25,7 +25,7 @@ export async function archiveNode(state: AgentStateType) {
   logger.debug({ sessionId: state.sessionId, messagesCount: state.messages.length }, "Node: Archive");
   let summary: { summaryTitle: string; userMessage: string; aiAnswer: string } | null = null;
   let extractedFacts: ExtractedFact[] = [];
-  let indexedAttachments: string[] = [];
+  const indexedAttachments: string[] = [];
   const userId = state.userId;
 
   // 1. Generate Session Summary for UI History (New Requirement)

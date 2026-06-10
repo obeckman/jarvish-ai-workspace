@@ -26,12 +26,14 @@ webWorker.addEventListener('message', (event: MessageEvent<WorkerRequest<Expecte
           type: 'SUCCESS',
           payload: result
         });
+        break;
 
       } catch (error) {
         webWorker.postMessage({
           type: 'ERROR',
           error: error instanceof Error ? error.message : 'Unknown Worker Error'
         });
+        break;
       }
     default: {
       // do some logic 

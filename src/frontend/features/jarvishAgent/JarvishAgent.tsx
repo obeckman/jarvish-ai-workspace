@@ -96,7 +96,7 @@ export const JarvishAgent: React.FC = () => {
                 : (isDraftBlock(blocks) ? blocks : null);
               if (draftBlock) return draftBlock;
             }
-          } catch (e) { /* Not JSON */ }
+          } catch { /* Not JSON */ }
         }
       }
     }

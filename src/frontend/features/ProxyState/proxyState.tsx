@@ -45,20 +45,20 @@ export function useSnapshot<T extends object>(proxyObj: T): T {
   
   React.useLayoutEffect(()=>{
     const proxyListeners = proxyRef.current.proxyListeners
-    snapshotKeysOnListeners.current.forEach((key)=>{
+    const subscribedKeys = snapshotKeysOnListeners.current
+    subscribedKeys.forEach((key)=>{
       proxyListeners.get(key)?.delete(forceNewStateCallback)
     })
-    snapshotKeysOnListeners.current.clear()
+    subscribedKeys.clear()
     keysUsedDuringRender.current.forEach((key)=>{
-      snapshotKeysOnListeners.current.add(key)  
+      subscribedKeys.add(key)  
       if(!proxyListeners.has(key)){
           proxyListeners.set(key,new Set())
       }
       proxyListeners.get(key)?.add(forceNewStateCallback)
     })
     return ()=> {
-      const proxyListeners = proxyRef.current.proxyListeners 
-      snapshotKeysOnListeners.current.forEach((key)=> {
+      subscribedKeys.forEach((key)=> {
       
         proxyListeners.get(key)?.delete(forceNewStateCallback)
       
@@ -105,7 +105,6 @@ export function App() {
 setInterval(() => {
   ++state.count
 }, 1000)
-
 
 
 

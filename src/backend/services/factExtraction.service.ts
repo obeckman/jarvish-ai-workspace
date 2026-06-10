@@ -69,7 +69,7 @@ export async function extractAndStoreFacts(
     const result = await model.generateContent(prompt);
     const text = result.response.text() || "";
     logger.debug({ text }, "[Fact Extraction] Raw model output");
-    let cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    const cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
     const parsedFacts = parse(cleaned);
     logger.debug({ parsedFacts }, "[Fact Extraction] Parsed facts");
 

@@ -15,7 +15,7 @@ export const Markdown: React.FC<MarkdownProps> = React.memo(({ content, classNam
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeSanitize]}
         components={{
-          a: ({ node, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" />
+          a: ({ node: _node, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" />
         }}
       >
         {content}
