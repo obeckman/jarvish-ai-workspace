@@ -36,5 +36,34 @@ export default defineConfig({
         secure: false,
       }
     }
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('/node_modules/@shikijs/langs/')) {
+            const match = id.match(/\/node_modules\/@shikijs\/langs\/dist\/([^/.]+)\.mjs$/)
+            return match ? `shiki-lang-${match[1]}` : 'shiki-langs'
+          }
+
+          if (id.includes('/node_modules/@shikijs/themes/')) {
+            return 'shiki-theme'
+          }
+
+          if (
+            id.includes('/node_modules/shiki/') ||
+            id.includes('/node_modules/@shikijs/core/') ||
+            id.includes('/node_modules/@shikijs/types/') ||
+            id.includes('/node_modules/@shikijs/engine-javascript/')
+          ) {
+            return 'shiki-core'
+          }
+
+          if (id.includes('/src/frontend/features/jarvishAgent/components/Blocks/CodeBlock')) {
+            return 'jarvish-code-block'
+          }
+        },
+      },
+    },
   }
 })
