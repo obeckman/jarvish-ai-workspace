@@ -321,6 +321,64 @@
           font-size: 0.86rem;
         }
       }
+
+      .status-panel {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        margin: 22px 0 0;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: var(--panel-strong);
+        padding: 14px;
+        box-shadow: var(--shadow);
+      }
+
+      .status-panel.is-hidden {
+        display: none;
+      }
+
+      .status-panel__copy {
+        min-width: 0;
+      }
+
+      .status-panel__copy strong {
+        display: block;
+        font-size: 0.95rem;
+      }
+
+      .status-panel__copy span {
+        display: block;
+        margin-top: 3px;
+        color: var(--muted);
+        font-size: 0.88rem;
+        line-height: 1.35;
+      }
+
+      .stage.is-loading textarea {
+        color: var(--muted);
+      }
+
+      .stage.is-error textarea {
+        background: var(--danger-soft);
+      }
+
+      .visually-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+      }
+
+      @media (max-width: 700px) {
+        .status-panel {
+          align-items: stretch;
+          flex-direction: column;
+        }
+      }
     </style>
   </head>
   <body>
@@ -330,447 +388,112 @@
         <h1>AI Developer Prompt Toolkit</h1>
         <p class="subtitle">
           Edit prompts directly in the browser, keep changes across refreshes,
-          and copy only the prompt you need. Use reset when you want the clean
-          original version back.
+          and copy only the prompt you need. Prompt bodies load from Markdown
+          files so adding a new prompt is just one file plus one registry entry.
         </p>
       </header>
 
-      <section class="prompt-group" aria-labelledby="managed-flow-title">
-        <div class="group-header">
-          <div>
-            <h2 id="managed-flow-title">Managed Build Flow</h2>
-            <p>
-              A four-step sequence for turning an ambiguous task into an
-              approved plan or debug finding, implementation, review, and
-              handoff.
-            </p>
-          </div>
+      <aside class="status-panel is-hidden" data-folder-fallback>
+        <div class="status-panel__copy">
+          <strong>Markdown files could not be loaded automatically.</strong>
+          <span>Select the prompts folder, or select the Markdown files directly if folder selection is unavailable.</span>
         </div>
+        <button class="tool-button" type="button" data-load-folder>Load prompts folder</button>
+        <input class="visually-hidden" type="file" data-folder-input webkitdirectory multiple />
+      </aside>
 
-        <div class="grid">
-          <article class="stage" data-prompt-card>
-            <div class="stage__header">
-              <div class="stage__number">1</div>
-              <div class="stage__title">
-                <h3>The Brief &amp; Alignment</h3>
-                <p>Use for new work, or switch to bug debugging before fixes.</p>
-              </div>
-            </div>
-            <div class="stage__toolbar">
-              <span class="format-label">Markdown prompt</span>
-              <div class="actions">
-                <button class="tool-button" type="button" data-copy="stage-1" aria-label="Copy The Brief and Alignment">
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M8 8h10v12H8zM6 16H4V4h12v2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                  </svg>
-                  Copy
-                </button>
-                <button class="tool-button" type="button" data-reset="stage-1">Reset</button>
-                <button class="tool-button tool-button--danger" type="button" data-clear="stage-1">Clear</button>
-              </div>
-            </div>
-            <textarea id="stage-1" spellcheck="false">STAGE 1 MODE SELECTOR.
-Choose exactly one mode based on the task:
-- Use MODE A for new features, refactors, architecture decisions, or technical requirements.
-- Use MODE B for bugs, regressions, broken behavior, flaky behavior, or unexplained runtime failures.
-
-Task or bug report:
-{{TASK_OR_BUG_DESCRIPTION}}
-
-If the task is a bug, do not run MODE A first. Start with MODE B.
-
-----------------------------------------------------------------------
-MODE A: Planning only for new features / technical requirements.
-Do not edit files, write implementation code, run destructive commands, install dependencies, or start a dev server. Your job is to understand the task, surface uncertainty, propose options, and wait for approval.
-
-You are a fast, literal, and highly capable Full-Stack Developer working under a Senior Engineer.
-
-Project stack and constraints:
-- Frontend: React 19, TypeScript, Vite.
-- Backend: Node.js using Clean Architecture.
-- Styling: SCSS with CSS Modules and `classnames`.
-- Default engineering bias: clean code, DRY implementation, state close to the component, no magic strings, no inline styles, and no unnecessary new abstractions.
-- Codebase-first rule: before proposing new components, hooks, utilities, services, styles, endpoints, validation logic, or types, inspect whether the codebase already has an equivalent implementation or established pattern. Prefer reusing, extending, or composing existing code over creating a parallel solution.
-- Consistency rule: match the naming, folder structure, data flow, error handling, styling, and test style already used in the repository unless there is a clear reason to diverge.
-- Contract rule: when frontend and backend share payloads, identify the single source of truth for DTOs, schemas, constants, and runtime validators. Prefer one shared contract or generated types over parallel definitions.
-- Type-boundary rule: avoid `any` and avoid broad `unknown` inside trusted application logic. Use `unknown` only at untrusted runtime boundaries such as JSON parsing, external API responses, caught errors, model/tool output, and streamed transport payloads, then narrow immediately with explicit guards, generated types, or Zod schemas.
-
-Your task is to help prepare an implementation strategy
-
-
-Before writing code or logic, provide THREE distinct full-stack implementation approaches. For each approach, include:
-1. Architecture overview: frontend component structure plus matching backend endpoints, services, use-cases, or data-layer changes.
-2. State management strategy: keep state local by default. Evaluate lifting state, persistence, URL state, server cache, or global stores only when lifecycle requirements justify it.
-3. Trade-offs: rendering performance, state proximity, data flow clarity, testability, complexity, and delivery risk.
-4. Failure modes: edge cases involving async state, unexpected payloads, concurrency, network failures, permission issues, or stale data.
-5. Existing-code reuse: identify codebase patterns, helpers, components, hooks, services, DTOs, schemas, validators, constants, styles, or tests that should be reused before adding anything new.
-6. Files likely touched: list likely frontend, backend, shared type, style, and test files.
-7. Type and validation boundary: identify which data crosses trust boundaries, which shared/generated contract owns it, and how invalid data should be narrowed, rejected, repaired, retried, or surfaced to the user.
-
-Output format:
-1. Clarifying questions: ask up to 5 focused questions only if ambiguity would materially change the architecture. If ambiguity is low-risk, state your assumption and continue.
-2. Approach A.
-3. Approach B.
-4. Approach C.
-5. Recommendation: choose the cleanest path and explain why.
-6. Assumptions and risks.
-
-Stop after the recommendation. Do not move to Definition of Done, execution, or code changes until I explicitly approve an approach.
-
-----------------------------------------------------------------------
-MODE B: Debug Assumptions / Root Cause Isolation for bugs.
-Do not implement fixes yet unless explicitly instructed. Your job is to reproduce the issue, collect evidence, validate assumptions, isolate the failure boundary, and identify likely root causes before code changes.
-
-Primary rule:
-Do not assume the first visible symptom is the root cause.
-
-Allowed actions:
-- Read code, configs, tests, logs, docs, and existing runtime output.
-- Run safe inspection and reproduction commands.
-- Start a dev server only if needed to reproduce the bug and only when it is safe for the local project.
-- Ask me to run the app, click through a flow, share browser console output, share network request/response details, provide backend logs, confirm environment variables, or capture screenshots when you cannot access that evidence directly.
-- Use browser/devtools evidence when available: console errors, network tab, request payloads, response bodies, status codes, timing, local/session storage, cookies, and visible UI state.
-- Edit code only to add temporary, targeted debug logging or instrumentation. Do not change business logic, control flow, data contracts, styling, or behavior.
-
-Hard limits:
-- Do not implement fixes.
-- Do not do speculative rewrites.
-- Do not silence errors to make symptoms disappear.
-- Do not add broad logging. Instrument the smallest boundary that can validate or reject a specific assumption.
-- Keep all output short, accurate, and low-cognitive-load. Prefer concise evidence tables or numbered bullets over long narratives.
-- The prompt should help you think clearly, stay grounded, avoid panic, and maintain sequencing. It should not produce a giant document.
-
-Debugging workflow:
-1. Reproduce the issue consistently, or clearly state what is blocking reproduction.
-2. Classify reproduction conditions: always reproducible, intermittent, environment-specific, user-state-specific, timing-sensitive, data-specific, permission/auth-specific, or browser/device-specific.
-3. Identify the observable symptom without calling it the root cause.
-4. Trace the relevant request, render, state, async, persistence, and data flow.
-5. List assumptions and choose the smallest evidence needed to validate each one.
-6. Before adding instrumentation, inspect existing logs, monitoring hooks, error utilities, analytics events, devtools traces, test coverage, feature flags, and retry/error wrappers.
-7. Add targeted temporary instrumentation only when existing evidence is insufficient.
-8. Validate assumptions with runtime behavior, logs, browser evidence, or command output.
-9. Narrow the failure boundary: frontend, backend, transport, persistence, environment, auth/session, feature flag/config, cache, database/query, or async lifecycle.
-10. Rank root-cause hypotheses by evidence strength and likelihood.
-11. Before proposing any fix strategy, estimate likely blast radius, components/services affected, regression risk, and whether the issue may reflect a shared architectural problem.
-12. Propose safe-fix strategy candidates only after evidence supports the likely root cause.
-
-Investigation priorities:
-- Browser console errors/warnings
-- Network requests/responses, payload mismatches, status codes, and timing
-- Backend logs and structured error output
-- Runtime state snapshots
-- React render lifecycle, stale closures, effects, memoization, and unmount/cancel behavior
-- Async timing, race conditions, aborts, retries, streaming, and partial responses
-- Auth/session state, cookies, storage, permissions, and expired tokens
-- Feature flags, config, env variables, and build/runtime mode differences
-- Cache invalidation, stale state, optimistic updates, and deduping
-- Database/query responses and mapper/DTO boundaries
-- Error boundaries, swallowed exceptions, and silent fallback paths
-
-Rules:
-- Distinguish symptoms from root causes.
-- Prefer evidence over intuition.
-- If you need help gathering evidence, ask me for one concrete action at a time.
-- For every root-cause hypothesis, assign confidence: low, medium, or high.
-- For every root-cause hypothesis, state the exact supporting evidence and the missing evidence preventing certainty.
-- If multiple plausible root causes exist, rank them by likelihood and evidence strength.
-- If temporary logs are added, mark them clearly and include a removal reminder.
-- Stop before implementation.
-
-Required short output:
-1. Reproduction status.
-2. Reproduction condition classification.
-3. Observable symptom.
-4. Confirmed evidence.
-5. Unverified assumptions.
-6. Most likely failure boundary.
-7. Ranked root-cause hypotheses with confidence, supporting evidence, and missing evidence.
-8. Minimal instrumentation/logging plan, if needed.
-9. Fix impact estimate: blast radius, affected components/services, regression risk, and shared-architecture concern.
-10. One recommended next debugging step.
-11. Safe-fix strategy candidates, without implementation.</textarea>
-          </article>
-
-          <article class="stage" data-prompt-card>
-            <div class="stage__header">
-              <div class="stage__number">2</div>
-              <div class="stage__title">
-                <h3>Definition of Done</h3>
-                <p>Use after approving an architecture path or fix strategy.</p>
-              </div>
-            </div>
-            <div class="stage__toolbar">
-              <span class="format-label">Markdown prompt</span>
-              <div class="actions">
-                <button class="tool-button" type="button" data-copy="stage-2" aria-label="Copy Definition of Done">
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M8 8h10v12H8zM6 16H4V4h12v2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                  </svg>
-                  Copy
-                </button>
-                <button class="tool-button" type="button" data-reset="stage-2">Reset</button>
-                <button class="tool-button tool-button--danger" type="button" data-clear="stage-2">Clear</button>
-              </div>
-            </div>
-            <textarea id="stage-2" spellcheck="false">MODE: Definition of Done / Approval Gate.
-Do not edit files, write implementation code, run destructive commands, install dependencies, or start a dev server. Your job is to turn the approved plan into a strict execution contract and wait for my execution signal.
-
-I approve {{APPROVED_APPROACH_OR_FIX_STRATEGY}}.
-
-Before you build, establish the strict Definition of Done for this mission. Treat this as the execution contract.
-
-[FRONTEND ARCHITECTURE]
-1. Core Tech & State: Use pure TypeScript and clean React 19 patterns. Keep state local unless Stage 1 explicitly justified lifting, persistence, URL state, server cache, or a global store.
-2. Styling Architecture: Use SCSS with CSS Modules. Import styles locally and use `classnames` for conditional classes. No inline styles. Extract static labels, keys, option lists, and configurations into explicit constants.
-3. Component Design & UX: Components must be modular and single-purpose. Async workflows must show polished loading, empty, success, and granular error states.
-4. Codebase Reuse First: Before creating a component, hook, utility, service, style, type, or API wrapper, search for an existing implementation or established local pattern. Reuse, extend, or compose existing code whenever it keeps behavior clear.
-5. No Code Repeats: Keep code DRY without creating abstractions that are broader than the task needs. Do not duplicate logic, mappings, constants, DTOs, validation rules, formatting helpers, or API calls.
-6. Clean Code: Prefer small named functions, explicit data shapes, readable branching, stable boundaries, and meaningful file/module names. Avoid cleverness, hidden side effects, and large mixed-responsibility components.
-
-[BACKEND ARCHITECTURE]
-7. Clean Node.js: Separate routing/entry points, business logic/services/use-cases, validation, and data access. Avoid bloated controllers and mixed concerns.
-8. Backend Reuse First: Reuse existing route conventions, middleware, validators, error utilities, logging patterns, repositories, mappers, and service boundaries before adding new ones.
-9. Unified Type Safety: Frontend and backend must share exact DTO and API payload types when the repo structure allows it. Avoid `any` and unsafe type escapes.
-
-[LOGIC, ROBUSTNESS & ERROR HANDLING]
-10. Total Conditional Handling: Every meaningful `if` must have an explicit `else` or a clearly justified early return. No silent dropped paths.
-11. Defensive Programming: Catch operational errors with contextual logging. Defensively handle null values, empty payloads, malformed data, permission failures, network timeouts, retries, and stale async results.
-12. Test Evidence: Add or update tests proportionate to risk. Reuse existing test utilities, mocks, fixtures, and setup patterns. If tests are impossible in the current setup, explain the blocker and provide manual verification steps.
-
-Output format:
-1. Restate the Definition of Done in your own words.
-2. List any remaining questions that could change the implementation.
-3. State the assumptions you will proceed with if I give the execution signal.
-
-Stop after restating the Definition of Done, remaining questions, and assumptions. Do not start coding until I explicitly say to execute.</textarea>
-          </article>
-
-          <article class="stage" data-prompt-card>
-            <div class="stage__header">
-              <div class="stage__number">3</div>
-              <div class="stage__title">
-                <h3>Execution &amp; Review Gate</h3>
-                <p>Use when the build should begin.</p>
-              </div>
-            </div>
-            <div class="stage__toolbar">
-              <span class="format-label">Markdown prompt</span>
-              <div class="actions">
-                <button class="tool-button" type="button" data-copy="stage-3" aria-label="Copy Execution and Review Gate">
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M8 8h10v12H8zM6 16H4V4h12v2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                  </svg>
-                  Copy
-                </button>
-                <button class="tool-button" type="button" data-reset="stage-3">Reset</button>
-                <button class="tool-button tool-button--danger" type="button" data-clear="stage-3">Clear</button>
-              </div>
-            </div>
-            <textarea id="stage-3" spellcheck="false">MODE: Execution.
-You are now approved to edit files, run appropriate commands, and verify the implementation. Keep the work scoped to the approved approach and Definition of Done.
-
-Execute the implementation now based on our agreed approach and Definition of Done.
-
-Implementation constraints:
-- Prefer the smallest production-quality implementation that satisfies the requirement.
-- Do not introduce new libraries, global state, backend layers, or broad abstractions unless the existing codebase already uses them or the requirement clearly needs them.
-- Search the codebase first for existing components, hooks, utilities, services, DTOs, validators, constants, styles, tests, and conventions that solve or resemble the problem.
-- Reuse, extend, or compose existing implementations before creating new ones. If you create a new abstraction, explain why existing code could not be used cleanly.
-- Keep the implementation DRY. Do not duplicate business rules, UI mappings, payload shapes, API clients, formatters, validation logic, or error handling paths.
-- Keep code clean and boring: small cohesive modules, meaningful names, explicit boundaries, predictable control flow, and no clever shortcuts.
-- Preserve existing behavior outside the approved task scope.
-- If you discover ambiguity while coding, ask focused questions only when the answer materially changes the implementation. Otherwise, state the assumption and continue.
-
-Deliver the implementation with:
-1. Strict TypeScript across frontend, backend, and shared contracts.
-2. SCSS Modules with `classnames`; no inline styles.
-3. Local state by default, with any broader state lifecycle explicitly justified.
-4. Clean Node.js layer separation where backend changes are needed.
-5. Reuse of existing codebase patterns, helpers, and test utilities where available.
-6. Explicit loading, empty, success, and granular error states for async UI.
-7. Defensive error handling and contextual logging.
-8. Tests or clear verification evidence.
-
-After the implementation, switch roles to a skeptical Senior QA and Performance Reviewer. Audit your own work and answer:
-1. What assumptions did you make that might be wrong?
-2. What would be the most likely reason a reviewer would reject this implementation?
-3. Where could unnecessary re-renders, stale async state, loose error catching, duplicated code, missed reuse opportunities, or type escapes exist?
-4. Score the output against every Definition of Done item.
-5. List exact verification commands and expected results.</textarea>
-          </article>
-
-          <article class="stage" data-prompt-card>
-            <div class="stage__header">
-              <div class="stage__number">4</div>
-              <div class="stage__title">
-                <h3>The Clean Handoff</h3>
-                <p>Use at a context reset or session handoff.</p>
-              </div>
-            </div>
-            <div class="stage__toolbar">
-              <span class="format-label">Markdown prompt</span>
-              <div class="actions">
-                <button class="tool-button" type="button" data-copy="stage-4" aria-label="Copy The Clean Handoff">
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M8 8h10v12H8zM6 16H4V4h12v2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                  </svg>
-                  Copy
-                </button>
-                <button class="tool-button" type="button" data-reset="stage-4">Reset</button>
-                <button class="tool-button tool-button--danger" type="button" data-clear="stage-4">Clear</button>
-              </div>
-            </div>
-            <textarea id="stage-4" spellcheck="false">MODE: Handoff.
-Do not add new implementation work unless explicitly asked. Your job is to preserve project state clearly enough for a fresh session to continue without guessing.
-
-We are at a handoff point. Act as a technical project manager summarizing this session so a completely fresh, context-free AI session can continue the work flawlessly.
-
-Generate a clean Markdown Handoff Document with these sections on the project path: "conductor/tracks/<assignment name>"
-1. Original Goal & Context.
-2. Approved Architecture: frontend patterns, state placement, styling structure, backend layer separation, shared contracts, and any rejected alternatives.
-3. Current Code State: exact files changed, important functions/components/endpoints, and known dependency or environment assumptions.
-4. Current Technical Constraints: repo conventions, testing limitations, lint/build constraints, API contracts, and style rules.
-5. Reuse & DRY Notes: existing components, hooks, utilities, services, DTOs, validators, styles, tests, or patterns that were reused, extended, or intentionally not used.
-6. Active or Unresolved Risks: performance bottlenecks, missing edge cases, unhandled states, duplicated logic risk, missed reuse opportunities, open type definitions, uncertain requirements, or reviewer concerns.
-7. Exact Next Recommended Step: the single next action an incoming session should take.
-8. Success Evidence: commands, screenshots, tests, logs, or manual flows needed to prove the next step succeeds.
-
-Update `interview.html` and `state.html` if needed.
-Rules:
-- Remove conversational fluff and debugging history.
-- Preserve concrete decisions, file paths, commands, and verification results.
-- If anything is uncertain, label it clearly as an assumption or open question.
-- Give pure, actionable project state.</textarea>
-          </article>
-        </div>
-      </section>
-
-      <section class="prompt-group" aria-labelledby="standalone-title">
-        <div class="group-header">
-          <div>
-            <h2 id="standalone-title">Standalone Prompts</h2>
-            <p>
-              One-off prompts for interviews, unknown repositories, and live
-              assessment prep.
-            </p>
-          </div>
-        </div>
-
-        <div class="grid">
-          <article class="stage stage--wide" data-prompt-card>
-            <div class="stage__header">
-              <div class="stage__number">A</div>
-              <div class="stage__title">
-                <h3>Interview Project Onboarding</h3>
-                <p>Use when receiving an interview assignment or unknown codebase.</p>
-              </div>
-            </div>
-            <div class="stage__toolbar">
-              <span class="format-label">Markdown prompt</span>
-              <div class="actions">
-                <button class="tool-button" type="button" data-copy="interview-onboarding" aria-label="Copy Interview Project Onboarding">
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M8 8h10v12H8zM6 16H4V4h12v2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                  </svg>
-                  Copy
-                </button>
-                <button class="tool-button" type="button" data-reset="interview-onboarding">Reset</button>
-                <button class="tool-button tool-button--danger" type="button" data-clear="interview-onboarding">Clear</button>
-              </div>
-            </div>
-            <textarea id="interview-onboarding" spellcheck="false">MODE: Onboarding and planning only.
-Do not implement, edit files, install dependencies, or run destructive commands yet. Give me a technical map, risks, exact files, likely commands, and clarification questions when uncertainty matters.
-
-You are the Lead Architect and Technical Project Manager for this interview project. I have just been handed this codebase or assignment, and I need a comprehensive senior-level briefing to onboard me instantly so I can execute cleanly.
-
-Here are the assignment details, requirements, repository structure, or code excerpts:
-{{INTERVIEW_PROJECT_MATERIALS}}
-
-----------------------------------------------------------------------
-OPTIONAL EXTRA CONTEXT: MY TECH PROFILE & PRIORITIES
-- My core focus is high-quality, type-safe frontend development: React 19/17, TypeScript, modular components, strict state proximity, SCSS with CSS Modules and `classnames`, no magic strings, and no inline styles.
-- I am comfortable with Node.js backends using Clean Architecture: clear separation of routes, services/use-cases, validation, and data layers with unified shared TypeScript contracts across frontend/backend.
-- I prioritize production-ready robustness: explicit condition handling, defensive programming, contextual error catching/logging, and polished async UX states for loading, empty, success, and granular error cases.
-- I prefer the smallest implementation that satisfies the assignment without overbuilding.
-- I strongly prefer clean code and DRY implementation. If the codebase already has a relevant component, hook, utility, service, type, style, test helper, or pattern, reuse or extend it instead of creating a duplicate.
-----------------------------------------------------------------------
-
-If the assignment is ambiguous, ask up to 5 focused clarification questions only when the answers would materially change the execution plan. If the ambiguity is manageable, state your assumption and continue.
-
-Analyze the provided project materials and output a single comprehensive Markdown document covering:
-
-### 1. Core Architecture & Tech Stack
-- Break down the exact tech stack being used: frontend framework/version, bundler, styling system, testing libraries, backend setup, package manager, and build commands when visible.
-- Explain the repository architecture: folder structure, component locations, service/API boundaries, routing, data flow, shared types, and test organization.
-
-### 2. The "Where & What" Execution Plan
-- Identify the exact files I need to modify or create.
-- List the precise entry points, components, hooks, services, utilities, API clients, backend endpoints, or tests that matter.
-- Highlight what parts of the existing code I should avoid touching to reduce regression risk.
-- Suggest the smallest production-quality implementation path.
-- Identify existing code that should be reused or extended before new code is written.
-- Call out any places where creating new code would duplicate existing behavior.
-
-### 3. Implied Code Standards & Quality Expectations
-- Infer the coding style, naming conventions, component patterns, state management approach, styling rules, and type-safety expectations from the codebase.
-- Identify any hidden reviewer expectations common for this stack or interview format.
-- Call out anything that would look overengineered or underengineered.
-- Explain the repository's DRY boundaries: shared constants, shared types, common utilities, reusable components, service helpers, test fixtures, and style patterns.
-
-### 4. Critical Edge Cases & Robustness Map
-- Map the exact edge cases, network behaviors, data states, and user flows I must handle.
-- Specify where errors should be caught, logged, and surfaced in the UI.
-- Include async risks such as stale responses, loading flicker, empty responses, partial failures, null/undefined data, retries, and permission failures.
-
-### 5. Senior-Level Bonus Opportunities
-- Identify 2-3 specific improvements that are not explicitly required but would stand out to a senior reviewer.
-- Keep these scoped and pragmatic: performance, accessibility, test coverage, type safety, clean decoupling, or maintainability.
-
-### 6. Final Execution Checklist
-- Provide a concise checklist I can follow while coding.
-- Include likely verification commands and what successful evidence should look like.
-
-Be direct, highly technical, and omit conversational fluff. Give me pure, actionable engineering intelligence.</textarea>
-          </article>
-
-          <article class="stage stage--wide" data-prompt-card>
-            <div class="stage__header">
-              <div class="stage__number">B</div>
-              <div class="stage__title">
-                <h3>Skill Capture</h3>
-                <p>Use after a useful workflow should become reusable repo knowledge.</p>
-              </div>
-            </div>
-            <div class="stage__toolbar">
-              <span class="format-label">Markdown prompt</span>
-              <div class="actions">
-                <button class="tool-button" type="button" data-copy="skill-capture" aria-label="Copy Skill Capture">
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M8 8h10v12H8zM6 16H4V4h12v2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                  </svg>
-                  Copy
-                </button>
-                <button class="tool-button" type="button" data-reset="skill-capture">Reset</button>
-                <button class="tool-button tool-button--danger" type="button" data-clear="skill-capture">Clear</button>
-              </div>
-            </div>
-            <textarea id="skill-capture" spellcheck="false">Please summarize this as a reusable skill and add it to the repo's skills directory.
-Also update the root SKILL.md index with a one-line trigger description.</textarea>
-          </article>
-        </div>
-      </section>
+      <div data-prompt-root></div>
     </main>
 
     <div class="toast" role="status" aria-live="polite" data-toast>Copied</div>
 
     <script>
       const STORAGE_PREFIX = "ai-prompt-toolkit:";
-      const copyButtons = document.querySelectorAll("[data-copy]");
-      const resetButtons = document.querySelectorAll("[data-reset]");
-      const clearButtons = document.querySelectorAll("[data-clear]");
-      const textareas = document.querySelectorAll("textarea");
+      const PROMPT_GROUPS = [
+        {
+          title: "Managed Build Flow",
+          description:
+            "A four-step sequence for turning an ambiguous task into an approved plan or debug finding, implementation, review, and handoff.",
+          items: [
+            {
+              id: "stage-1",
+              number: "1",
+              title: "The Brief & Alignment",
+              description: "Use for new work, or switch to bug debugging before fixes.",
+              file: "managed-build/01-brief-alignment.md",
+            },
+            {
+              id: "stage-2",
+              number: "2",
+              title: "Definition of Done",
+              description: "Use after approving an architecture path or fix strategy.",
+              file: "managed-build/02-definition-of-done.md",
+            },
+            {
+              id: "stage-3",
+              number: "3",
+              title: "Execution & Review Gate",
+              description: "Use when the build should begin.",
+              file: "managed-build/03-execution-review-gate.md",
+            },
+            {
+              id: "stage-4",
+              number: "4",
+              title: "The Clean Handoff",
+              description: "Use at a context reset or session handoff.",
+              file: "managed-build/04-clean-handoff.md",
+            },
+          ],
+        },
+        {
+          title: "Standalone Prompts",
+          description:
+            "One-off prompts for interviews, unknown repositories, live assessment prep, and reusable workflow capture.",
+          items: [
+            {
+              id: "interview-onboarding",
+              number: "A",
+              title: "Interview Project Onboarding",
+              description: "Use when receiving an interview assignment or unknown codebase.",
+              file: "standalone/interview-project-onboarding.md",
+              wide: true,
+            },
+            {
+              id: "skill-capture",
+              number: "B",
+              title: "Skill Capture",
+              description: "Use after a useful workflow should become reusable repo knowledge.",
+              file: "standalone/skill-capture.md",
+              wide: true,
+            },
+          ],
+        },
+      ];
+
+      const promptRoot = document.querySelector("[data-prompt-root]");
       const toast = document.querySelector("[data-toast]");
+      const folderFallback = document.querySelector("[data-folder-fallback]");
+      const folderInput = document.querySelector("[data-folder-input]");
+      const loadFolderButton = document.querySelector("[data-load-folder]");
       const defaultPrompts = {};
+
+      const getStorageKey = (id) => `${STORAGE_PREFIX}${id}`;
+      const getAllPromptItems = () => PROMPT_GROUPS.flatMap((group) => group.items);
+      const getLoadFailedMessage = (item) =>
+        `Waiting for ${item.file}. Use Load prompts folder above if the browser blocks local Markdown loading.`;
+      const isGeneratedLoadMessage = (item, value) =>
+        value === getLoadFailedMessage(item) ||
+        value === `Could not load ${item.file}. Use Load prompts folder above.`;
+      const escapeHtml = (value) =>
+        value.replace(/[&<>"]/g, (character) => {
+          const entities = {
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+          };
+          return entities[character];
+        });
 
       const showToast = (message) => {
         toast.textContent = message;
@@ -781,7 +504,13 @@ Also update the root SKILL.md index with a one-line trigger description.</textar
         }, 1400);
       };
 
-      const getStorageKey = (id) => `${STORAGE_PREFIX}${id}`;
+      const showFolderFallback = () => {
+        folderFallback.classList.remove("is-hidden");
+      };
+
+      const hideFolderFallback = () => {
+        folderFallback.classList.add("is-hidden");
+      };
 
       const copyTextWithFallback = (text) => {
         const fallbackTextarea = document.createElement("textarea");
@@ -810,44 +539,203 @@ Also update the root SKILL.md index with a one-line trigger description.</textar
         }
       };
 
-      textareas.forEach((textarea) => {
-        defaultPrompts[textarea.id] = textarea.value;
+      const renderPromptCard = (item) => `
+          <article class="stage ${item.wide ? "stage--wide" : ""} is-loading" data-prompt-card="${item.id}">
+            <div class="stage__header">
+              <div class="stage__number">${escapeHtml(item.number)}</div>
+              <div class="stage__title">
+                <h3>${escapeHtml(item.title)}</h3>
+                <p>${escapeHtml(item.description)}</p>
+              </div>
+            </div>
+            <div class="stage__toolbar">
+              <span class="format-label">Markdown prompt</span>
+              <div class="actions">
+                <button class="tool-button" type="button" data-copy="${item.id}" aria-label="Copy ${escapeHtml(item.title)}">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M8 8h10v12H8zM6 16H4V4h12v2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                  Copy
+                </button>
+                <button class="tool-button" type="button" data-reset="${item.id}">Reset</button>
+                <button class="tool-button tool-button--danger" type="button" data-clear="${item.id}">Clear</button>
+              </div>
+            </div>
+            <textarea id="${item.id}" spellcheck="false">Loading ${escapeHtml(item.file)}...</textarea>
+          </article>`;
 
-        const savedValue = window.localStorage.getItem(getStorageKey(textarea.id));
-        if (savedValue !== null) {
-          textarea.value = savedValue;
+      const renderPromptGroups = () => {
+        promptRoot.innerHTML = PROMPT_GROUPS.map(
+          (group, groupIndex) => `
+      <section class="prompt-group" aria-labelledby="prompt-group-${groupIndex}">
+        <div class="group-header">
+          <div>
+            <h2 id="prompt-group-${groupIndex}">${escapeHtml(group.title)}</h2>
+            <p>${escapeHtml(group.description)}</p>
+          </div>
+        </div>
+
+        <div class="grid">
+${group.items.map(renderPromptCard).join("\n")}
+        </div>
+      </section>`,
+        ).join("");
+      };
+
+      const setPromptStatus = (id, status) => {
+        const card = document.querySelector(`[data-prompt-card="${id}"]`);
+        if (!card) {
+          return;
+        }
+        card.classList.toggle("is-loading", status === "loading");
+        card.classList.toggle("is-error", status === "error");
+      };
+
+      const hydratePrompt = (item, promptText) => {
+        const textarea = document.getElementById(item.id);
+        if (!textarea) {
+          return;
         }
 
-        textarea.addEventListener("input", () => {
-          window.localStorage.setItem(getStorageKey(textarea.id), textarea.value);
+        defaultPrompts[item.id] = promptText;
+        const savedValue = window.localStorage.getItem(getStorageKey(item.id));
+        textarea.value =
+          savedValue !== null && !isGeneratedLoadMessage(item, savedValue)
+            ? savedValue
+            : promptText;
+        setPromptStatus(item.id, "ready");
+      };
+
+      const markPromptLoadFailed = (item) => {
+        const textarea = document.getElementById(item.id);
+        if (!textarea) {
+          return;
+        }
+
+        defaultPrompts[item.id] = "";
+        const savedValue = window.localStorage.getItem(getStorageKey(item.id));
+        textarea.value =
+          savedValue !== null && !isGeneratedLoadMessage(item, savedValue)
+            ? savedValue
+            : getLoadFailedMessage(item);
+        setPromptStatus(item.id, "error");
+      };
+
+      const loadPromptWithFetch = async (item) => {
+        const response = await fetch(item.file);
+        if (!response.ok) {
+          throw new Error(`Failed to load ${item.file}`);
+        }
+        return response.text();
+      };
+
+      const loadPromptsWithFetch = async () => {
+        const promptItems = getAllPromptItems();
+        const results = await Promise.allSettled(
+          promptItems.map(async (item) => {
+            const promptText = await loadPromptWithFetch(item);
+            hydratePrompt(item, promptText);
+          }),
+        );
+
+        const failedItems = results
+          .map((result, index) => ({ result, item: promptItems[index] }))
+          .filter(({ result }) => result.status === "rejected")
+          .map(({ item }) => item);
+
+        failedItems.forEach(markPromptLoadFailed);
+
+        if (failedItems.length > 0) {
+          showFolderFallback();
+        } else {
+          hideFolderFallback();
+        }
+      };
+
+      const readFileAsText = (file) =>
+        new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.addEventListener("load", () => resolve(reader.result));
+          reader.addEventListener("error", () => reject(reader.error));
+          reader.readAsText(file);
         });
+
+      const loadPromptsFromFolder = async (fileList) => {
+        const selectedFiles = Array.from(fileList);
+        let loadedCount = 0;
+        let missingCount = 0;
+
+        for (const item of getAllPromptItems()) {
+          const selectedFile = selectedFiles.find((file) => {
+            const selectedPath = file.webkitRelativePath.replace(/\\/g, "/");
+            const expectedFilename = item.file.split("/").pop();
+            return selectedPath.endsWith(item.file) || file.name === expectedFilename;
+          });
+
+          if (!selectedFile) {
+            missingCount += 1;
+            markPromptLoadFailed(item);
+            continue;
+          }
+
+          const promptText = await readFileAsText(selectedFile);
+          hydratePrompt(item, promptText);
+          loadedCount += 1;
+        }
+
+        if (missingCount === 0) {
+          hideFolderFallback();
+          showToast(`Loaded ${loadedCount} prompts`);
+        } else {
+          showFolderFallback();
+          showToast(`Loaded ${loadedCount}; ${missingCount} missing`);
+        }
+      };
+
+      promptRoot.addEventListener("input", (event) => {
+        if (event.target.matches("textarea")) {
+          window.localStorage.setItem(getStorageKey(event.target.id), event.target.value);
+        }
       });
 
-      copyButtons.forEach((button) => {
-        button.addEventListener("click", () => {
-          const textarea = document.getElementById(button.dataset.copy);
+      promptRoot.addEventListener("click", (event) => {
+        const copyButton = event.target.closest("[data-copy]");
+        const resetButton = event.target.closest("[data-reset]");
+        const clearButton = event.target.closest("[data-clear]");
+
+        if (copyButton) {
+          const textarea = document.getElementById(copyButton.dataset.copy);
           copyText(textarea.value, "Prompt copied");
-        });
-      });
+        }
 
-      resetButtons.forEach((button) => {
-        button.addEventListener("click", () => {
-          const textarea = document.getElementById(button.dataset.reset);
-          textarea.value = defaultPrompts[textarea.id];
+        if (resetButton) {
+          const textarea = document.getElementById(resetButton.dataset.reset);
+          textarea.value = defaultPrompts[textarea.id] || "";
           window.localStorage.removeItem(getStorageKey(textarea.id));
           showToast("Prompt reset");
-        });
-      });
+        }
 
-      clearButtons.forEach((button) => {
-        button.addEventListener("click", () => {
-          const textarea = document.getElementById(button.dataset.clear);
+        if (clearButton) {
+          const textarea = document.getElementById(clearButton.dataset.clear);
           textarea.value = "";
           window.localStorage.setItem(getStorageKey(textarea.id), "");
           textarea.focus();
           showToast("Prompt cleared");
-        });
+        }
       });
+
+      loadFolderButton.addEventListener("click", () => {
+        folderInput.click();
+      });
+
+      folderInput.addEventListener("change", () => {
+        if (folderInput.files.length > 0) {
+          loadPromptsFromFolder(folderInput.files);
+        }
+      });
+
+      renderPromptGroups();
+      loadPromptsWithFetch();
     </script>
   </body>
 </html>
