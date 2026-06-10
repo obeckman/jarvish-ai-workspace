@@ -18,4 +18,4 @@ export const appStore = createLocalStore<AppState>({
 
 //our selectors 
 export const getUseName = (state: AppState) => state.user.name
-export const getCount = (state) => state.count
+export const getCount = (state: AppState) => state.count

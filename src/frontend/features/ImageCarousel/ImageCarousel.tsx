@@ -54,7 +54,9 @@ const useLeastRecentlyUsedCache = (limit: number = 10) => {
             if (imageCacheRef.current.size >= limitRef.current) {
                 //Map.keys().next().value is the very first key inserted (the oldest).
                 const oldestKey = imageCacheRef.current.keys().next().value
-                imageCacheRef.current.delete(oldestKey) //GC can now reclaim this RAM.
+                if (oldestKey) {
+                    imageCacheRef.current.delete(oldestKey) //GC can now reclaim this RAM.
+                }
             }
         }
         imageCacheRef.current.set(key, value)
@@ -112,10 +114,10 @@ export const HighPerfCarousel: React.FC<{ images: ImageProps[] }> = ({ images })
     const activeImage = images[currentIndex];
 
     const nextIndex = (currentIndex + 1) % images.length; // Carousel index
-    const nextImage = images[nextIndex];
+    const nextImage = images[nextIndex] ?? activeImage;
 
     const prevIndex = (currentIndex - 1 + images.length) % images.length;
-    const prevImage = images[prevIndex];
+    const prevImage = images[prevIndex] ?? activeImage;
 
     // -------------------------------------------------------------------------
     // CONCEPT: Pre-fetching (Predictive Loading)
@@ -123,9 +125,15 @@ export const HighPerfCarousel: React.FC<{ images: ImageProps[] }> = ({ images })
     // while the user is viewing the CURRENT image.
     // -------------------------------------------------------------------------
     useEffect(() => {
+        if (!nextImage || !prevImage) return;
+
         preloadImage(nextImage.src);
         preloadImage(prevImage.src);
-    }, [nextImage.src, prevImage.src]);
+    }, [nextImage, prevImage, preloadImage]);
+
+    if (!activeImage || images.length === 0) {
+        return null;
+    }
 
     const handleNext = () => {
         setCurrentIndex(nextIndex);
@@ -220,4 +228,3 @@ const styles = {
         alignItems: 'center'
     }
 }
-

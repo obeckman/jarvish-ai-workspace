@@ -1,18 +1,18 @@
 import React, { useState, useCallback, useMemo, useContext, createContext } from 'react';
 
-import { FormSchema, FieldSchema, FieldGroup } from './types'
+import type { FormSchema, FieldSchema, FieldGroup, GroupField, SelectField } from './types'
 
 
 // --- 2. CONTEXT LAYER: State Management ---
 // We use Context to avoid prop-drilling 'onChange' and 'values' through 10 layers of layout.
 type FormContextType = {
-    values: {};
-    handleChange: (key: any, value: any) => void;
+    values: Record<string, unknown>;
+    handleChange: (key: string, value: unknown) => void;
 }
 interface FormInputsProps {
     field: FieldSchema,
-    value,
-    onChange
+    value?: unknown,
+    onChange: (key: string, value: unknown) => void;
 }
 const FormContext = createContext<FormContextType | null>(null);
 
@@ -33,7 +33,7 @@ const transformsSchemaIntoFormState = (schema: FieldGroup) => {
         // otherwise default to empty string or null
         acc[field.key] = "";
         return acc;
-    }, {} as Record<string, any>);
+    }, {} as Record<string, unknown>);
 };
 
 // --- 3. ATOMIC COMPONENTS (The "Bricks") ---
@@ -45,7 +45,7 @@ const TextInput = React.memo(({ field, value, onChange }: FormInputsProps) => (
         <label>{field.label}</label>
         <input
             type="text"
-            value={value || ''}
+            value={typeof value === 'string' || typeof value === 'number' ? value : ''}
             onChange={(e) => onChange(field.key, e.target.value)}
             className="border p-2 rounded"
         />
@@ -56,12 +56,12 @@ const SelectInput = React.memo(({ field, value, onChange }: FormInputsProps) => 
     <div className="field-row">
         <label>{field.label}</label>
         <select
-            value={value || ''}
+            value={typeof value === 'string' || typeof value === 'number' ? value : ''}
             onChange={(e) => onChange(field.key, e.target.value)}
             className="border p-2 rounded"
         >
             <option value="">Select...</option>
-            {field.options?.map((opt) => (
+            {(field as SelectField).options.map((opt: string) => (
                 <option key={opt} value={opt}>{opt}</option>
             ))}
         </select>
@@ -70,12 +70,13 @@ const SelectInput = React.memo(({ field, value, onChange }: FormInputsProps) => 
 
 // --- 4. THE RECURSIVE GROUP ---
 // This handles nested structures (e.g., sections, row/col layouts).
-const GroupField = React.memo(({ field }: FormInputsProps) => {
+const GroupFieldComponent = React.memo(({ field }: FormInputsProps) => {
+    const groupField = field as GroupField;
     return (
         <fieldset className="border p-4 my-2">
-            <legend className="font-bold">{field.label}</legend>
+            <legend className="font-bold">{groupField.label}</legend>
             {/* Recursion happens here via the Renderer */}
-            <SchemaRenderer fieldSchema={field.children} />
+            <SchemaRenderer fieldGroup={groupField.children} />
         </fieldset>
     );
 });
@@ -86,7 +87,7 @@ const GroupField = React.memo(({ field }: FormInputsProps) => {
 const FIELD_REGISTRY = {
     text: TextInput,
     select: SelectInput,
-    group: GroupField, // Allows recursion
+    group: GroupFieldComponent, // Allows recursion
 };
 
 // --- 5. THE ENGINE: Dynamic Field Wrapper ---
@@ -140,21 +141,21 @@ const SchemaRenderer = ({ fieldGroup }: { fieldGroup: FieldGroup }) => (<>{
 
 
 // --- 7. THE ROOT COMPONENT ---
-export const FormBuilder = ({ formSchema, onSubmit }: { formSchema: FieldGroup, onSubmit: (FormSchema) => void }) => {
+export const FormBuilder = ({ formSchema, onSubmit }: { formSchema: FieldGroup, onSubmit: (form: FormSchema) => void }) => {
     // 1. LAZY INITIALIZATION, on mount convert input FormSchema into initial Form state
-    const [values, setValues] = useState<Record<string, any>>(() =>
+    const [values, setValues] = useState<Record<string, unknown>>(() =>
         transformsSchemaIntoFormState(formSchema)
     );
 
 
     // Optimization: Stable function reference to prevent unnecessary re-renders in children
-    const handleChange = useCallback((key, value) => {
+    const handleChange = useCallback((key: string, value: unknown) => {
         setValues((prev) => ({ ...prev, [key]: value }));
     }, []);
 
-    const handleSubmit = (e) => {
+    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        onSubmit(values);
+        onSubmit({ id: 'submitted-form', formSchema });
     };
 
     // Optimization: Memoize the context value
@@ -201,4 +202,3 @@ export const FormBuilderWrapper = () => {
         />
     );
 };
-

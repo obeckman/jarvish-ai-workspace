@@ -7,7 +7,9 @@ import React, {
   memo 
 } from 'react';
 
-import { FileNode, TreeContextType } from './types';
+import type { FileNode, TreeContextType } from './types';
+
+export type { FileNode } from './types';
 
 const TreeStateContext = createContext<TreeContextType | undefined>(undefined);
 

@@ -13,11 +13,10 @@ How do you solve this contradiction?"
 
 */
 import React from 'react';
-import {} from './types';
 import './TheSilentInterval.css';
 
 export const useSilentInterval = <T,>(callback: () => T, delay: number) => {
-    const savedCallback = React.useRef<() => T>();
+    const savedCallback = React.useRef<(() => T) | null>(null);
     const delayRef = React.useRef<number>(delay);
     const [callbackValue, setCallbackValue] = React.useState<T|null>(null);
 
@@ -36,11 +35,10 @@ export const useSilentInterval = <T,>(callback: () => T, delay: number) => {
             }
         }
         if (delayRef.current !== null) {
-            let id = setInterval(tick, delayRef.current);
+            const id = setInterval(tick, delayRef.current);
             return () => clearInterval(id);
         }
     }, []);
 
     return callbackValue;
 };
-

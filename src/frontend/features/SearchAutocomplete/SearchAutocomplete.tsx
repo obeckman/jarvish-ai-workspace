@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 
 // UTILITY: Generic Debounce Hook
 // Why? Decouples timing logic from fetching logic.
-function useDebounce(value, delay) {
+function useDebounce<T>(value: T, delay: number) {
     //on mount we return our value , on next renders we Debounce it for delay time span
     const [debouncedValue, setDebouncedValue] = useState(value);
 
@@ -26,10 +26,10 @@ function useDebounce(value, delay) {
 const timeoutDuration = 5000;
 
 // CORE ARCHITECTURE: The Search Hook
-export function useSearch(query) {
-    const [data, setData] = useState(null);
+export function useSearch(query: string) {
+    const [data, setData] = useState<unknown>(null);
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
+    const [error, setError] = useState<string | null>(null);
 
     // 1. BUZZWORD: Debouncing
     // We only trigger the effect when 'debouncedQuery' changes, not every keystroke.
@@ -38,7 +38,7 @@ export function useSearch(query) {
 
     // Ref to cache results (Optional optimization, good for "Architect" points)
     // Prevents re-fetching if user types 'A' -> 'AB' -> back to 'A'.
-    const cache = useRef({});
+    const cache = useRef<Record<string, unknown>>({});
 
     useEffect(() => {// every time we changed debouncedQuery lets fetch the data 
         // Edge case: Empty query should clear results immediately.
@@ -82,14 +82,14 @@ export function useSearch(query) {
 
                 cache.current[debouncedQuery] = result; // Write to cache
                 setData(result);
-            } catch (err) {
+            } catch (err: unknown) {
                 // specific handling for AbortError
-                if (err.name === 'AbortError') {
+                if (err instanceof DOMException && err.name === 'AbortError') {
                     console.log('Fetch aborted');
                     // Do NOT set error state here. Abortion is a valid flow, not an error.
                     return;
                 }
-                setError(err.message);
+                setError(err instanceof Error ? err.message : 'Unknown search error');
             } finally {
                 // Only turn off loading if the request wasn't aborted
                 if (!controller.signal.aborted) {

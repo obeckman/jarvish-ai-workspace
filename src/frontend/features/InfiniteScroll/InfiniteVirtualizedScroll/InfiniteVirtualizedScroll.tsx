@@ -127,7 +127,7 @@ const useInfiniteFetch = <T,>(
     return { totalItems: paginationInfo.totalItems, items, sentinelObserverRef, sentinelStyle, showSentinel };
 }
 
-const useVirtualizedScrollBl = <T extends {id:string}>(
+const useVirtualizedScrollBl = <T extends {id:string | number}>(
     items: T[],
     totalItems: number,
     itemHeight: number,
@@ -149,7 +149,7 @@ const useVirtualizedScrollBl = <T extends {id:string}>(
     return { handleScroll, visibleItems, visibleItemsPosition, totalHeight };
 };
 
-export const InfiniteVirtualizedScroll = <T extends {id:string}>({
+export const InfiniteVirtualizedScroll = <T extends {id:string | number}>({
     integrationAPIconfig,
     itemHeight,
     renderItemCallBack,

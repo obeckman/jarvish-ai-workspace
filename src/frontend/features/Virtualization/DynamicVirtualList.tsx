@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react';
 
 interface DynamicVirtualListProps {
-  items: any[];
+  items: unknown[];
   containerHeight: number;// how much space we have for our VirtualList ,what the user see
   estimatedItemHeight: number; // Best guess (e.g., 50px) to calculate scrollbar initially
-  renderItem: (item: any, index: number) => React.ReactNode;
+  renderItem: (item: unknown, index: number) => React.ReactNode;
 }
 
 // Helper: Binary Search to find the item at a specific scroll offset
@@ -38,7 +38,7 @@ export const DynamicVirtualList: React.FC<DynamicVirtualListProps> = ({
 
   // 2. REFS FOR DOM MEASUREMENT
   // We use a ResizeObserver to detect size changes automatically
-  const resizeObserver = useRef<ResizeObserver>();
+  const resizeObserver = useRef<ResizeObserver | null>(null);
 
 
   useEffect(() => {
@@ -115,7 +115,7 @@ export const DynamicVirtualList: React.FC<DynamicVirtualListProps> = ({
     }
   };
 
-  const visibleItems: { index: number, data: string, offsetY: number }[] = [];
+  const visibleItems: { index: number, data: unknown, offsetY: number }[] = [];
   for (let i = visibleStartIndex; i <= visibleEndIndex; i++) {
     visibleItems.push({
       index: i,

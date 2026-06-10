@@ -45,12 +45,14 @@ describe('GraphQL resolvers', () => {
 
   it('delegates query and mutation resolvers to backend services', async () => {
     const { resolvers } = await import('@/backend/graphql/resolvers');
+    const query = resolvers.Query as Record<string, (...args: never[]) => unknown>;
+    const mutation = resolvers.Mutation as Record<string, (...args: never[]) => unknown>;
     mocks.getSessions.mockResolvedValue(['session']);
     mocks.createSession.mockResolvedValue({ id: 'session-1' });
 
-    expect(resolvers.Query?.status?.({}, {}, {} as never, {} as never)).toBe('Backend graphQL is healthy');
-    await expect(resolvers.Query?.getSessions?.({}, { limit: 10 }, {} as never, {} as never)).resolves.toEqual(['session']);
-    await expect(resolvers.Mutation?.createSession?.({}, { id: 'session-1', title: 'Draft' }, {} as never, {} as never))
+    expect(query.status({} as never, {} as never, {} as never, {} as never)).toBe('Backend graphQL is healthy');
+    await expect(query.getSessions({} as never, { limit: 10 } as never, {} as never, {} as never)).resolves.toEqual(['session']);
+    await expect(mutation.createSession({} as never, { id: 'session-1', title: 'Draft' } as never, {} as never, {} as never))
       .resolves.toEqual({ id: 'session-1' });
 
     expect(mocks.getSessions).toHaveBeenCalledWith({ limit: 10 });
@@ -59,9 +61,10 @@ describe('GraphQL resolvers', () => {
 
   it('resolves session summaries from parent sessions', async () => {
     const { resolvers } = await import('@/backend/graphql/resolvers');
+    const session = resolvers.Session as Record<string, (...args: never[]) => unknown>;
     mocks.getSessionSummaryBySessionId.mockResolvedValue({ sessionId: 'session-1' });
 
-    await expect(resolvers.Session?.summary?.({ id: 'session-1' } as never, {}, {} as never, {} as never))
+    await expect(session.summary({ id: 'session-1' } as never, {} as never, {} as never, {} as never))
       .resolves.toEqual({ sessionId: 'session-1' });
 
     expect(mocks.getSessionSummaryBySessionId).toHaveBeenCalledWith('session-1');
@@ -69,14 +72,18 @@ describe('GraphQL resolvers', () => {
 
   it('passes Google token header into subscription stream service', async () => {
     const { resolvers } = await import('@/backend/graphql/resolvers');
+    const agentEvents = resolvers.Subscription?.agentEvents as unknown as {
+      subscribe: (...args: never[]) => AsyncGenerator<unknown>;
+      resolve: (payload: { agentEvents: { type: string; content: string } }) => unknown;
+    };
     const payload = { agentEvents: { type: 'STATUS', content: 'ok' } };
     mocks.streamAgentEvents.mockImplementation(async function* () {
       yield payload;
     });
 
-    const iterator = resolvers.Subscription?.agentEvents.subscribe(
-      {},
-      { query: 'hello', history: [], attachments: [], sessionId: 'session-1' },
+    const iterator = agentEvents.subscribe(
+      {} as never,
+      { query: 'hello', history: [], attachments: [], sessionId: 'session-1' } as never,
       {
         request: {
           headers: new Headers({ 'x-google-token': 'token-1' }),
@@ -94,6 +101,6 @@ describe('GraphQL resolvers', () => {
       googleToken: 'token-1',
     });
 
-    expect(resolvers.Subscription?.agentEvents.resolve(payload)).toEqual(payload.agentEvents);
+    expect(agentEvents.resolve(payload)).toEqual(payload.agentEvents);
   });
 });

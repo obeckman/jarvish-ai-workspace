@@ -28,7 +28,7 @@ describe('Jarvish session row mappers', () => {
       userMessage: 'meetings today?',
       aiAnswer: 'one meeting',
       createdAt: '2026-06-10',
-    })).toEqual({
+    } as never)).toEqual({
       sessionId: 'session-1',
       summaryTitle: 'Meetings',
       userMessage: 'meetings today?',
@@ -45,7 +45,7 @@ describe('Jarvish session row mappers', () => {
       category: null,
       confidence: null,
       createdAt: 1781091716314,
-    })).toEqual({
+    } as never)).toEqual({
       id: 'fact-1',
       sessionId: null,
       fact: 'User prefers short answers',
