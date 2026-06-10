@@ -195,6 +195,7 @@ export async function supervisorNode(state: AgentStateType) {
 } catch (error) {
     const geminiError = getGeminiErrorDetails(error);
     logger.error({ sessionId: state.sessionId, error: geminiError }, "Node: Supervisor | Error during processing");
+
     return {
       messages: [new AIMessage({
         content: createGeminiErrorBlockContent(error),

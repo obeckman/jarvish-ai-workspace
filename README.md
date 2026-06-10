@@ -79,6 +79,12 @@ Some Jarvish agent flows require the backend and `GEMINI_API_KEY`.
 
 Vector memory persists to `sqlite.db` by default. Set `VECTOR_STORE_PROVIDER=memory` only when you want an ephemeral in-memory store for local testing.
 
+To verify the configured Gemini key/model directly:
+
+```bash
+npm run diagnose:gemini
+```
+
 For active schema/client development:
 
 ```bash
@@ -88,7 +94,7 @@ npm run start:watch
 ## Environment
 
 ```txt
-GEMINI_API_KEY=required for agent reasoning and embeddings
+GEMINI_API_KEY=required for hosted model reasoning
 GEMINI_REASONING_MODEL=optional, defaults to gemini-2.5-flash
 GEMINI_PROCESSING_MODEL=optional, defaults to GEMINI_REASONING_MODEL
 GEMINI_TOOL_EXECUTION_MODEL=optional, defaults to GEMINI_REASONING_MODEL
