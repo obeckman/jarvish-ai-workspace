@@ -1,18 +1,18 @@
-import { db } from "@/Backend/db/index";
-import { sessions } from "@/Backend/db/schema";
+import { db } from "@/backend/db/index";
+import { sessions } from "@/backend/db/schema";
 import {
   MutationCreateSessionArgs,
   MutationDeleteSessionArgs,
   MutationStartResearchArgs,
   Session,
-} from "@/Backend/graphql/__generated__/resolvers-types";
-import { mapSessionRow } from "@/Backend/graphql/mappers/session.mapper";
+} from "@/backend/graphql/__generated__/resolvers-types";
+import { mapSessionRow } from "@/backend/graphql/mappers/session.mapper";
 import {
   CreateSessionArgsSchema,
   DeleteByIdArgsSchema,
   StartResearchArgsSchema,
-} from "@/Backend/graphql/schemas/resolver.schema";
-import { generateTitle } from "@/Backend/services/titling.service";
+} from "@/backend/graphql/schemas/resolver.schema";
+import { generateTitle } from "@/backend/services/titling.service";
 import { DEFAULT_USER_ID } from "@/shared/jarvish.constants";
 import { eq } from "drizzle-orm";
 

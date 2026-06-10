@@ -1,7 +1,8 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { REASONING_MODEL } from "@/Backend/agent/models";
+import { REASONING_MODEL } from "@/backend/agent/models";
 import { ROLES } from "@/shared/jarvish.constants";
-import { logger } from '@/Backend/utils/logger';
+import { logger } from '@/backend/utils/logger';
+import { getGeminiErrorDetails } from "@/backend/services/gemini-error";
 
 export async function summarizeSession(history: { role: string, content: string }[]) {
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
@@ -29,17 +30,16 @@ export async function summarizeSession(history: { role: string, content: string 
     "aiAnswer": "..."
   }`;
 
-  const result = await model.generateContent(prompt);
-  const response = result.response;
-  const text = response.text() || "";
-  
   try {
+    const result = await model.generateContent(prompt);
+    const response = result.response;
+    const text = response.text() || "";
     // Clean up potential markdown code blocks
     const cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
     const parsed = JSON.parse(cleaned);
     return parsed;
   } catch (e) {
-    logger.error(`[Summarization Error] Failed to parse JSON. Raw text preview: ${text.substring(0, 100)}...`);
+    logger.warn({ error: getGeminiErrorDetails(e) }, "[Summarization Warning] Falling back to deterministic summary.");
     return {
       summaryTitle: "Conversation Summary",
       userMessage: history.find(m => {

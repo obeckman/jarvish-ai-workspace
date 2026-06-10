@@ -3,8 +3,8 @@ import {
   AgentAttachment,
   AgentMetadata,
   ProcessedAttachment,
-} from "@/Backend/agent/contracts/state.contract";
-import { Memory } from "@/Backend/services/memory/vector_store.interface";
+} from "@/backend/agent/contracts/state.contract";
+import { Memory } from "@/backend/services/memory/vector_store.interface";
 import { STAGES } from "@/shared/jarvish.constants";
 import { BaseMessage } from "@langchain/core/messages"; // Keep BaseMessage import
 

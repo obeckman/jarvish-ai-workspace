@@ -1,6 +1,6 @@
 import type { Part } from "@google/generative-ai";
-import { AgentStateType } from "@/Backend/agent/state";
-import { AgentToolCall } from "@/Backend/agent/contracts/state.contract";
+import { AgentStateType } from "@/backend/agent/state";
+import { AgentToolCall } from "@/backend/agent/contracts/state.contract";
 import { ROLES, GEMINI_ROLES } from "@/shared/jarvish.constants";
 import {
   asAgentMessageLike,
@@ -8,7 +8,7 @@ import {
   getAgentMessageRole,
   getAgentMessageType,
   getAgentToolCalls,
-} from "@/Backend/agent/contracts/message.contract";
+} from "@/backend/agent/contracts/message.contract";
 
 type GeminiHistoryMessage = {
   role: string;

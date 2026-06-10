@@ -1,22 +1,22 @@
-import { createAgentGraph } from "@/Backend/agent/graph";
-import { db, sqlite } from "@/Backend/db/index";
-import { sessionSummaries, sessions } from "@/Backend/db/schema";
+import { createAgentGraph } from "@/backend/agent/graph";
+import { db, sqlite } from "@/backend/db/index";
+import { sessionSummaries, sessions } from "@/backend/db/schema";
 import {
   Message,
   QueryGetSessionHistoryArgs,
   QueryGetSessionsArgs,
   Session,
-} from "@/Backend/graphql/__generated__/resolvers-types";
+} from "@/backend/graphql/__generated__/resolvers-types";
 import {
   mapGraphMessageToGraphQLMessage,
   RawGraphMessage,
-} from "@/Backend/graphql/mappers/message.mapper";
-import { mapSessionRow } from "@/Backend/graphql/mappers/session.mapper";
+} from "@/backend/graphql/mappers/message.mapper";
+import { mapSessionRow } from "@/backend/graphql/mappers/session.mapper";
 import {
   GetSessionsArgsSchema,
   SessionIdArgsSchema,
-} from "@/Backend/graphql/schemas/resolver.schema";
-import { logger } from "@/Backend/utils/logger";
+} from "@/backend/graphql/schemas/resolver.schema";
+import { logger } from "@/backend/utils/logger";
 import { SqliteSaver } from "@langchain/langgraph-checkpoint-sqlite";
 import { desc, eq, like, or } from "drizzle-orm";
 

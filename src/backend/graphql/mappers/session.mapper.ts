@@ -2,12 +2,12 @@ import {
   Session,
   SessionSummary,
   StructuredFact,
-} from "@/Backend/graphql/__generated__/resolvers-types";
+} from "@/backend/graphql/__generated__/resolvers-types";
 import {
   Session as DbSession,
   SessionSummary as DbSessionSummary,
   StructuredFact as DbStructuredFact,
-} from "@/Backend/db/schema";
+} from "@/backend/db/schema";
 
 type DateLike = Date | string | number;
 

@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { AgentStateType } from "@/Backend/agent/state";
-import { TOOL_EXECUTION_MODEL } from "@/Backend/agent/models";
+import { AgentStateType } from "@/backend/agent/state";
+import { TOOL_EXECUTION_MODEL } from "@/backend/agent/models";
 
 export async function queryProcessedAttachments(query: string, state: AgentStateType) {
   if (!state.processedAttachments || state.processedAttachments.length === 0) {

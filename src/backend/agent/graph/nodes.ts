@@ -1,12 +1,12 @@
-import { contextNode } from "@/Backend/agent/nodes/context";
-import { processingNode } from "@/Backend/agent/nodes/processing";
-import { supervisorNode } from "@/Backend/agent/nodes/supervisor";
-import { researchWorkerNode } from "@/Backend/agent/nodes/workers/research";
-import { googleWorkerNode } from "@/Backend/agent/nodes/workers/google";
-import { coderWorkerNode } from "@/Backend/agent/nodes/workers/coder";
-import { toolsNode } from "@/Backend/agent/nodes/tools";
-import { archiveNode } from "@/Backend/agent/nodes/archive";
-import { clarificationNode } from "@/Backend/agent/nodes/clarification";
+import { contextNode } from "@/backend/agent/nodes/context";
+import { processingNode } from "@/backend/agent/nodes/processing";
+import { supervisorNode } from "@/backend/agent/nodes/supervisor";
+import { researchWorkerNode } from "@/backend/agent/nodes/workers/research";
+import { googleWorkerNode } from "@/backend/agent/nodes/workers/google";
+import { coderWorkerNode } from "@/backend/agent/nodes/workers/coder";
+import { toolsNode } from "@/backend/agent/nodes/tools";
+import { archiveNode } from "@/backend/agent/nodes/archive";
+import { clarificationNode } from "@/backend/agent/nodes/clarification";
 import { NODE_NAMES } from "@/shared/jarvish.constants";
 
 export const AGENT_GRAPH_NODES = [

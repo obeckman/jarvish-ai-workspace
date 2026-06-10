@@ -1,4 +1,4 @@
-import logger from '@/Backend/utils/logger';
+import logger from '@/backend/utils/logger';
 import { docs_v1, google } from 'googleapis';
 import { getToolErrorMessage, getToolErrorStatus } from './tool-error';
 

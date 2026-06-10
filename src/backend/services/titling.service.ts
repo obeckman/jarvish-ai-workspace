@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { REASONING_MODEL } from "@/Backend/agent/models";
-import { logger } from '@/Backend/utils/logger';
+import { REASONING_MODEL } from "@/backend/agent/models";
+import { logger } from '@/backend/utils/logger';
 /**
  * Generates a concise, descriptive title for a research session based on the initial query.
  */

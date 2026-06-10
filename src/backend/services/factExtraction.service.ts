@@ -1,12 +1,13 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { z } from "zod";
-import { REASONING_MODEL } from "@/Backend/agent/models";
+import { REASONING_MODEL } from "@/backend/agent/models";
 import parse from "partial-json-parser";
-import { addMemory, MEMORY_TYPES } from "@/Backend/services/memory/memory.service"; // Import addMemory
-import { db } from "@/Backend/db";
-import { structuredFacts } from "@/Backend/db/schema";
-import { logger } from "@/Backend/utils/logger";
+import { addMemory, MEMORY_TYPES } from "@/backend/services/memory/memory.service"; // Import addMemory
+import { db } from "@/backend/db";
+import { structuredFacts } from "@/backend/db/schema";
+import { logger } from "@/backend/utils/logger";
 import { and, eq, isNull, or } from "drizzle-orm";
+import { getGeminiErrorDetails } from "@/backend/services/gemini-error";
 
 export type ExtractedFact = {
   fact: string;
@@ -164,7 +165,7 @@ export async function extractAndStoreFacts(
     }
     return []; // Return empty array if no facts found
   } catch (error) {
-    logger.error(error, "[Fact Extraction Error]");
+    logger.warn({ error: getGeminiErrorDetails(error) }, "[Fact Extraction Warning] Skipping fact extraction.");
     return []; // Return empty array on error
   }
 }

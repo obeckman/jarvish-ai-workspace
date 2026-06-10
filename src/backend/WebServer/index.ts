@@ -1,7 +1,7 @@
 
 import express, { Request, Response, Application } from 'express';
 import cors from 'cors';
-import {handleGraphQLRequests} from '@/Backend/graphql';
+import {handleGraphQLRequests} from '@/backend/graphql';
 /**
  * Express Application Assembler
  * Configures the server with GraphQL Yoga and required middlewares.

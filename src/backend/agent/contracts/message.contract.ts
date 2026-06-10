@@ -1,5 +1,5 @@
 import type { MessageContent } from "@langchain/core/messages";
-import { AgentToolCall } from "@/Backend/agent/contracts/state.contract";
+import { AgentToolCall } from "@/backend/agent/contracts/state.contract";
 
 export type AgentMessageLike = {
   content?: MessageContent;

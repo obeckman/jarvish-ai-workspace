@@ -1,8 +1,8 @@
 import { END, START } from "@langchain/langgraph";
 import { NODE_NAMES } from "@/shared/jarvish.constants";
-import { supervisorRouter, toolsRouter, workerRouter } from "@/Backend/agent/graph/routers";
-import { SUPERVISOR_ROUTES, TOOL_ROUTES, WORKER_ROUTES } from "@/Backend/agent/graph/routes";
-import type { DynamicAgentGraph } from "@/Backend/agent/graph";
+import { supervisorRouter, toolsRouter, workerRouter } from "@/backend/agent/graph/routers";
+import { SUPERVISOR_ROUTES, TOOL_ROUTES, WORKER_ROUTES } from "@/backend/agent/graph/routes";
+import type { DynamicAgentGraph } from "@/backend/agent/graph";
 
 export function addAgentGraphTopology(workflow: DynamicAgentGraph): DynamicAgentGraph {
   return workflow

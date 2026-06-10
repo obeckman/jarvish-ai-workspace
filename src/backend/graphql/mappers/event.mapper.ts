@@ -1,4 +1,4 @@
-import { EventType as GraphQLEventType } from "@/Backend/graphql/__generated__/resolvers-types";
+import { EventType as GraphQLEventType } from "@/backend/graphql/__generated__/resolvers-types";
 import { EVENT_TYPES, type EventType as DomainEventType } from "@/shared/jarvish.constants.ts";
 
 export const DOMAIN_TO_GRAPHQL_EVENT_TYPE = {

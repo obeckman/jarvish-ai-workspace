@@ -1,45 +1,42 @@
+import { InMemoryVectorStore } from '@/backend/services/memory/in-memory.store'
+import { SQLiteVectorStore } from '@/backend/services/memory/sqlite-vector.store'
+import { sqlite } from '@/backend/db'
+import { setVectorStore } from '@/backend/services/memory/memory.service'
+import type { IVectorStore } from '@/backend/services/memory/vector_store.interface'
+import { logger } from '@/backend/utils/logger'
 
-import 'dotenv/config';
-import weaviateEmbedded, { EmbeddedOptions } from 'weaviate-ts-embedded';
-import weaviate from 'weaviate-client';
-import path from 'node:path';
-import { WeaviateVectorStore,  } from '@/Backend/services/memory/weaviate.store';
-import { setVectorStore } from '@/Backend/services/memory/memory.service';
-import { logger } from '@/Backend/utils/logger';
+const VECTOR_STORE_PROVIDERS = {
+  SQLITE: 'sqlite',
+  MEMORY: 'memory',
+} as const
 
-// Initialize Weaviate Embedded, lightweight, embedded instance of the Weaviate vector database
-export const runVectorDatabase = async () => {
+type VectorStoreProvider = typeof VECTOR_STORE_PROVIDERS[keyof typeof VECTOR_STORE_PROVIDERS]
 
-  logger.info("--- Initializing Vector Database ---");
-    // 1. Initialize Weaviate Embedded, lightweight, embedded instance of the Weaviate vector database
-  const embeddedOptions = new EmbeddedOptions({
-    port: 8080, // Match old server's DB port
-    env: {
-      DEFAULT_VECTORIZER_MODULE: 'none',
-      PERSISTENCE_DATA_PATH: path.join(process.cwd(), 'src', 'Backend', 'weaviate_data'),
-    },
-  });
+export async function runVectorDatabase() {
+  const provider = getVectorStoreProvider()
+  logger.info({ provider }, '[Memory] Initializing vector store')
 
-  const embeddedClient = weaviateEmbedded.client(embeddedOptions);
+  const vectorStore = createVectorStore(provider)
+  await vectorStore.ensureSchema()
+  setVectorStore(vectorStore)
 
-  try {
-    logger.info("[Infra] Starting Initializing Vector Database Weaviate...");
-    await embeddedClient.embedded.start();
-    
-    // 2. Connect using the modern v3 client
-    const client = await weaviate.connectToLocal({
-      port: 8080
-    });
+  logger.info({ provider }, '[Memory] Vector store ready')
+}
 
-    // 3. Setup Vector Store
-    const vectorStore = new WeaviateVectorStore(client);
-    await vectorStore.ensureSchema();
-    setVectorStore(vectorStore);
-    
-    logger.info("[Infra] Initializing Vector Database and Schema ready.");
+function getVectorStoreProvider(): VectorStoreProvider {
+  const configuredProvider = process.env.VECTOR_STORE_PROVIDER?.trim().toLowerCase()
 
-  } catch (error) {
-    logger.error(error, "[Fatal Startup Error in initializeVectorDatabase]");
-    process.exit(1);
+  if (configuredProvider === VECTOR_STORE_PROVIDERS.MEMORY) {
+    return VECTOR_STORE_PROVIDERS.MEMORY
   }
+
+  return VECTOR_STORE_PROVIDERS.SQLITE
+}
+
+function createVectorStore(provider: VectorStoreProvider): IVectorStore {
+  if (provider === VECTOR_STORE_PROVIDERS.MEMORY) {
+    return new InMemoryVectorStore()
+  }
+
+  return new SQLiteVectorStore(sqlite)
 }

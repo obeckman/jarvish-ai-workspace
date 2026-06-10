@@ -1,14 +1,14 @@
-import { AgentStateType } from "@/Backend/agent/state";
-import { retrieveMemories } from "@/Backend/services/memory/memory.service";
+import { AgentStateType } from "@/backend/agent/state";
+import { retrieveMemories } from "@/backend/services/memory/memory.service";
 import { ROLES, STAGES } from "@/shared/jarvish.constants";
 import { AIMessage } from "@langchain/core/messages";
-import { logger } from "@/Backend/utils/logger";
+import { logger } from "@/backend/utils/logger";
 
 /**
  * Node: Context Retrieval
  * Responsibilities:
  * 1. Extract the primary query from the last user message.
- * 2. Perform a semantic search in Weaviate for relevant history.
+ * 2. Perform a semantic search through the vector-store boundary.
  * 3. Update the state with retrieved memories and stage progress.
  */
 export async function contextNode(state: AgentStateType) {

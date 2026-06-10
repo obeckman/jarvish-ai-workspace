@@ -1,15 +1,15 @@
-import { AgentStateType } from "@/Backend/agent/state";
-import { addMemory, MEMORY_TYPES } from "@/Backend/services/memory/memory.service";
+import { AgentStateType } from "@/backend/agent/state";
+import { addMemory, MEMORY_TYPES } from "@/backend/services/memory/memory.service";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { ARCHIVE_MODEL } from "@/Backend/agent/models";
+import { ARCHIVE_MODEL } from "@/backend/agent/models";
 import { PDFParse } from 'pdf-parse';
-import { summarizeSession } from "@/Backend/services/summarization.service";
-import { extractAndStoreFacts, type ExtractedFact } from "@/Backend/services/factExtraction.service";
-import { db } from "@/Backend/db/index";
-import { sessionSummaries } from "@/Backend/db/schema";
+import { summarizeSession } from "@/backend/services/summarization.service";
+import { extractAndStoreFacts, type ExtractedFact } from "@/backend/services/factExtraction.service";
+import { db } from "@/backend/db/index";
+import { sessionSummaries } from "@/backend/db/schema";
 import { STAGES, ROLES } from "@/shared/jarvish.constants";
 import { getMessageRole } from "./utils";
-import { logger } from "@/Backend/utils/logger";
+import { logger } from "@/backend/utils/logger";
 import { createHash, randomUUID } from "node:crypto";
 
 /**
@@ -17,7 +17,7 @@ import { createHash, randomUUID } from "node:crypto";
  * Responsibilities:
  * 1. Summarize the current interaction.
  * 2. Index all attachments (PDFs, Images, Text) into long-term memory.
- * 3. Persist everything to Weaviate for long-term recall.
+ * 3. Persist recallable context through the vector-store boundary.
  * 4. Generate and store a high-level session summary for history UI.
  * 5. Extract static facts for the structured user profile.
  */

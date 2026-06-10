@@ -1,7 +1,7 @@
-import { logger } from "@/Backend/utils/logger";
+import { logger } from "@/backend/utils/logger";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { AgentStateType } from "@/Backend/agent/state";
-import { REASONING_MODEL } from "@/Backend/agent/models";
+import { AgentStateType } from "@/backend/agent/state";
+import { REASONING_MODEL } from "@/backend/agent/models";
 import { STAGES, NODE_NAMES } from "@/shared/jarvish.constants";
 import { mapStateToGeminiHistory } from "../utils";
 import { AIMessage } from "@langchain/core/messages";
@@ -10,12 +10,12 @@ import {
   gmailSearchDeclaration,
   googleDocsDeclaration,
   updateGoogleDocDeclaration
-} from "@/Backend/agent/nodes/registry";
+} from "@/backend/agent/nodes/registry";
 import {
   createClarificationBlockContent,
   formatConfidenceStatus,
   validateOrRepairNodeResponse,
-} from "@/Backend/agent/validation/node-response.validator";
+} from "@/backend/agent/validation/node-response.validator";
 
 /**
  * Node: Google Worker

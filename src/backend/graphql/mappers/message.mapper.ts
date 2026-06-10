@@ -7,8 +7,8 @@ import {
   type MessageContent,
   type ToolCall,
 } from "@langchain/core/messages";
-import { getMessageRole, getMessageType } from "@/Backend/agent/nodes/utils";
-import { Message } from "@/Backend/graphql/__generated__/resolvers-types";
+import { getMessageRole, getMessageType } from "@/backend/agent/nodes/utils";
+import { Message } from "@/backend/graphql/__generated__/resolvers-types";
 import { EVENT_TYPES, NODE_NAMES, ROLES } from "@/shared/jarvish.constants.ts";
 
 type InputHistoryMessage = {

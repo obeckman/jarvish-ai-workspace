@@ -1,17 +1,18 @@
-import { logger } from "@/Backend/utils/logger";
+import { logger } from "@/backend/utils/logger";
 import { GoogleGenerativeAI, SchemaType, type Part } from "@google/generative-ai";
-import { AgentStateType } from "@/Backend/agent/state";
-import { REASONING_MODEL } from "@/Backend/agent/models";
+import { AgentStateType } from "@/backend/agent/state";
+import { REASONING_MODEL } from "@/backend/agent/models";
 import { STAGES, BLOCK_TYPES, NODE_NAMES } from "@/shared/jarvish.constants";;
 import { mapStateToGeminiHistory } from "./utils";
 import { AIMessage } from "@langchain/core/messages";
 import { HumanMessage } from "@langchain/core/messages";
-import { getAgentMessageName } from "@/Backend/agent/contracts/message.contract";
+import { getAgentMessageName } from "@/backend/agent/contracts/message.contract";
 import {
   createClarificationBlockContent,
   formatConfidenceStatus,
   validateOrRepairNodeResponse,
-} from "@/Backend/agent/validation/node-response.validator";
+} from "@/backend/agent/validation/node-response.validator";
+import { createGeminiErrorBlockContent, getGeminiErrorDetails } from "@/backend/services/gemini-error";
 /**
  * Node: Supervisor
  * Responsibilities:
@@ -176,14 +177,20 @@ export async function supervisorNode(state: AgentStateType) {
   };
 }
   catch (error) {
-    logger.error({ sessionId: state.sessionId, error }, "Node: Supervisor | Error during processing");
+    const geminiError = getGeminiErrorDetails(error);
+    logger.error({ sessionId: state.sessionId, error: geminiError }, "Node: Supervisor | Error during processing");
     return {
       messages: [new AIMessage({
-        content: JSON.stringify([{ type: BLOCK_TYPES.TEXT, content: "An error occurred while processing the response." }]),
+        content: createGeminiErrorBlockContent(error),
         tool_calls: [],
         name: "supervisor"
       })],
-      metadata: { stage: STAGES.SYNTHESIZE, status: "Supervisor encountered an error." }
+      metadata: {
+        stage: STAGES.SYNTHESIZE,
+        status: "Supervisor encountered a model provider error.",
+        confidence: 0,
+        validationReason: geminiError.message,
+      }
     };
   }
 }

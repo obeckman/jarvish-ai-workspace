@@ -2,21 +2,21 @@ import { AgentEvent, Resolvers } from './__generated__/resolvers-types';
 import {
   getSessionHistory,
   getSessions,
-} from '@/Backend/graphql/services/session.resolver.service';
+} from '@/backend/graphql/services/session.resolver.service';
 import {
   getSessionSummary,
   getSessionSummaryBySessionId,
-} from '@/Backend/graphql/services/summary.resolver.service';
+} from '@/backend/graphql/services/summary.resolver.service';
 import {
   deleteStructuredFact,
   getStructuredFacts,
-} from '@/Backend/graphql/services/fact.resolver.service';
+} from '@/backend/graphql/services/fact.resolver.service';
 import {
   createSession,
   deleteSession,
   startResearch,
-} from '@/Backend/graphql/services/mutation.resolver.service';
-import { streamAgentEvents } from '@/Backend/graphql/services/agent-event.service';
+} from '@/backend/graphql/services/mutation.resolver.service';
+import { streamAgentEvents } from '@/backend/graphql/services/agent-event.service';
 
 type GraphQLContext = {
   request: Request;

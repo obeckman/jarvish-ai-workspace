@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { IVectorStore, Memory, MemoryMetadata } from '@/Backend/services/memory/vector_store.interface';
-import { logger } from '@/Backend/utils/logger';
+import { IVectorStore, Memory, MemoryMetadata } from '@/backend/services/memory/vector_store.interface';
+import { logger } from '@/backend/utils/logger';
 let vectorStore: IVectorStore | null = null;
 
 export const MAX_MEMORY_CANDIDATES = 50;

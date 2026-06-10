@@ -1,8 +1,8 @@
 import { StateGraph } from "@langchain/langgraph";
 import { BaseCheckpointSaver } from "@langchain/langgraph-checkpoint";
-import { AgentState, type AgentStateType } from "@/Backend/agent/state";
-import { AGENT_GRAPH_NODES } from "@/Backend/agent/graph/nodes";
-import { addAgentGraphTopology } from "@/Backend/agent/graph/topology";
+import { AgentState, type AgentStateType } from "@/backend/agent/state";
+import { AGENT_GRAPH_NODES } from "@/backend/agent/graph/nodes";
+import { addAgentGraphTopology } from "@/backend/agent/graph/topology";
 
 type GraphRunnableConfig = {
   configurable?: {

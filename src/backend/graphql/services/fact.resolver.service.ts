@@ -1,14 +1,14 @@
-import { db } from "@/Backend/db/index";
-import { structuredFacts } from "@/Backend/db/schema";
+import { db } from "@/backend/db/index";
+import { structuredFacts } from "@/backend/db/schema";
 import {
   MutationDeleteStructuredFactArgs,
   StructuredFact,
-} from "@/Backend/graphql/__generated__/resolvers-types";
-import { mapStructuredFactRow } from "@/Backend/graphql/mappers/session.mapper";
-import { DeleteByIdArgsSchema } from "@/Backend/graphql/schemas/resolver.schema";
-import { forgetMemory } from "@/Backend/services/memory/memory.service";
+} from "@/backend/graphql/__generated__/resolvers-types";
+import { mapStructuredFactRow } from "@/backend/graphql/mappers/session.mapper";
+import { DeleteByIdArgsSchema } from "@/backend/graphql/schemas/resolver.schema";
+import { forgetMemory } from "@/backend/services/memory/memory.service";
 import { DEFAULT_USER_ID } from "@/shared/jarvish.constants";
-import { logger } from "@/Backend/utils/logger";
+import { logger } from "@/backend/utils/logger";
 import { and, desc, eq, isNull, or } from "drizzle-orm";
 
 export async function getStructuredFacts(): Promise<StructuredFact[]> {

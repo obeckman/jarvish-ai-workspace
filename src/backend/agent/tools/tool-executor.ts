@@ -1,15 +1,15 @@
-import { logger } from "@/Backend/utils/logger";
-import { AgentToolCall } from "@/Backend/agent/contracts/state.contract";
-import { AgentStateType } from "@/Backend/agent/state";
-import { addMemory, forgetMemory, MEMORY_TYPES } from "@/Backend/services/memory/memory.service";
-import { readFile, writeFile } from "@/Backend/services/tools/file.service";
-import { getGoogleDocContent, listCalendarEvents, searchGmailMessages, updateGoogleDoc } from "@/Backend/services/tools/google.service";
-import { checkInventory } from "@/Backend/services/tools/inventory.service";
-import { readPdf } from "@/Backend/services/tools/pdf.service";
-import { searchWeb } from "@/Backend/services/tools/search.service";
-import { fetchWebPage } from "@/Backend/services/tools/web.service";
+import { logger } from "@/backend/utils/logger";
+import { AgentToolCall } from "@/backend/agent/contracts/state.contract";
+import { AgentStateType } from "@/backend/agent/state";
+import { addMemory, forgetMemory, MEMORY_TYPES } from "@/backend/services/memory/memory.service";
+import { readFile, writeFile } from "@/backend/services/tools/file.service";
+import { getGoogleDocContent, listCalendarEvents, searchGmailMessages, updateGoogleDoc } from "@/backend/services/tools/google.service";
+import { checkInventory } from "@/backend/services/tools/inventory.service";
+import { readPdf } from "@/backend/services/tools/pdf.service";
+import { searchWeb } from "@/backend/services/tools/search.service";
+import { fetchWebPage } from "@/backend/services/tools/web.service";
 import { TOOL_NAMES } from "@/shared/jarvish.constants";
-import { queryProcessedAttachments } from "@/Backend/agent/tools/attachment-query";
+import { queryProcessedAttachments } from "@/backend/agent/tools/attachment-query";
 import {
   AddMemoryToolArgsSchema,
   FetchWebPageToolArgsSchema,
@@ -24,8 +24,8 @@ import {
   UpdateGoogleDocToolArgsSchema,
   WebSearchToolArgsSchema,
   WriteFileToolArgsSchema,
-} from "@/Backend/agent/tools/tool.schemas";
-import { validateToolOutput } from "@/Backend/agent/validation/tool-output.validator";
+} from "@/backend/agent/tools/tool.schemas";
+import { validateToolOutput } from "@/backend/agent/validation/tool-output.validator";
 
 type ToolHandler = (call: AgentToolCall, state: AgentStateType) => Promise<unknown>;
 

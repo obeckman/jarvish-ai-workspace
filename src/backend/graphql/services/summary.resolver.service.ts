@@ -1,14 +1,14 @@
-import { db } from "@/Backend/db/index";
-import { sessionSummaries } from "@/Backend/db/schema";
+import { db } from "@/backend/db/index";
+import { sessionSummaries } from "@/backend/db/schema";
 import {
   QueryGetSessionSummaryArgs,
   SessionSummary,
-} from "@/Backend/graphql/__generated__/resolvers-types";
-import { mapSessionSummaryRow } from "@/Backend/graphql/mappers/session.mapper";
-import { SessionIdArgsSchema } from "@/Backend/graphql/schemas/resolver.schema";
-import { getSessionHistory } from "@/Backend/graphql/services/session.resolver.service";
-import { summarizeSession } from "@/Backend/services/summarization.service";
-import { logger } from "@/Backend/utils/logger";
+} from "@/backend/graphql/__generated__/resolvers-types";
+import { mapSessionSummaryRow } from "@/backend/graphql/mappers/session.mapper";
+import { SessionIdArgsSchema } from "@/backend/graphql/schemas/resolver.schema";
+import { getSessionHistory } from "@/backend/graphql/services/session.resolver.service";
+import { summarizeSession } from "@/backend/services/summarization.service";
+import { logger } from "@/backend/utils/logger";
 import { eq } from "drizzle-orm";
 
 export async function getSessionSummary(

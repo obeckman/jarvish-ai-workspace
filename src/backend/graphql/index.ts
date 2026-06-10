@@ -1,5 +1,5 @@
 import { createYoga } from 'graphql-yoga';
-import { schema } from '@/Backend/graphql/schema';
+import { schema } from '@/backend/graphql/schema';
 
 
 export const handleGraphQLRequests = () => {

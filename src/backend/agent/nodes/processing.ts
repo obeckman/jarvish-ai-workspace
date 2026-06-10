@@ -1,13 +1,13 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { AgentStateType } from "@/Backend/agent/state";
-import { PROCESSING_MODEL } from "@/Backend/agent/models";
+import { AgentStateType } from "@/backend/agent/state";
+import { PROCESSING_MODEL } from "@/backend/agent/models";
 import { ROLES, STAGES, TOOL_NAMES } from "@/shared/jarvish.constants";
 import { searchWeb } from "../../services/tools/search.service";
 import { readFile } from "../../services/tools/file.service";
 import { AIMessage } from "@langchain/core/messages";
-import { logger } from "@/Backend/utils/logger";
-import { ProcessedAttachment } from "@/Backend/agent/contracts/state.contract";
-import { validateToolOutput } from "@/Backend/agent/validation/tool-output.validator";
+import { logger } from "@/backend/utils/logger";
+import { ProcessedAttachment } from "@/backend/agent/contracts/state.contract";
+import { validateToolOutput } from "@/backend/agent/validation/tool-output.validator";
 
 /**
  * Node: Attachment & Shadow Tooling Processing

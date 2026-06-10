@@ -17,7 +17,7 @@ export type MemorySearchOptions = {
 };
 
 /**
- * Standard interface for Vector Store implementations (e.g., Weaviate, Pinecone, Local).
+ * Standard interface for Vector Store implementations.
  * This allows us to swap the underlying database without changing the agent logic.
  */
 export interface IVectorStore {
