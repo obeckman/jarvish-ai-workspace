@@ -107,7 +107,6 @@ VITE_GOOGLE_CLIENT_ID=optional for frontend Google auth
 GOOGLE_CLIENT_ID=required for GraphQL app authentication and backend config endpoint value
 CORS_ORIGINS=comma-separated allowed browser origins for the backend, e.g. http://localhost:5173
 VITE_DEV_ORIGIN=optional additional development origin allowed by CORS
-GRAPHQL_PLAYGROUND_ENABLED=optional, false by default; set true to expose GraphiQL
 SERPER_API_KEY=optional web search provider
 GOOGLE_SEARCH_API_KEY=optional Google Custom Search provider
 GOOGLE_SEARCH_CX=optional Google Custom Search engine id

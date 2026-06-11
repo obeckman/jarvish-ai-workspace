@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "server": "tsx src/backend/index.ts",
+    "runprod": "NODE_ENV=production npm start",
     "diagnose:gemini": "node scripts/diagnose-gemini.mjs",
     "wait:backend": "node scripts/wait-for-backend.mjs",
     "codegen": "graphql-codegen --config codegen.ts",

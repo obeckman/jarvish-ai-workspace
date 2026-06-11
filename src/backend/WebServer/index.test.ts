@@ -13,6 +13,8 @@ import { runWebServer } from '@/backend/WebServer';
 
 describe('runWebServer', () => {
   let server: Server | null = null;
+  const originalNodeEnv = process.env.NODE_ENV;
+  const originalGraphqlPlaygroundEnabled = process.env.GRAPHQL_PLAYGROUND_ENABLED;
 
   afterEach(async () => {
     await new Promise<void>((resolve, reject) => {
@@ -30,6 +32,8 @@ describe('runWebServer', () => {
     });
     server = null;
     mocks.authenticateRequest.mockReset();
+    restoreEnv('NODE_ENV', originalNodeEnv);
+    restoreEnv('GRAPHQL_PLAYGROUND_ENABLED', originalGraphqlPlaygroundEnabled);
   });
 
   it('serves health and config endpoints', async () => {
@@ -85,6 +89,31 @@ describe('runWebServer', () => {
     });
   });
 
+  it('serves GraphiQL outside production', async () => {
+    process.env.NODE_ENV = 'development';
+
+    const app = runWebServer();
+    const baseUrl = await listen(app);
+    const response = await fetch(`${baseUrl}/graphql`, {
+      headers: { Accept: 'text/html' },
+    });
+
+    await expect(response.text()).resolves.toContain('GraphiQL');
+  });
+
+  it('does not serve GraphiQL in production', async () => {
+    process.env.NODE_ENV = 'production';
+    process.env.GRAPHQL_PLAYGROUND_ENABLED = 'true';
+
+    const app = runWebServer();
+    const baseUrl = await listen(app);
+    const response = await fetch(`${baseUrl}/graphql`, {
+      headers: { Accept: 'text/html' },
+    });
+
+    await expect(response.text()).resolves.not.toContain('GraphiQL');
+  });
+
   function listen(app: ReturnType<typeof runWebServer>): Promise<string> {
     return new Promise((resolve) => {
       server = app.listen(0, () => {
@@ -94,5 +123,13 @@ describe('runWebServer', () => {
         }
       });
     });
+  }
+
+  function restoreEnv(key: string, value: string | undefined): void {
+    if (value === undefined) {
+      delete process.env[key];
+      return;
+    }
+    process.env[key] = value;
   }
 });

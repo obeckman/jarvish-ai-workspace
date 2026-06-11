@@ -24,7 +24,7 @@ export const handleGraphQLRequests = () => {
         throw error;
       }
     },
-    graphiql: process.env.GRAPHQL_PLAYGROUND_ENABLED === 'true',
+    graphiql: process.env.NODE_ENV !== 'production',
     maskedErrors: false,
   });
   return yoga;
