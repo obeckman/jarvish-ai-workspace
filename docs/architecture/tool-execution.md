@@ -23,6 +23,12 @@ worker emits tool call
 - inventory checks
 - Google Calendar, Gmail, and Docs actions when an auth token is present
 
+## High-Risk Tool Gating
+
+`NODE_ENV=production` is treated as hosted/public mode for local filesystem tools. In that mode, `write_file` is not exposed to the model and is rejected by the central executor if requested anyway. `read_file` remains available only for a small public allowlist: `README.md`, `docs/**`, and selected agent/tool overview source files.
+
+All local file paths are resolved from the project root with `path.relative` boundary checks. Hidden files and environment files such as `.env` are denied in every environment.
+
 ## Reliability Notes
 
 Each tool call returns a structured execution result with:

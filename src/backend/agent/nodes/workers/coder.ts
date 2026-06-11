@@ -12,6 +12,8 @@ import {
   forgetMemoryDeclaration,
   inventoryToolDeclaration
 } from "@/backend/agent/nodes/registry";
+import { canExposeWriteFileTool } from "@/backend/services/tools/file.service";
+import type { FunctionDeclaration } from "@google/generative-ai";
 import {
   createClarificationBlockContent,
   formatConfidenceStatus,
@@ -22,6 +24,28 @@ import {
  * Node: Coder Worker
  * Specialized in local system operations, codebase analysis, and technical implementation.
  */
+export function getCoderWorkerFunctionDeclarations(): FunctionDeclaration[] {
+  return [
+    readFileDeclaration,
+    ...(canExposeWriteFileTool() ? [writeFileDeclaration] : []),
+    addMemoryDeclaration,
+    forgetMemoryDeclaration,
+    inventoryToolDeclaration
+  ];
+}
+
+function getCoderToolInstructions(): string {
+  const writeInstruction = canExposeWriteFileTool()
+    ? "- write_file: For writing or updating local files."
+    : "- write_file is disabled in production; do not request local file writes.";
+
+  return `AVAILABLE TOOLS:
+    - read_file: For reading approved local codebase files.
+    ${writeInstruction}
+    - add_to_memory: For saving facts to long-term storage.
+    - check_inventory: For checking product status.`;
+}
+
 export async function coderWorkerNode(state: AgentStateType) {
   logger.debug({ sessionId: state.sessionId, messagesCount: state.messages.length }, "Node: Coder Worker");
   try {
@@ -32,28 +56,18 @@ export async function coderWorkerNode(state: AgentStateType) {
     STRICT PROTOCOLS:
     1. PRECISION MANDATE: When reading local files, report the exact content or relevant snippets. Never guess code or file structures.
     2. CODE QUALITY: Suggest idiomatic, clean, and maintainable code that follows project patterns.
-    3. COLLABORATION: Use write_file to apply approved changes to the codebase. Always explain what you changed.
+    3. COLLABORATION: When write_file is available, use it only for approved codebase changes. Always explain what you changed.
     4. DRAFTING: You are responsible for drafting proposals, reports, and emails. Use your high-quality reasoning to create structured, professional content.
     5. MEMORY ACCURACY: Only add facts to memory that have been explicitly confirmed by the user or verified by other workers.
     6. INVENTORY TRUTH: Report live inventory status exactly as returned by the tool.
 
-    AVAILABLE TOOLS:
-    - read_file: For reading local codebase files.
-    - write_file: For writing or updating local files.
-    - add_to_memory: For saving facts to long-term storage.
-    - check_inventory: For checking product status.`;
+    ${getCoderToolInstructions()}`;
 
     const model = genAI.getGenerativeModel({
       model: REASONING_MODEL,
       systemInstruction,
       tools: [{
-        functionDeclarations: [
-          readFileDeclaration,
-          writeFileDeclaration,
-          addMemoryDeclaration,
-          forgetMemoryDeclaration,
-          inventoryToolDeclaration
-        ]
+        functionDeclarations: getCoderWorkerFunctionDeclarations()
       }]
     });
 

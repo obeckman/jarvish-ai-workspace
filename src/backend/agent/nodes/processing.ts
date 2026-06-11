@@ -3,7 +3,7 @@ import { AgentStateType } from "@/backend/agent/state";
 import { PROCESSING_MODEL } from "@/backend/agent/models";
 import { ROLES, STAGES, TOOL_NAMES } from "@/shared/jarvish.constants";
 import { searchWeb } from "../../services/tools/search.service";
-import { readFile } from "../../services/tools/file.service";
+import { canReadLocalProjectFile, isProductionFileToolMode, readFile } from "../../services/tools/file.service";
 import { AIMessage } from "@langchain/core/messages";
 import { logger } from "@/backend/utils/logger";
 import { ProcessedAttachment } from "@/backend/agent/contracts/state.contract";
@@ -64,17 +64,7 @@ export async function processingNode(state: AgentStateType) {
   // 2. Shadow Tooling: Predict and pre-execute
   if (process.env.SHADOW_TOOLING_ENABLED === 'true' && query && query.length > 10) {
     try {
-      const shadowPrompt = `Analyze the user's query and predict if specific tools will DEFINITELY be needed.
-      Query: "${query}"
-      
-      Predict ONE of:
-      - WEB_SEARCH: If they ask for news, current events, or external info.
-      - READ_FILE: If they mention a specific file path or "this code".
-      - NONE: If it's a general question or doesn't need external data.
-      
-      Output ONLY the tool name and the suggested argument (query or path).
-      Example: WEB_SEARCH | latest nvidia stock price
-      Example: READ_FILE | src/App.tsx`;
+      const shadowPrompt = buildShadowToolPrompt(query);
 
       const shadowResult = await model.generateContent(shadowPrompt);
       const [tool, arg] = shadowResult.response.text().split('|').map(s => s.trim());
@@ -86,6 +76,14 @@ export async function processingNode(state: AgentStateType) {
         validationReasons.push(validation.reason);
         shadowResults.push(`[Shadow Search Result] ${String(searchResult).substring(0, 1000)}`);
       } else if (tool === 'READ_FILE' && arg) {
+        const policy = canReadLocalProjectFile(arg);
+
+        if (!policy.allowed) {
+          logger.info({ sessionId: state.sessionId, arg, reason: policy.reason }, "Shadow Tooling: Skipping disallowed file read");
+          validationReasons.push("Shadow file read was blocked by local file policy.");
+          return finishProcessing(state, processedResults, shadowResults, validationReasons);
+        }
+
         logger.info({ sessionId: state.sessionId, arg }, "Shadow Tooling: Pre-reading file");
         const fileResult = await readFile({ path: arg });
         const validation = validateToolOutput(TOOL_NAMES.READ_FILE, fileResult);
@@ -104,6 +102,36 @@ export async function processingNode(state: AgentStateType) {
       : "Shadow tooling is disabled for this environment.");
   }
 
+  return finishProcessing(state, processedResults, shadowResults, validationReasons);
+}
+
+export function buildShadowToolPrompt(query: string): string {
+  const fileReadOption = isProductionFileToolMode()
+    ? ''
+    : `
+      - READ_FILE: If they mention a specific file path or "this code".`;
+  const fileReadExample = isProductionFileToolMode()
+    ? ''
+    : `
+      Example: READ_FILE | src/App.tsx`;
+
+  return `Analyze the user's query and predict if specific tools will DEFINITELY be needed.
+      Query: "${query}"
+      
+      Predict ONE of:
+      - WEB_SEARCH: If they ask for news, current events, or external info.${fileReadOption}
+      - NONE: If it's a general question or doesn't need external data.
+      
+      Output ONLY the tool name and the suggested argument (query or path).
+      Example: WEB_SEARCH | latest nvidia stock price${fileReadExample}`;
+}
+
+function finishProcessing(
+  state: AgentStateType,
+  processedResults: ProcessedAttachment[],
+  shadowResults: string[],
+  validationReasons: string[],
+) {
   const messages = [];
   if (processedResults.length > 0 || shadowResults.length > 0) {
     messages.push(new AIMessage({

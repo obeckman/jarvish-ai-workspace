@@ -2,7 +2,7 @@ import { logger } from "@/backend/utils/logger";
 import { AgentToolCall } from "@/backend/agent/contracts/state.contract";
 import { AgentStateType } from "@/backend/agent/state";
 import { addMemory, forgetMemory, MEMORY_TYPES } from "@/backend/services/memory/memory.service";
-import { readFile, writeFile } from "@/backend/services/tools/file.service";
+import { canExposeWriteFileTool, readFile, writeFile } from "@/backend/services/tools/file.service";
 import { getGoogleDocContent, listCalendarEvents, searchGmailMessages, updateGoogleDoc } from "@/backend/services/tools/google.service";
 import { checkInventory } from "@/backend/services/tools/inventory.service";
 import { readPdf } from "@/backend/services/tools/pdf.service";
@@ -89,6 +89,15 @@ export async function executeAgentTool(
   call: AgentToolCall,
   state: AgentStateType,
 ): Promise<ToolExecutionResult> {
+  if (call.name === TOOL_NAMES.WRITE_FILE && !canExposeWriteFileTool()) {
+    return {
+      output: `Error: Tool '${call.name}' is disabled in production.`,
+      confidence: 0,
+      valid: false,
+      reason: "Tool is disabled in production.",
+    };
+  }
+
   const handler = TOOL_HANDLERS[call.name];
 
   if (!handler) {
