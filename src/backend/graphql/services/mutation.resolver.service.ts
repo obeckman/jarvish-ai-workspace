@@ -13,8 +13,8 @@ import {
   StartResearchArgsSchema,
 } from "@/backend/graphql/schemas/resolver.schema";
 import { generateTitle } from "@/backend/services/titling.service";
+import { randomUUID } from "node:crypto";
 import { and, eq } from "drizzle-orm";
-import { GraphQLError } from "graphql";
 
 export async function startResearch(_args: MutationStartResearchArgs): Promise<string> {
   StartResearchArgsSchema.parse(_args);
@@ -22,32 +22,9 @@ export async function startResearch(_args: MutationStartResearchArgs): Promise<s
 }
 
 export async function createSession(args: MutationCreateSessionArgs, userId: string): Promise<Session> {
-  const { id, title, initialQuery } = CreateSessionArgsSchema.parse(args);
+  const { title, initialQuery } = CreateSessionArgsSchema.parse(args);
+  const id = randomUUID();
   const finalTitle = initialQuery ? await generateTitle(initialQuery) : title || "New Research";
-  const [existingSession] = await db
-    .select()
-    .from(sessions)
-    .where(eq(sessions.id, id))
-    .limit(1);
-
-  if (existingSession) {
-    if (existingSession.userId !== userId) {
-      throw new GraphQLError("Session id is already in use", {
-        extensions: { code: "FORBIDDEN" },
-      });
-    }
-
-    const [updatedSession] = await db
-      .update(sessions)
-      .set({
-        title: finalTitle,
-        updatedAt: new Date(),
-      })
-      .where(and(eq(sessions.id, id), eq(sessions.userId, userId)))
-      .returning();
-
-    return mapSessionRow(updatedSession);
-  }
 
   await db.insert(sessions).values({
     id,

@@ -60,7 +60,6 @@ export type Mutation = {
 
 
 export type MutationCreateSessionArgs = {
-  id: Scalars['String']['input'];
   initialQuery?: InputMaybe<Scalars['String']['input']>;
   title: Scalars['String']['input'];
 };
@@ -280,7 +279,7 @@ export type MessageResolvers<ContextType = any, ParentType extends ResolversPare
 }>;
 
 export type MutationResolvers<ContextType = any, ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation']> = ResolversObject<{
-  createSession?: Resolver<ResolversTypes['Session'], ParentType, ContextType, RequireFields<MutationCreateSessionArgs, 'id' | 'title'>>;
+  createSession?: Resolver<ResolversTypes['Session'], ParentType, ContextType, RequireFields<MutationCreateSessionArgs, 'title'>>;
   deleteSession?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationDeleteSessionArgs, 'id'>>;
   deleteStructuredFact?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationDeleteStructuredFactArgs, 'id'>>;
   startResearch?: Resolver<ResolversTypes['String'], ParentType, ContextType, RequireFields<MutationStartResearchArgs, 'history' | 'query'>>;

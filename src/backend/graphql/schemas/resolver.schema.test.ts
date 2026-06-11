@@ -42,6 +42,10 @@ describe('Jarvish GraphQL resolver boundary schemas', () => {
   it('requires non-empty identifiers and queries', () => {
     expect(() => SessionIdArgsSchema.parse({ sessionId: '' })).toThrow();
     expect(() => StreamAgentEventsInputSchema.parse({ query: '' })).toThrow();
-    expect(() => CreateSessionArgsSchema.parse({ id: '', title: 'Draft' })).toThrow();
+  });
+
+  it('rejects client-provided ids when creating sessions', () => {
+    expect(CreateSessionArgsSchema.parse({ title: 'Draft' })).toEqual({ title: 'Draft' });
+    expect(() => CreateSessionArgsSchema.parse({ id: 'session-1', title: 'Draft' })).toThrow();
   });
 });

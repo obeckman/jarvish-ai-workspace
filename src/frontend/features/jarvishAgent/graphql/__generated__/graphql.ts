@@ -55,7 +55,6 @@ export type GetStructuredFactsQueryVariables = Exact<{ [key: string]: never; }>;
 export type GetStructuredFactsQuery = { getStructuredFacts: Array<{ ' $fragmentRefs'?: { 'FactFieldsFragment': FactFieldsFragment } }> };
 
 export type CreateSessionMutationVariables = Exact<{
-  id: string;
   title: string;
   initialQuery?: string | null | undefined;
 }>;
@@ -182,8 +181,8 @@ export const GetStructuredFactsDocument = new TypedDocumentString(`
   createdAt
 }`) as unknown as TypedDocumentString<GetStructuredFactsQuery, GetStructuredFactsQueryVariables>;
 export const CreateSessionDocument = new TypedDocumentString(`
-    mutation CreateSession($id: String!, $title: String!, $initialQuery: String) {
-  createSession(id: $id, title: $title, initialQuery: $initialQuery) {
+    mutation CreateSession($title: String!, $initialQuery: String) {
+  createSession(title: $title, initialQuery: $initialQuery) {
     id
     title
   }

@@ -95,8 +95,8 @@ export const GQL_QUERIES = {
 
 export const GQL_MUTATIONS = {
    CREATE_SESSION: graphql(`
-    mutation CreateSession($id: String!, $title: String!, $initialQuery: String) { 
-      createSession(id: $id, title: $title, initialQuery: $initialQuery) { id title } 
+    mutation CreateSession($title: String!, $initialQuery: String) { 
+      createSession(title: $title, initialQuery: $initialQuery) { id title } 
     }
   `),
   DELETE_SESSION: graphql(`

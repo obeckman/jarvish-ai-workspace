@@ -21,7 +21,7 @@ type Documents = {
     "    \n    query GetSessionHistory($sessionId: String!) {       \n      getSessionHistory(sessionId: $sessionId) { \n        type role content \n      }     \n    }  \n  ": typeof types.GetSessionHistoryDocument,
     "    \n    query GetSessionSummary($sessionId: String!) {       \n      getSessionSummary(sessionId: $sessionId) { \n        summaryTitle userMessage aiAnswer createdAt sessionId \n      }     \n    }  \n  ": typeof types.GetSessionSummaryDocument,
     "    \n    query GetStructuredFacts {      \n      getStructuredFacts { \n        ...FactFields\n      }     \n    }  \n  ": typeof types.GetStructuredFactsDocument,
-    "\n    mutation CreateSession($id: String!, $title: String!, $initialQuery: String) { \n      createSession(id: $id, title: $title, initialQuery: $initialQuery) { id title } \n    }\n  ": typeof types.CreateSessionDocument,
+    "\n    mutation CreateSession($title: String!, $initialQuery: String) { \n      createSession(title: $title, initialQuery: $initialQuery) { id title } \n    }\n  ": typeof types.CreateSessionDocument,
     "\n    mutation DeleteSession($id: String!) { \n      deleteSession(id: $id) \n    }\n  ": typeof types.DeleteSessionDocument,
     "\n    mutation DeleteStructuredFact($id: String!) {\n      deleteStructuredFact(id: $id)\n    }\n  ": typeof types.DeleteStructuredFactDocument,
     "\n    subscription AgentChat($query: String!, $history: [MessageInput!]!, $attachments: [AttachmentInput!], $sessionId: String) {\n      agentEvents(query: $query, history: $history, attachments: $attachments, sessionId: $sessionId) {\n        type\n        content\n        stage\n        metadata\n      }\n    }\n  ": typeof types.AgentChatDocument,
@@ -33,7 +33,7 @@ const documents: Documents = {
     "    \n    query GetSessionHistory($sessionId: String!) {       \n      getSessionHistory(sessionId: $sessionId) { \n        type role content \n      }     \n    }  \n  ": types.GetSessionHistoryDocument,
     "    \n    query GetSessionSummary($sessionId: String!) {       \n      getSessionSummary(sessionId: $sessionId) { \n        summaryTitle userMessage aiAnswer createdAt sessionId \n      }     \n    }  \n  ": types.GetSessionSummaryDocument,
     "    \n    query GetStructuredFacts {      \n      getStructuredFacts { \n        ...FactFields\n      }     \n    }  \n  ": types.GetStructuredFactsDocument,
-    "\n    mutation CreateSession($id: String!, $title: String!, $initialQuery: String) { \n      createSession(id: $id, title: $title, initialQuery: $initialQuery) { id title } \n    }\n  ": types.CreateSessionDocument,
+    "\n    mutation CreateSession($title: String!, $initialQuery: String) { \n      createSession(title: $title, initialQuery: $initialQuery) { id title } \n    }\n  ": types.CreateSessionDocument,
     "\n    mutation DeleteSession($id: String!) { \n      deleteSession(id: $id) \n    }\n  ": types.DeleteSessionDocument,
     "\n    mutation DeleteStructuredFact($id: String!) {\n      deleteStructuredFact(id: $id)\n    }\n  ": types.DeleteStructuredFactDocument,
     "\n    subscription AgentChat($query: String!, $history: [MessageInput!]!, $attachments: [AttachmentInput!], $sessionId: String) {\n      agentEvents(query: $query, history: $history, attachments: $attachments, sessionId: $sessionId) {\n        type\n        content\n        stage\n        metadata\n      }\n    }\n  ": types.AgentChatDocument,
@@ -66,7 +66,7 @@ export function graphql(source: "    \n    query GetStructuredFacts {      \n   
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n    mutation CreateSession($id: String!, $title: String!, $initialQuery: String) { \n      createSession(id: $id, title: $title, initialQuery: $initialQuery) { id title } \n    }\n  "): typeof import('./graphql').CreateSessionDocument;
+export function graphql(source: "\n    mutation CreateSession($title: String!, $initialQuery: String) { \n      createSession(title: $title, initialQuery: $initialQuery) { id title } \n    }\n  "): typeof import('./graphql').CreateSessionDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

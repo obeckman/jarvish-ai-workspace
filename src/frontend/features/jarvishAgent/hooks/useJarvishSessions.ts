@@ -163,7 +163,6 @@ export const useJarvishSessions = (
     const activeIdToken = await getActiveIdToken(idToken, checkAndRefreshIdToken);
     if (!activeIdToken) return null;
 
-    const id = `session-${Date.now()}`;
     const title = initialQuery
       ? (initialQuery.substring(0, 30) + (initialQuery.length > 30 ? '...' : ''))
       : 'New Research';
@@ -174,7 +173,7 @@ export const useJarvishSessions = (
         headers: getGraphQLHeaders(activeIdToken),
         body: JSON.stringify({
           query: GQL_MUTATIONS.CREATE_SESSION,
-          variables: { id, title, initialQuery }
+          variables: { title, initialQuery }
         })
       });
       const result = await res.json();

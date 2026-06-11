@@ -37,7 +37,7 @@ export const schema = createSchema<GraphQLContext>({
       """
       Creates a new session record.
       """
-      createSession(id: String!, title: String!, initialQuery: String): Session!
+      createSession(title: String!, initialQuery: String): Session!
       """
       Deletes a session and its associated state.
       """

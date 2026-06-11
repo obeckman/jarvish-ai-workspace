@@ -22,10 +22,9 @@ export const SessionIdArgsSchema = z.object({
 });
 
 export const CreateSessionArgsSchema = z.object({
-  id: z.string().min(1),
   title: z.string(),
   initialQuery: z.string().nullish(),
-});
+}).strict();
 
 export const DeleteByIdArgsSchema = z.object({
   id: z.string().min(1),

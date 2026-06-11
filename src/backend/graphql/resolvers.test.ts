@@ -61,11 +61,11 @@ describe('GraphQL resolvers', () => {
 
     expect(query.status({} as never, {} as never, {} as never, {} as never)).toBe('Backend graphQL is healthy');
     await expect(query.getSessions({} as never, { limit: 10 } as never, context as never, {} as never)).resolves.toEqual(['session']);
-    await expect(mutation.createSession({} as never, { id: 'session-1', title: 'Draft' } as never, context as never, {} as never))
+    await expect(mutation.createSession({} as never, { title: 'Draft' } as never, context as never, {} as never))
       .resolves.toEqual({ id: 'session-1' });
 
     expect(mocks.getSessions).toHaveBeenCalledWith({ limit: 10 }, 'user-1');
-    expect(mocks.createSession).toHaveBeenCalledWith({ id: 'session-1', title: 'Draft' }, 'user-1');
+    expect(mocks.createSession).toHaveBeenCalledWith({ title: 'Draft' }, 'user-1');
   });
 
   it('resolves session summaries from parent sessions', async () => {
