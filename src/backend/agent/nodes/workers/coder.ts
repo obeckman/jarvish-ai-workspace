@@ -1,74 +1,29 @@
 import { logger } from "@/backend/utils/logger";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { AgentStateType } from "@/backend/agent/state";
-import { REASONING_MODEL } from "@/backend/agent/models";
 import { STAGES, NODE_NAMES } from "@/shared/jarvish.constants";
 import { mapStateToGeminiHistory } from "../utils";
 import { AIMessage } from "@langchain/core/messages";
-import { 
-  readFileDeclaration, 
-  writeFileDeclaration,
-  addMemoryDeclaration,
-  forgetMemoryDeclaration,
-  inventoryToolDeclaration
-} from "@/backend/agent/nodes/registry";
-import { canExposeWriteFileTool } from "@/backend/services/tools/file.service";
-import type { FunctionDeclaration } from "@google/generative-ai";
 import {
   createClarificationBlockContent,
   formatConfidenceStatus,
   validateOrRepairNodeResponse,
 } from "@/backend/agent/validation/node-response.validator";
+import { createGeminiModel } from "@/backend/agent/nodes/model-adapters";
+import {
+  buildCoderWorkerSystemInstruction,
+  getCoderWorkerFunctionDeclarations,
+} from "@/backend/agent/nodes/prompts";
 
 /**
  * Node: Coder Worker
  * Specialized in local system operations, codebase analysis, and technical implementation.
  */
-export function getCoderWorkerFunctionDeclarations(): FunctionDeclaration[] {
-  return [
-    readFileDeclaration,
-    ...(canExposeWriteFileTool() ? [writeFileDeclaration] : []),
-    addMemoryDeclaration,
-    forgetMemoryDeclaration,
-    inventoryToolDeclaration
-  ];
-}
-
-function getCoderToolInstructions(): string {
-  const writeInstruction = canExposeWriteFileTool()
-    ? "- write_file: For writing or updating local files."
-    : "- write_file is disabled in production; do not request local file writes.";
-
-  return `AVAILABLE TOOLS:
-    - read_file: For reading approved local codebase files.
-    ${writeInstruction}
-    - add_to_memory: For saving facts to long-term storage.
-    - check_inventory: For checking product status.`;
-}
-
 export async function coderWorkerNode(state: AgentStateType) {
   logger.debug({ sessionId: state.sessionId, messagesCount: state.messages.length }, "Node: Coder Worker");
   try {
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-    
-    const systemInstruction = `You are the Coder Worker. Your job is to handle technical tasks, codebase analysis, local operations, and DOCUMENT DRAFTING.
-    
-    STRICT PROTOCOLS:
-    1. PRECISION MANDATE: When reading local files, report the exact content or relevant snippets. Never guess code or file structures.
-    2. CODE QUALITY: Suggest idiomatic, clean, and maintainable code that follows project patterns.
-    3. COLLABORATION: When write_file is available, use it only for approved codebase changes. Always explain what you changed.
-    4. DRAFTING: You are responsible for drafting proposals, reports, and emails. Use your high-quality reasoning to create structured, professional content.
-    5. MEMORY ACCURACY: Only add facts to memory that have been explicitly confirmed by the user or verified by other workers.
-    6. INVENTORY TRUTH: Report live inventory status exactly as returned by the tool.
-
-    ${getCoderToolInstructions()}`;
-
-    const model = genAI.getGenerativeModel({
-      model: REASONING_MODEL,
-      systemInstruction,
-      tools: [{
-        functionDeclarations: getCoderWorkerFunctionDeclarations()
-      }]
+    const model = createGeminiModel({
+      systemInstruction: buildCoderWorkerSystemInstruction(),
+      functionDeclarations: getCoderWorkerFunctionDeclarations(),
     });
 
     const history = mapStateToGeminiHistory(state);

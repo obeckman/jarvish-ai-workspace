@@ -378,20 +378,7 @@ Senior architect / senior frontend / full-stack review for making this repositor
   - Add a deterministic demo provider with seeded responses.
   - Make the hosted CV version usable without requiring reviewers to connect accounts or provide keys.
 
-### AI-02: Prompt and orchestration code are mixed in large node files
 
-- Files:
-  - `src/backend/agent/nodes/supervisor.ts`
-  - `src/backend/agent/nodes/workers/research.ts`
-  - `src/backend/agent/nodes/workers/google.ts`
-  - `src/backend/agent/nodes/workers/coder.ts`
-- Evidence:
-  - Prompt strings, model setup, state mapping, tool declarations, validation, and error handling live together.
-- Risk:
-  - Harder to test prompt policies and worker behavior separately.
-- Recommendation:
-  - Extract prompt builders and model adapters.
-  - Add unit tests for prompt construction and route/tool behavior.
 
 ### AI-03: Confidence scoring can appear more authoritative than it is
 

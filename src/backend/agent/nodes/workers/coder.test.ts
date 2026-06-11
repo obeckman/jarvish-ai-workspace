@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { getCoderWorkerFunctionDeclarations } from '@/backend/agent/nodes/workers/coder';
+import {
+  buildCoderWorkerSystemInstruction,
+  getCoderWorkerFunctionDeclarations,
+} from '@/backend/agent/nodes/prompts';
 import { TOOL_NAMES } from '@/shared/jarvish.constants';
 
 const originalEnv = { ...process.env };
@@ -25,5 +28,11 @@ describe('coder worker tool declarations', () => {
     process.env = { ...originalEnv, NODE_ENV: 'development' };
 
     expect(getCoderWorkerFunctionDeclarations().map((declaration) => declaration.name)).toContain(TOOL_NAMES.WRITE_FILE);
+  });
+
+  it('keeps production write policy visible in the prompt', () => {
+    process.env = { ...originalEnv, NODE_ENV: 'production' };
+
+    expect(buildCoderWorkerSystemInstruction()).toContain('write_file is disabled in production');
   });
 });
