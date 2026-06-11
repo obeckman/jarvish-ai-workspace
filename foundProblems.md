@@ -16,55 +16,6 @@ Senior architect / senior frontend / full-stack review for making this repositor
 
 ## Highest Priority Before Sharing
 
-### P0-01: Backend has no real authentication or authorization boundary
-
-- Files:
-  - `src/backend/WebServer/index.ts`
-  - `src/backend/graphql/resolvers.ts`
-  - `src/backend/graphql/services/session.resolver.service.ts`
-  - `src/backend/graphql/services/fact.resolver.service.ts`
-  - `src/shared/jarvish.constants.ts`
-- Evidence:
-  - `cors()` allows all origins.
-  - GraphQL queries and mutations expose sessions, histories, summaries, and structured facts without user authentication.
-  - `DEFAULT_USER_ID = 'developer'` is used as the effective user identity.
-  - The subscription accepts a Google token from `x-google-token`, but that is only delegated to Google tools, not used to authorize Jarvish data.
-- Risk:
-  - If deployed publicly, any visitor can enumerate or delete sessions/facts and read persisted conversation history.
-  - Hiring reviewers will likely notice this immediately because the project claims memory and private Google integration.
-- Recommendation:
-  - Add an explicit deployment mode: local demo vs hosted demo.
-  - For hosted mode, require an authenticated app user, scope every session/fact/checkpoint query by user id, and reject unauthenticated mutations.
-  - Restrict CORS to configured origins.
-
-### P0-02: GraphiQL is enabled unconditionally
-
-- File: `src/backend/graphql/index.ts`
-- Evidence:
-  - `graphiql: true` is always enabled.
-- Risk:
-  - A deployed CV link exposes an interactive API explorer with all operations discoverable.
-- Recommendation:
-  - Enable GraphiQL only in development with `NODE_ENV !== 'production'`.
-
-### P0-03: Local file read/write tools are too powerful for a deployed agent
-
-- Files:
-  - `src/backend/services/tools/file.service.ts`
-  - `src/backend/agent/tools/tool-executor.ts`
-  - `src/backend/agent/nodes/processing.ts`
-- Evidence:
-  - Agent tool registry exposes `READ_FILE` and `WRITE_FILE`.
-  - Path containment uses `fullPath.startsWith(process.cwd())`.
-  - Shadow tooling can pre-read files based on a model prediction.
-- Risk:
-  - In hosted mode, the model can read or write project files. Even with the containment check, it can access `.env` if present under the project root and can overwrite source/runtime artifacts.
-  - `startsWith` is not a robust path-boundary check; paths such as sibling prefixes can be mishandled in other root layouts.
-- Recommendation:
-  - Disable file write tools in hosted/public demo mode.
-  - Restrict file read tools to a safe allowlist such as `docs/` or selected source files.
-  - Replace `startsWith` with `path.relative(root, fullPath)` boundary logic.
-  - Add tests for traversal, absolute paths, `.env`, and sibling-prefix edge cases.
 
 ### P0-04: Google OAuth access tokens are stored in `localStorage`
 
