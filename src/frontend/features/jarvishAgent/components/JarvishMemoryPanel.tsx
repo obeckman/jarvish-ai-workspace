@@ -3,8 +3,13 @@ import { Trash2, BrainCircuit, RefreshCw } from 'lucide-react';
 import { useJarvishMemory } from '../hooks/useJarvishMemory';
 import styles from '@/frontend/features/jarvishAgent/components/JarvishMemoryPanel.module.scss';
 
-export const JarvishMemoryPanel: React.FC = () => {
-  const { facts, isFetching, fetchFacts, deleteFact } = useJarvishMemory();
+type JarvishMemoryPanelProps = {
+  idToken: string | null;
+  checkAndRefreshIdToken?: () => Promise<string | null>;
+};
+
+export const JarvishMemoryPanel: React.FC<JarvishMemoryPanelProps> = ({ idToken, checkAndRefreshIdToken }) => {
+  const { facts, isFetching, fetchFacts, deleteFact } = useJarvishMemory(idToken, checkAndRefreshIdToken);
 
   return (
     <div className={styles.memoryPanel}>

@@ -1,5 +1,6 @@
 interface GoogleOAuthTokenResponse {
   access_token?: string;
+  id_token?: string;
   expires_in?: number;
   error?: string;
   error_description?: string;
@@ -20,6 +21,11 @@ interface GoogleCredentialResponse {
   credential?: string;
 }
 
+interface GooglePromptMomentNotification {
+  isNotDisplayed(): boolean;
+  isSkippedMoment(): boolean;
+}
+
 interface Window {
   google?: {
     accounts: {
@@ -32,7 +38,8 @@ interface Window {
           callback: (response: GoogleCredentialResponse) => void;
           auto_select?: boolean;
         }): void;
-        prompt(): void;
+        prompt(callback?: (notification: GooglePromptMomentNotification) => void): void;
+        disableAutoSelect(): void;
       };
     };
   };

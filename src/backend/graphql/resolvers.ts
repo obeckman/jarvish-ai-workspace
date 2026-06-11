@@ -17,10 +17,7 @@ import {
   startResearch,
 } from '@/backend/graphql/services/mutation.resolver.service';
 import { streamAgentEvents } from '@/backend/graphql/services/agent-event.service';
-
-type GraphQLContext = {
-  request: Request;
-};
+import type { GraphQLContext } from '@/backend/graphql/context';
 
 /**
  * GraphQL Resolvers
@@ -29,21 +26,21 @@ type GraphQLContext = {
 export const resolvers: Resolvers<GraphQLContext> = {
   Query: {
     status: () => "Backend graphQL is healthy",
-    getSessions: async (_parent, args) => getSessions(args),
-    getSessionHistory: async (_parent, args) => getSessionHistory(args),
-    getSessionSummary: async (_parent, args) => getSessionSummary(args),
-    getStructuredFacts: async () => getStructuredFacts()
+    getSessions: async (_parent, args, context) => getSessions(args, context.auth.userId),
+    getSessionHistory: async (_parent, args, context) => getSessionHistory(args, context.auth.userId),
+    getSessionSummary: async (_parent, args, context) => getSessionSummary(args, context.auth.userId),
+    getStructuredFacts: async (_parent, _args, context) => getStructuredFacts(context.auth.userId)
   },
 
   Session: {
-    summary: async (parent) => getSessionSummaryBySessionId(parent.id)
+    summary: async (parent, _args, context) => getSessionSummaryBySessionId(parent.id, context.auth.userId)
   },
 
   Mutation: {
     startResearch: async (_parent, args) => startResearch(args),
-    createSession: async (_parent, args) => createSession(args),
-    deleteSession: async (_parent, args) => deleteSession(args),
-    deleteStructuredFact: async (_parent, args) => deleteStructuredFact(args)
+    createSession: async (_parent, args, context) => createSession(args, context.auth.userId),
+    deleteSession: async (_parent, args, context) => deleteSession(args, context.auth.userId),
+    deleteStructuredFact: async (_parent, args, context) => deleteStructuredFact(args, context.auth.userId)
   },
 
   Subscription: {
@@ -56,6 +53,7 @@ export const resolvers: Resolvers<GraphQLContext> = {
           attachments,
           sessionId,
           googleToken,
+          userId: context.auth.userId,
         });
       },
       resolve: (payload: { agentEvents: AgentEvent }) => payload.agentEvents

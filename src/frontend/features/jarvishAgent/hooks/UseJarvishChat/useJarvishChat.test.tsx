@@ -37,7 +37,7 @@ describe('useJarvishChat', () => {
         },
       }),
     });
-    const { result } = renderHook(() => useJarvishChat('session-1', null));
+    const { result } = renderHook(() => useJarvishChat('session-1', 'id-token', null));
 
     await act(async () => {
       await result.current.loadSessionHistory('session-1');
@@ -55,7 +55,7 @@ describe('useJarvishChat', () => {
       ok: true,
       json: async () => ({ errors: [{ message: 'history unavailable' }] }),
     });
-    const { result } = renderHook(() => useJarvishChat('session-1', null));
+    const { result } = renderHook(() => useJarvishChat('session-1', 'id-token', null));
 
     await act(async () => {
       await result.current.loadSessionHistory('session-1');
@@ -75,7 +75,7 @@ describe('useJarvishChat', () => {
         sseLine({ type: 'MESSAGE', content: JSON.stringify([{ type: BLOCK_TYPES.TEXT, content: 'Done' }]), stage: null, metadata: { confidence: 95 } }),
       ]),
     });
-    const { result } = renderHook(() => useJarvishChat('session-1', 'old-token', checkAndRefreshToken));
+    const { result } = renderHook(() => useJarvishChat('session-1', 'id-token', 'old-token', checkAndRefreshToken));
 
     await act(async () => {
       result.current.setInput('check calendar');
@@ -111,7 +111,7 @@ describe('useJarvishChat', () => {
       ok: true,
       body: createTextStream(['data: {bad-json}\n']),
     });
-    const { result } = renderHook(() => useJarvishChat('session-1', null));
+    const { result } = renderHook(() => useJarvishChat('session-1', 'id-token', null));
 
     await act(async () => {
       result.current.setInput('broken stream');
@@ -127,7 +127,7 @@ describe('useJarvishChat', () => {
   });
 
   it('rejects oversized attachments before reading them', () => {
-    const { result } = renderHook(() => useJarvishChat('session-1', null));
+    const { result } = renderHook(() => useJarvishChat('session-1', 'id-token', null));
     const file = new File(['too large'], 'large.pdf', { type: 'application/pdf' });
     Object.defineProperty(file, 'size', { value: 11 * 1024 * 1024 });
 

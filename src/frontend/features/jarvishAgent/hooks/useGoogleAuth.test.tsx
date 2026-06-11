@@ -21,19 +21,33 @@ describe('useGoogleAuth', () => {
 
   it('loads persisted token state and logs out cleanly', async () => {
     localStorage.setItem(STORAGE_KEYS.GOOGLE_TOKEN, 'token-1');
+    localStorage.setItem(STORAGE_KEYS.GOOGLE_ID_TOKEN, createJwt(Date.now() + 10 * 60_000));
     localStorage.setItem('google_token_expires_at', String(Date.now() + 60_000));
     const { useGoogleAuth } = await import('@/frontend/features/jarvishAgent/hooks/useGoogleAuth');
     const { result } = renderHook(() => useGoogleAuth());
 
     expect(result.current.googleToken).toBe('token-1');
+    expect(result.current.googleIdToken).toBeTruthy();
 
     act(() => {
       result.current.logout();
     });
 
     expect(result.current.googleToken).toBeNull();
+    expect(result.current.googleIdToken).toBeNull();
     expect(localStorage.getItem(STORAGE_KEYS.GOOGLE_TOKEN)).toBeNull();
+    expect(localStorage.getItem(STORAGE_KEYS.GOOGLE_ID_TOKEN)).toBeNull();
+    expect(localStorage.getItem(STORAGE_KEYS.GOOGLE_ID_TOKEN_EXPIRES_AT)).toBeNull();
     expect(localStorage.getItem('google_token_expires_at')).toBeNull();
+  });
+
+  it('clears expired persisted Google ID tokens on load', async () => {
+    localStorage.setItem(STORAGE_KEYS.GOOGLE_ID_TOKEN, createJwt(Date.now() - 60_000));
+    const { useGoogleAuth } = await import('@/frontend/features/jarvishAgent/hooks/useGoogleAuth');
+    const { result } = renderHook(() => useGoogleAuth());
+
+    expect(result.current.googleIdToken).toBeNull();
+    expect(localStorage.getItem(STORAGE_KEYS.GOOGLE_ID_TOKEN)).toBeNull();
   });
 
   it('rejects login when Google Identity Services are unavailable', async () => {
@@ -60,3 +74,9 @@ describe('useGoogleAuth', () => {
     vi.useRealTimers();
   });
 });
+
+function createJwt(expiresAtMs: number): string {
+  const header = btoa(JSON.stringify({ alg: 'none' }));
+  const payload = btoa(JSON.stringify({ exp: Math.floor(expiresAtMs / 1000) }));
+  return `${header}.${payload}.signature`;
+}

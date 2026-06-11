@@ -36,6 +36,7 @@
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.45.2",
     "express": "^5.2.1",
+    "google-auth-library": "^10.7.0",
     "googleapis": "^171.4.0",
     "graphql": "^16.14.2",
     "graphql-yoga": "^5.21.2",

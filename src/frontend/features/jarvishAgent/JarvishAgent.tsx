@@ -30,11 +30,13 @@ export const JarvishAgent: React.FC = () => {
   // Domain Hooks
   const { 
     googleToken, 
+    googleIdToken,
     loginWithGoogle, 
     logout, 
     authError, 
     setAuthError,
-    checkAndRefreshToken
+    checkAndRefreshToken,
+    checkAndRefreshIdToken
   } = useGoogleAuth();
 
   const {
@@ -48,7 +50,7 @@ export const JarvishAgent: React.FC = () => {
     deleteSession,
     triggerSummary,
     isPolling
-  } = useJarvishSessions(searchTerm);
+  } = useJarvishSessions(searchTerm, googleIdToken, checkAndRefreshIdToken);
 
   const {
     messages,
@@ -70,7 +72,7 @@ export const JarvishAgent: React.FC = () => {
     removeAttachment,
     clearMessages,
     loadSessionHistory
-  } = useJarvishChat(currentSessionId, googleToken, checkAndRefreshToken);
+  } = useJarvishChat(currentSessionId, googleIdToken, googleToken, checkAndRefreshToken, checkAndRefreshIdToken);
 
   // Sync Error Messages
   useEffect(() => {
@@ -134,8 +136,18 @@ export const JarvishAgent: React.FC = () => {
   const handleSendMessage = useCallback(async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!input.trim()) return;
+    if (!googleIdToken) {
+      setErrorMessage('Sign in with Google to use Jarvish.');
+      return;
+    }
 
     let sessionId = currentSessionId;
+    if (sessionId && !sessions.some(session => session.id === sessionId)) {
+      sessionId = null;
+      setCurrentSessionId(null);
+      clearMessages();
+    }
+
     if (!sessionId) {
       // Auto-create session if none active
       const title = input.substring(0, 30) + (input.length > 30 ? '...' : '');
@@ -150,7 +162,7 @@ export const JarvishAgent: React.FC = () => {
       setViewMode('chat');
       sendMessage(sessionId);
     }
-  }, [input, currentSessionId, createNewSession, setCurrentSessionId, sendMessage]);
+  }, [clearMessages, createNewSession, currentSessionId, googleIdToken, input, sendMessage, sessions, setCurrentSessionId, setErrorMessage]);
 
   const handleResetUI = useCallback(() => {
     clearMessages();
@@ -202,7 +214,7 @@ export const JarvishAgent: React.FC = () => {
 
         {viewMode === 'memory' ? (
           
-            <JarvishMemoryPanel />
+            <JarvishMemoryPanel idToken={googleIdToken} checkAndRefreshIdToken={checkAndRefreshIdToken} />
           
         ) : (
           <>

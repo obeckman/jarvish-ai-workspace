@@ -13,11 +13,12 @@ import {
   StreamAgentEventsInputSchema,
 } from "@/backend/graphql/schemas/resolver.schema";
 import {
+  ensureSessionForUser,
   getCheckpointer,
   touchSession,
 } from "@/backend/graphql/services/session.resolver.service";
 import { logger } from "@/backend/utils/logger";
-import { DEFAULT_USER_ID, EVENT_TYPES, STAGES } from "@/shared/jarvish.constants.ts";
+import { EVENT_TYPES, STAGES } from "@/shared/jarvish.constants.ts";
 import { HumanMessage, type MessageContent, type ToolCall } from "@langchain/core/messages";
 
 type AgentEventPayload = {
@@ -26,6 +27,7 @@ type AgentEventPayload = {
 
 type StreamAgentEventsInput = SubscriptionAgentEventsArgs & {
   googleToken?: string | null;
+  userId: string;
 };
 
 type GraphStreamMode = "updates";
@@ -52,6 +54,7 @@ export async function* streamAgentEvents({
   attachments = [],
   sessionId,
   googleToken,
+  userId,
 }: StreamAgentEventsInput): AsyncGenerator<AgentEventPayload> {
   const parsed = StreamAgentEventsInputSchema.parse({
     query,
@@ -62,6 +65,22 @@ export async function* streamAgentEvents({
   });
   const graph = createAgentGraph(getCheckpointer());
 
+  if (parsed.sessionId) {
+    const hasAccess = await ensureSessionForUser(parsed.sessionId, userId);
+    if (!hasAccess) {
+      logger.warn({ sessionId: parsed.sessionId, userId }, "Rejected agent stream for non-owned session");
+      yield {
+        agentEvents: {
+          type: mapDomainEventTypeToGraphQL(EVENT_TYPES.ERROR),
+          content: 'Session not found',
+          stage: null,
+          metadata: { confidence: 0, validationReason: 'Session not found' },
+        },
+      };
+      return;
+    }
+  }
+
   const initialState = {
     messages: [
       ...mapInputToLangChainMessages(parsed.history),
@@ -70,7 +89,7 @@ export async function* streamAgentEvents({
     attachments: parsed.attachments,
     googleToken: parsed.googleToken,
     sessionId: parsed.sessionId,
-    userId: DEFAULT_USER_ID,
+    userId,
     metadata: { stage: STAGES.PREPARE, status: "Initializing..." },
   };
 
@@ -78,7 +97,7 @@ export async function* streamAgentEvents({
 
   if (parsed.sessionId) {
     try {
-      await touchSession(parsed.sessionId);
+      await touchSession(parsed.sessionId, userId);
     } catch (error) {
       logger.error({ sessionId: parsed.sessionId, error }, "Failed to update session updatedAt");
     }

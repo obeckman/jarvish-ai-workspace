@@ -1,5 +1,13 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Server } from 'node:http';
+
+const mocks = vi.hoisted(() => ({
+  authenticateRequest: vi.fn(),
+}));
+
+vi.mock('@/backend/auth/app-auth', () => ({
+  authenticateRequest: mocks.authenticateRequest,
+}));
 
 import { runWebServer } from '@/backend/WebServer';
 
@@ -21,6 +29,7 @@ describe('runWebServer', () => {
       });
     });
     server = null;
+    mocks.authenticateRequest.mockReset();
   });
 
   it('serves health and config endpoints', async () => {
@@ -34,12 +43,38 @@ describe('runWebServer', () => {
       .resolves.toEqual({ googleClientId: 'google-client' });
   });
 
-  it('mounts the GraphQL endpoint', async () => {
+  it('rejects unauthenticated GraphQL requests', async () => {
+    const { GraphQLError } = await import('graphql');
+    mocks.authenticateRequest.mockRejectedValue(new GraphQLError('Missing Authorization bearer token', {
+      extensions: { code: 'UNAUTHENTICATED' },
+    }));
+
     const app = runWebServer();
     const baseUrl = await listen(app);
     const response = await fetch(`${baseUrl}/graphql`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: '{ status }' }),
+    });
+
+    const body = await response.json();
+    expect(body.errors?.[0]).toMatchObject({
+      message: 'Missing Authorization bearer token',
+      extensions: { code: 'UNAUTHENTICATED' },
+    });
+  });
+
+  it('mounts the authenticated GraphQL endpoint', async () => {
+    mocks.authenticateRequest.mockResolvedValue({ userId: 'user-1' });
+
+    const app = runWebServer();
+    const baseUrl = await listen(app);
+    const response = await fetch(`${baseUrl}/graphql`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer id-token',
+      },
       body: JSON.stringify({ query: '{ status }' }),
     });
 

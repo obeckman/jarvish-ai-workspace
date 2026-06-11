@@ -36,11 +36,11 @@ describe('useJarvishMemory', () => {
       json: async () => ({ data: { getStructuredFacts: [fact] } }),
     });
 
-    const { result } = renderHook(() => useJarvishMemory());
+    const { result } = renderHook(() => useJarvishMemory('id-token'));
 
-    await waitFor(() => expect(result.current.isFetching).toBe(false));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(result.current.facts).toEqual([fact]));
 
-    expect(result.current.facts).toEqual([fact]);
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(JSON.parse(fetchMock.mock.calls[0][1].body).query).toBeDefined();
   });
@@ -51,7 +51,7 @@ describe('useJarvishMemory', () => {
       json: async () => ({ errors: [{ message: 'facts unavailable' }] }),
     });
 
-    const { result } = renderHook(() => useJarvishMemory());
+    const { result } = renderHook(() => useJarvishMemory('id-token'));
 
     await waitFor(() => expect(result.current.isFetching).toBe(false));
 
@@ -73,7 +73,7 @@ describe('useJarvishMemory', () => {
         json: async () => ({ data: { deleteStructuredFact: true } }),
       });
 
-    const { result } = renderHook(() => useJarvishMemory());
+    const { result } = renderHook(() => useJarvishMemory('id-token'));
     await waitFor(() => expect(result.current.facts).toHaveLength(1));
 
     await act(async () => {

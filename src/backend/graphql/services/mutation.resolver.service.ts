@@ -1,5 +1,5 @@
 import { db } from "@/backend/db/index";
-import { sessions } from "@/backend/db/schema";
+import { checkpoints, sessions, writes } from "@/backend/db/schema";
 import {
   MutationCreateSessionArgs,
   MutationDeleteSessionArgs,
@@ -13,30 +13,66 @@ import {
   StartResearchArgsSchema,
 } from "@/backend/graphql/schemas/resolver.schema";
 import { generateTitle } from "@/backend/services/titling.service";
-import { DEFAULT_USER_ID } from "@/shared/jarvish.constants";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
+import { GraphQLError } from "graphql";
 
 export async function startResearch(_args: MutationStartResearchArgs): Promise<string> {
   StartResearchArgsSchema.parse(_args);
   return "Research task acknowledged";
 }
 
-export async function createSession(args: MutationCreateSessionArgs): Promise<Session> {
+export async function createSession(args: MutationCreateSessionArgs, userId: string): Promise<Session> {
   const { id, title, initialQuery } = CreateSessionArgsSchema.parse(args);
   const finalTitle = initialQuery ? await generateTitle(initialQuery) : title || "New Research";
+  const [existingSession] = await db
+    .select()
+    .from(sessions)
+    .where(eq(sessions.id, id))
+    .limit(1);
+
+  if (existingSession) {
+    if (existingSession.userId !== userId) {
+      throw new GraphQLError("Session id is already in use", {
+        extensions: { code: "FORBIDDEN" },
+      });
+    }
+
+    const [updatedSession] = await db
+      .update(sessions)
+      .set({
+        title: finalTitle,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(sessions.id, id), eq(sessions.userId, userId)))
+      .returning();
+
+    return mapSessionRow(updatedSession);
+  }
 
   await db.insert(sessions).values({
     id,
     title: finalTitle,
-    userId: DEFAULT_USER_ID,
+    userId,
   });
 
-  const [newSession] = await db.select().from(sessions).where(eq(sessions.id, id));
+  const [newSession] = await db.select().from(sessions).where(and(eq(sessions.id, id), eq(sessions.userId, userId)));
   return mapSessionRow(newSession);
 }
 
-export async function deleteSession({ id }: MutationDeleteSessionArgs): Promise<boolean> {
+export async function deleteSession({ id }: MutationDeleteSessionArgs, userId: string): Promise<boolean> {
   const parsed = DeleteByIdArgsSchema.parse({ id });
+  const [ownedSession] = await db
+    .select({ id: sessions.id })
+    .from(sessions)
+    .where(and(eq(sessions.id, parsed.id), eq(sessions.userId, userId)))
+    .limit(1);
+
+  if (!ownedSession) {
+    return false;
+  }
+
   await db.delete(sessions).where(eq(sessions.id, parsed.id));
+  await db.delete(checkpoints).where(eq(checkpoints.threadId, parsed.id));
+  await db.delete(writes).where(eq(writes.threadId, parsed.id));
   return true;
 }

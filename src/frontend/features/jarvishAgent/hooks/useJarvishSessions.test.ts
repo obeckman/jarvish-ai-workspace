@@ -39,11 +39,11 @@ describe('useJarvishSessions', () => {
       json: async () => ({ data: { getSessions: [session] } }),
     });
 
-    const { result } = renderHook(() => useJarvishSessions('calendar'));
+    const { result } = renderHook(() => useJarvishSessions('calendar', 'id-token'));
 
-    await waitFor(() => expect(result.current.isFetchingSessions).toBe(false));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(result.current.sessions).toEqual([session]));
 
-    expect(result.current.sessions).toEqual([session]);
     const body = JSON.parse(fetchMock.mock.calls[0][1].body);
     expect(body.variables).toMatchObject({
       limit: 10,
@@ -58,7 +58,7 @@ describe('useJarvishSessions', () => {
       json: async () => ({ data: { getSessions: [] } }),
     });
 
-    const { result } = renderHook(() => useJarvishSessions(''));
+    const { result } = renderHook(() => useJarvishSessions('', 'id-token'));
     await waitFor(() => expect(result.current.isFetchingSessions).toBe(false));
 
     act(() => {
@@ -85,7 +85,7 @@ describe('useJarvishSessions', () => {
       });
     vi.spyOn(Date, 'now').mockReturnValue(1781091716314);
 
-    const { result } = renderHook(() => useJarvishSessions(''));
+    const { result } = renderHook(() => useJarvishSessions('', 'id-token'));
     await waitFor(() => expect(result.current.isFetchingSessions).toBe(false));
 
     await act(async () => {
@@ -101,6 +101,19 @@ describe('useJarvishSessions', () => {
     });
   });
 
+  it('clears a persisted session id that is not visible to the authenticated user', async () => {
+    localStorage.setItem(STORAGE_KEYS.SESSION_ID, 'legacy-session');
+    fetchMock.mockResolvedValueOnce({
+      json: async () => ({ data: { getSessions: [session] } }),
+    });
+
+    const { result } = renderHook(() => useJarvishSessions('', 'id-token'));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(result.current.currentSessionId).toBeNull());
+    expect(localStorage.getItem(STORAGE_KEYS.SESSION_ID)).toBeNull();
+  });
+
   it('optimistically deletes sessions and clears current selection', async () => {
     fetchMock
       .mockResolvedValueOnce({
@@ -111,7 +124,7 @@ describe('useJarvishSessions', () => {
       });
     localStorage.setItem(STORAGE_KEYS.SESSION_ID, 'session-1');
 
-    const { result } = renderHook(() => useJarvishSessions(''));
+    const { result } = renderHook(() => useJarvishSessions('', 'id-token'));
     await waitFor(() => expect(result.current.sessions).toHaveLength(1));
 
     await act(async () => {

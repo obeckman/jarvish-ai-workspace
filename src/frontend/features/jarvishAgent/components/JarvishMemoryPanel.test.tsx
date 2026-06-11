@@ -23,7 +23,7 @@ describe('JarvishMemoryPanel', () => {
       deleteFact: vi.fn(),
     });
 
-    render(<JarvishMemoryPanel />);
+    render(<JarvishMemoryPanel idToken="id-token" />);
 
     expect(screen.getByText('Jarvish Memory')).toBeInTheDocument();
     expect(screen.getByText("Jarvish hasn't learned any specific facts about you yet.")).toBeInTheDocument();
@@ -46,7 +46,7 @@ describe('JarvishMemoryPanel', () => {
       deleteFact,
     });
 
-    render(<JarvishMemoryPanel />);
+    render(<JarvishMemoryPanel idToken="id-token" />);
     expect(screen.getByText('PREFERENCE')).toBeInTheDocument();
     expect(screen.getByText('User prefers concise answers')).toBeInTheDocument();
 

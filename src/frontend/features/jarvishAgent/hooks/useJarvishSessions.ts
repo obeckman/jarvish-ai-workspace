@@ -7,9 +7,14 @@ import {
   GetSessionsQuery,
   GetSessionsQueryVariables,
 } from '@/frontend/features/jarvishAgent/graphql/__generated__/graphql'
+import { getGraphQLHeaders } from '@/frontend/features/jarvishAgent/utils/authHeaders';
 
 
-export const useJarvishSessions = (searchTerm: string) => {
+export const useJarvishSessions = (
+  searchTerm: string,
+  idToken: string | null,
+  checkAndRefreshIdToken?: () => Promise<string | null>,
+) => {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(localStorage.getItem(STORAGE_KEYS.SESSION_ID));
   const [hasMore, setHasMore] = useState(true);
@@ -18,8 +23,22 @@ export const useJarvishSessions = (searchTerm: string) => {
 
   const isFetchingRef = useRef(false);
   const offsetRef = useRef(0);
+  const currentSessionIdRef = useRef(currentSessionId);
+
+  useEffect(() => {
+    currentSessionIdRef.current = currentSessionId;
+  }, [currentSessionId]);
 
   const fetchSessions = useCallback(async (reset = false) => {
+    const activeIdToken = await getActiveIdToken(idToken, checkAndRefreshIdToken);
+    if (!activeIdToken) {
+      setSessions([]);
+      setHasMore(false);
+      setCurrentSessionId(null);
+      localStorage.removeItem(STORAGE_KEYS.SESSION_ID);
+      return;
+    }
+
     if (isFetchingRef.current) return;
     isFetchingRef.current = true;
     setIsFetchingSessions(true);
@@ -30,7 +49,7 @@ export const useJarvishSessions = (searchTerm: string) => {
     try {
       const res = await fetch(API_ENDPOINTS.GRAPHQL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getGraphQLHeaders(activeIdToken),
         body: JSON.stringify({
           query: GQL_QUERIES.GET_SESSIONS,
           variables: {
@@ -42,8 +61,15 @@ export const useJarvishSessions = (searchTerm: string) => {
       });
       const result: { data: GetSessionsQuery } = await res.json();
       if (result.data.getSessions) {
-        const fetched = result.data.getSessions;
-        setSessions(prev => reset ? (fetched as Session[]) : [...prev, ...(fetched as Session[])]);
+        const fetched = result.data.getSessions as Session[];
+        setSessions(prev => reset ? fetched : [...prev, ...fetched]);
+
+        const selectedSessionId = currentSessionIdRef.current;
+        if (reset && !searchTerm && selectedSessionId && !fetched.some((session) => session.id === selectedSessionId)) {
+          setCurrentSessionId(null);
+          currentSessionIdRef.current = null;
+          localStorage.removeItem(STORAGE_KEYS.SESSION_ID);
+        }
         
         const nextOffset = newOffset + fetched.length;
         offsetRef.current = nextOffset;
@@ -56,13 +82,16 @@ export const useJarvishSessions = (searchTerm: string) => {
       isFetchingRef.current = false;
       setIsFetchingSessions(false);
     }
-  }, [searchTerm]);
+  }, [checkAndRefreshIdToken, idToken, searchTerm]);
 
   const fetchSummary = useCallback(async (sessionId: string) => {
+    const activeIdToken = await getActiveIdToken(idToken, checkAndRefreshIdToken);
+    if (!activeIdToken) return null;
+
     try {
       const res = await fetch(API_ENDPOINTS.GRAPHQL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getGraphQLHeaders(activeIdToken),
         body: JSON.stringify({
           query: GQL_QUERIES.GET_SESSION_SUMMARY,
           variables: { sessionId }
@@ -91,9 +120,12 @@ export const useJarvishSessions = (searchTerm: string) => {
       console.error("Fetching summary failed", e);
     }
     return null;
-  }, []);
+  }, [checkAndRefreshIdToken, idToken]);
 
   const triggerSummary = useCallback(async (sessionId: string, _e?: React.MouseEvent) => {
+    const activeIdToken = await getActiveIdToken(idToken, checkAndRefreshIdToken);
+    if (!activeIdToken) return;
+
     setIsPolling(true);
     const maxRetries = 5;
     let retries = 0;
@@ -103,7 +135,7 @@ export const useJarvishSessions = (searchTerm: string) => {
       try {
         await fetch(API_ENDPOINTS.GRAPHQL, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getGraphQLHeaders(activeIdToken),
           body: JSON.stringify({
             query: GQL_QUERIES.GET_SESSION_SUMMARY,
             variables: { sessionId }
@@ -125,9 +157,12 @@ export const useJarvishSessions = (searchTerm: string) => {
     }
     setIsPolling(false);
     console.error(`Failed to get session summary for ${sessionId} after ${maxRetries} retries.`);
-  }, [fetchSummary]);
+  }, [checkAndRefreshIdToken, fetchSummary, idToken]);
 
   const createNewSession = useCallback(async (initialQuery?: string) => {
+    const activeIdToken = await getActiveIdToken(idToken, checkAndRefreshIdToken);
+    if (!activeIdToken) return null;
+
     const id = `session-${Date.now()}`;
     const title = initialQuery
       ? (initialQuery.substring(0, 30) + (initialQuery.length > 30 ? '...' : ''))
@@ -136,7 +171,7 @@ export const useJarvishSessions = (searchTerm: string) => {
     try {
       const res = await fetch(API_ENDPOINTS.GRAPHQL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getGraphQLHeaders(activeIdToken),
         body: JSON.stringify({
           query: GQL_MUTATIONS.CREATE_SESSION,
           variables: { id, title, initialQuery }
@@ -152,9 +187,12 @@ export const useJarvishSessions = (searchTerm: string) => {
       console.error('Failed to create session:', e);
     }
     return null;
-  }, []);
+  }, [checkAndRefreshIdToken, idToken]);
 
   const deleteSession = useCallback(async (id: string, _e?: React.MouseEvent) => {
+    const activeIdToken = await getActiveIdToken(idToken, checkAndRefreshIdToken);
+    if (!activeIdToken) return;
+
     if (!confirm(UI_STRINGS.DELETE_CONFIRMATION)) return;
     const previousSessions = sessions;
     const previousCurrentSessionId = currentSessionId;
@@ -168,7 +206,7 @@ export const useJarvishSessions = (searchTerm: string) => {
     try {
       await fetch(API_ENDPOINTS.GRAPHQL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getGraphQLHeaders(activeIdToken),
         body: JSON.stringify({
           query: GQL_MUTATIONS.DELETE_SESSION,
           variables: { id }
@@ -185,10 +223,11 @@ export const useJarvishSessions = (searchTerm: string) => {
       }
       alert(`Failed to delete session: ${e instanceof Error ? e.message : 'Unknown error'}`);
     }
-  }, [currentSessionId, sessions]);
+  }, [checkAndRefreshIdToken, currentSessionId, idToken, sessions]);
 
   const updateCurrentSession = useCallback((id: string | null) => {
     setCurrentSessionId(id);
+    currentSessionIdRef.current = id;
     if (id) {
       localStorage.setItem(STORAGE_KEYS.SESSION_ID, id);
     } else {
@@ -213,3 +252,14 @@ export const useJarvishSessions = (searchTerm: string) => {
     isPolling
   };
 };
+
+async function getActiveIdToken(
+  idToken: string | null,
+  checkAndRefreshIdToken?: () => Promise<string | null>,
+): Promise<string | null> {
+  if (checkAndRefreshIdToken) {
+    return checkAndRefreshIdToken();
+  }
+
+  return idToken;
+}

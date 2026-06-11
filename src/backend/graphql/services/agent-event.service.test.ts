@@ -7,6 +7,7 @@ import { STAGES } from '@/shared/jarvish.constants';
 const mocks = vi.hoisted(() => ({
   stream: vi.fn(),
   touchSession: vi.fn(),
+  ensureSessionForUser: vi.fn(),
 }));
 
 vi.mock('@/backend/agent/graph', () => ({
@@ -18,6 +19,7 @@ vi.mock('@/backend/agent/graph', () => ({
 vi.mock('@/backend/graphql/services/session.resolver.service', () => ({
   getCheckpointer: () => ({ mocked: true }),
   touchSession: mocks.touchSession,
+  ensureSessionForUser: mocks.ensureSessionForUser,
 }));
 
 async function collectEvents(generator: AsyncGenerator<unknown>) {
@@ -34,6 +36,8 @@ describe('Jarvish agent event stream service', () => {
   beforeEach(() => {
     mocks.stream.mockReset();
     mocks.touchSession.mockReset();
+    mocks.ensureSessionForUser.mockReset();
+    mocks.ensureSessionForUser.mockResolvedValue(true);
   });
 
   it('streams status, user-facing messages, and reasoning updates from graph chunks', async () => {
@@ -65,9 +69,10 @@ describe('Jarvish agent event stream service', () => {
       history: [{ role: 'user', content: 'hello' }],
       attachments: [],
       sessionId: 'session-1',
+      userId: 'user-1',
     }));
 
-    expect(mocks.touchSession).toHaveBeenCalledWith('session-1');
+    expect(mocks.touchSession).toHaveBeenCalledWith('session-1', 'user-1');
     expect(events).toEqual([
       {
         agentEvents: {
@@ -116,6 +121,7 @@ describe('Jarvish agent event stream service', () => {
       history: [],
       attachments: [],
       sessionId: null,
+      userId: 'user-1',
     }))).resolves.toEqual([]);
   });
 
@@ -129,6 +135,7 @@ describe('Jarvish agent event stream service', () => {
       history: [],
       attachments: [],
       sessionId: null,
+      userId: 'user-1',
     }))).resolves.toEqual([
       {
         agentEvents: {

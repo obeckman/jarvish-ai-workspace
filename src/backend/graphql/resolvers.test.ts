@@ -39,6 +39,15 @@ vi.mock('@/backend/graphql/services/agent-event.service', () => ({
 }));
 
 describe('GraphQL resolvers', () => {
+  const context = {
+    request: {
+      headers: new Headers(),
+    },
+    auth: {
+      userId: 'user-1',
+    },
+  };
+
   beforeEach(() => {
     Object.values(mocks).forEach((mock) => mock.mockReset());
   });
@@ -51,12 +60,12 @@ describe('GraphQL resolvers', () => {
     mocks.createSession.mockResolvedValue({ id: 'session-1' });
 
     expect(query.status({} as never, {} as never, {} as never, {} as never)).toBe('Backend graphQL is healthy');
-    await expect(query.getSessions({} as never, { limit: 10 } as never, {} as never, {} as never)).resolves.toEqual(['session']);
-    await expect(mutation.createSession({} as never, { id: 'session-1', title: 'Draft' } as never, {} as never, {} as never))
+    await expect(query.getSessions({} as never, { limit: 10 } as never, context as never, {} as never)).resolves.toEqual(['session']);
+    await expect(mutation.createSession({} as never, { id: 'session-1', title: 'Draft' } as never, context as never, {} as never))
       .resolves.toEqual({ id: 'session-1' });
 
-    expect(mocks.getSessions).toHaveBeenCalledWith({ limit: 10 });
-    expect(mocks.createSession).toHaveBeenCalledWith({ id: 'session-1', title: 'Draft' });
+    expect(mocks.getSessions).toHaveBeenCalledWith({ limit: 10 }, 'user-1');
+    expect(mocks.createSession).toHaveBeenCalledWith({ id: 'session-1', title: 'Draft' }, 'user-1');
   });
 
   it('resolves session summaries from parent sessions', async () => {
@@ -64,10 +73,10 @@ describe('GraphQL resolvers', () => {
     const session = resolvers.Session as Record<string, (...args: never[]) => unknown>;
     mocks.getSessionSummaryBySessionId.mockResolvedValue({ sessionId: 'session-1' });
 
-    await expect(session.summary({ id: 'session-1' } as never, {} as never, {} as never, {} as never))
+    await expect(session.summary({ id: 'session-1' } as never, {} as never, context as never, {} as never))
       .resolves.toEqual({ sessionId: 'session-1' });
 
-    expect(mocks.getSessionSummaryBySessionId).toHaveBeenCalledWith('session-1');
+    expect(mocks.getSessionSummaryBySessionId).toHaveBeenCalledWith('session-1', 'user-1');
   });
 
   it('passes Google token header into subscription stream service', async () => {
@@ -88,6 +97,9 @@ describe('GraphQL resolvers', () => {
         request: {
           headers: new Headers({ 'x-google-token': 'token-1' }),
         },
+        auth: {
+          userId: 'user-1',
+        },
       } as never,
       {} as never,
     ) as AsyncGenerator<unknown>;
@@ -99,6 +111,7 @@ describe('GraphQL resolvers', () => {
       attachments: [],
       sessionId: 'session-1',
       googleToken: 'token-1',
+      userId: 'user-1',
     });
 
     expect(agentEvents.resolve(payload)).toEqual(payload.agentEvents);

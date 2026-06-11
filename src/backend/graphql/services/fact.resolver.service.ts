@@ -7,28 +7,24 @@ import {
 import { mapStructuredFactRow } from "@/backend/graphql/mappers/session.mapper";
 import { DeleteByIdArgsSchema } from "@/backend/graphql/schemas/resolver.schema";
 import { forgetMemory } from "@/backend/services/memory/memory.service";
-import { DEFAULT_USER_ID } from "@/shared/jarvish.constants";
 import { logger } from "@/backend/utils/logger";
-import { and, desc, eq, isNull, or } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 
-export async function getStructuredFacts(): Promise<StructuredFact[]> {
+export async function getStructuredFacts(userId: string): Promise<StructuredFact[]> {
   const results = await db
     .select()
     .from(structuredFacts)
-    .where(or(eq(structuredFacts.userId, DEFAULT_USER_ID), isNull(structuredFacts.userId)))
+    .where(eq(structuredFacts.userId, userId))
     .orderBy(desc(structuredFacts.createdAt));
   return results.map(mapStructuredFactRow);
 }
 
-export async function deleteStructuredFact({ id }: MutationDeleteStructuredFactArgs): Promise<boolean> {
+export async function deleteStructuredFact({ id }: MutationDeleteStructuredFactArgs, userId: string): Promise<boolean> {
   const parsed = DeleteByIdArgsSchema.parse({ id });
   const [fact] = await db
     .select()
     .from(structuredFacts)
-    .where(and(
-      eq(structuredFacts.id, parsed.id),
-      or(eq(structuredFacts.userId, DEFAULT_USER_ID), isNull(structuredFacts.userId)),
-    ));
+    .where(and(eq(structuredFacts.id, parsed.id), eq(structuredFacts.userId, userId)));
 
   if (!fact) {
     return false;

@@ -1,11 +1,12 @@
 import { createSchema } from 'graphql-yoga';
+import type { GraphQLContext } from '@/backend/graphql/context';
 import { resolvers } from '@/backend/graphql/resolvers';
 
 /**
  * GraphQL Schema Definition
  * Defines the contract between the frontend and the research agent.
  */
-export const schema = createSchema({
+export const schema = createSchema<GraphQLContext>({
   resolvers,
   typeDefs: /* GraphQL */ `
     type Query {

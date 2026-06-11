@@ -32,6 +32,7 @@ import {
   GetSessionHistoryQuery,
   GetSessionHistoryQueryVariables
 } from '@/frontend/features/jarvishAgent/graphql/__generated__/graphql';
+import { getGraphQLHeaders } from '@/frontend/features/jarvishAgent/utils/authHeaders';
 
 
 import { chatReducer } from './state';
@@ -53,8 +54,10 @@ function getGraphQLErrorMessage(errors: GraphQLResponse<unknown>["errors"]): str
 
 export const useJarvishChat = (
   currentSessionId: string | null,
+  idToken: string | null,
   googleToken: string | null,
-  checkAndRefreshToken?: () => Promise<string | null>
+  checkAndRefreshToken?: () => Promise<string | null>,
+  checkAndRefreshIdToken?: () => Promise<string | null>
 ) => {
   const [state, dispatch] = useReducer(chatReducer, INITIAL_CHAT_STATE);
 
@@ -68,11 +71,17 @@ export const useJarvishChat = (
   }, [state]);
 
   const loadSessionHistory = useCallback(async (sessionId: string) => {
+    const activeIdToken = checkAndRefreshIdToken ? await checkAndRefreshIdToken() : idToken;
+    if (!activeIdToken) {
+      dispatch({ type: STATE_ACTIONS.SET_ERROR_MESSAGE, payload: "Sign in to load conversation history." });
+      return;
+    }
+
     try {
       dispatch({ type: STATE_ACTIONS.SET_STATUS, payload: AGENT_STATUS.THINKING });
       const res = await fetch(API_ENDPOINTS.GRAPHQL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getGraphQLHeaders(activeIdToken),
         body: JSON.stringify({
           query: GQL_QUERIES.GET_SESSION_HISTORY,
           variables: { sessionId } as GetSessionHistoryQueryVariables
@@ -102,7 +111,7 @@ export const useJarvishChat = (
     } finally {
       dispatch({ type: STATE_ACTIONS.SET_STATUS, payload: AGENT_STATUS.IDLE });
     }
-  }, []);
+  }, [checkAndRefreshIdToken, idToken]);
 
   const cancelRequest = useCallback(() => {
     if (readerRef.current) {
@@ -259,19 +268,23 @@ export const useJarvishChat = (
   }, []);
 
   const getSendUserMessageHeaders = useCallback(async (): Promise<HeadersInit> => {
+    const activeIdToken = checkAndRefreshIdToken ? await checkAndRefreshIdToken() : idToken;
+    if (!activeIdToken) {
+      throw new Error('Sign in to send messages.');
+    }
+
     let activeToken = googleToken;
     if (checkAndRefreshToken) {
       const refreshed = await checkAndRefreshToken();
       if (refreshed) activeToken = refreshed;
     }
 
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',// Tells the server we are sending JSON data
+    const headers = getGraphQLHeaders(activeIdToken, {
       'Accept': 'text/event-stream' // Keep the connection open and stream data to the client
-    };
+    }) as Record<string, string>;
     if (activeToken) headers['x-google-token'] = activeToken;// Safely attaches an authentication token if the user is logged in
     return headers;
-  }, [googleToken, checkAndRefreshToken])
+  }, [checkAndRefreshIdToken, checkAndRefreshToken, googleToken, idToken])
 
   const sendUserMessage = useCallback(async (sessionId: string, overrideQuery?: string) => {
 
@@ -284,10 +297,10 @@ export const useJarvishChat = (
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
     reasoningMessageSequenceRef.current = 0;
-    const sendUserMessageHeaders = await getSendUserMessageHeaders();
     let activeReader: ReadableStreamDefaultReader<Uint8Array> | null = null;
 
     try {
+      const sendUserMessageHeaders = await getSendUserMessageHeaders();
 
       const response = await fetch(API_ENDPOINTS.GRAPHQL, {
         method: 'POST',

@@ -87,6 +87,8 @@ export const AGENT_STATUS = {
 
 export const STORAGE_KEYS = {
   GOOGLE_TOKEN: 'google_access_token',
+  GOOGLE_ID_TOKEN: 'google_id_token',
+  GOOGLE_ID_TOKEN_EXPIRES_AT: 'google_id_token_expires_at',
   SESSION_ID: 'jarvish_session_id',
 } as const;
 
