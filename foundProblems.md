@@ -236,17 +236,7 @@ Senior architect / senior frontend / full-stack review for making this repositor
 
 ## Tooling, Quality, And Repository Hygiene Problems
 
-### TQ-02: `skipLibCheck` and `allowJs` weaken type confidence
 
-- File: `tsconfig.json`
-- Evidence:
-  - `skipLibCheck: true`
-  - `allowJs: true`
-- Risk:
-  - Typecheck passing is less persuasive to technical reviewers.
-- Recommendation:
-  - Remove `allowJs` after converting `main.jsx`.
-  - Keep or document `skipLibCheck`; if kept, mention why.
 
 ### TQ-03: Generated files are committed without a clear regeneration check in CI
 

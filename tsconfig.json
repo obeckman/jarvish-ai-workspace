@@ -3,6 +3,8 @@
     "target": "ESNext",
     "useDefineForClassFields": true,
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    // Required while dependency declarations fail under TS 6.0:
+    // Drizzle optional dialect packages, lru-cache iterator types, and Vite DOM/WebWorker lib overlap.
     "skipLibCheck": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
