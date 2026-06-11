@@ -7,6 +7,7 @@ The Interview Question
 
  */
 import React from 'react';
+import { clientLogger } from '@/frontend/utils/clientLogger';
 
 export const fetchDataFromApis = async (apiEndpoint: string, onError: (error: string) => void): Promise<any> => {
         const abortToken = new AbortController();
@@ -18,7 +19,7 @@ export const fetchDataFromApis = async (apiEndpoint: string, onError: (error: st
         })
         Request.catch(error => {
             if (error.name === 'AbortError') {
-                console.log(`Fetch aborted for ${apiEndpoint}`);
+                clientLogger.debug(`Fetch aborted for ${apiEndpoint}`);
             } else {
                 console.error(`Fetch error for ${apiEndpoint}:`, error);
                 onError(`API error - ${apiEndpoint}: ${error.message}`);

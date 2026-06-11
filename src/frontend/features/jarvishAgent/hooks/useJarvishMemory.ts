@@ -7,6 +7,7 @@ import {
   GetStructuredFactsQuery,
 } from '@/frontend/features/jarvishAgent/graphql/__generated__/graphql';
 import { getGraphQLHeaders } from '@/frontend/features/jarvishAgent/utils/authHeaders';
+import { clientLogger } from '@/frontend/utils/clientLogger';
 
 export const useJarvishMemory = (
   idToken: string | null,
@@ -48,7 +49,7 @@ export const useJarvishMemory = (
         setFacts([]);
       }
     } catch (e) {
-      console.error('Failed to fetch structured facts:', e);
+      clientLogger.error('Failed to fetch structured facts:', e);
     } finally {
       isFetchingRef.current = false;
       setIsFetching(false);
@@ -70,7 +71,7 @@ export const useJarvishMemory = (
       });
       setFacts(prev => prev.filter(f => f.id !== id));
     } catch (e) {
-      console.error('Failed to delete structured fact:', e);
+      clientLogger.error('Failed to delete structured fact:', e);
     }
   }, [checkAndRefreshIdToken, idToken]);
 

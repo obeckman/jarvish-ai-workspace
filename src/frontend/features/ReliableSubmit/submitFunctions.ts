@@ -1,4 +1,5 @@
 import {SubmitResponse, SubmitFunctionMap} from './types';
+import { clientLogger } from '@/frontend/utils/clientLogger';
 
 export const submitFunctionForDemo = <T>(_data: T) => {
                 const promise = new Promise<SubmitResponse>((resolve, reject) => {
@@ -6,11 +7,11 @@ export const submitFunctionForDemo = <T>(_data: T) => {
                         
                         const willSucceed = Math.random() > 0.9
                         if (willSucceed) {
-                            console.log('Simulated submit success.');
+                            clientLogger.debug('Simulated submit success.');
                             resolve({ success: true });
                         }
                         else {
-                            console.log('Simulated submit failure.');
+                            clientLogger.debug('Simulated submit failure.');
                             reject(new Error('Submission failed'));
                         }
                     }, 1000);

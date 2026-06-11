@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useMemo, useContext, createContext } from 'react';
+import { clientLogger } from '@/frontend/utils/clientLogger';
 
 import type { FormSchema, FieldSchema, FieldGroup, GroupField, SelectField } from './types'
 
@@ -198,7 +199,7 @@ export const FormBuilderWrapper = () => {
         <FormBuilder
             key={schemaId} // <--- THIS IS THE MAGIC
             formSchema={schema.formSchema}
-            onSubmit={() => console.debug('submit')}
+            onSubmit={() => clientLogger.debug('submit')}
         />
     );
 };

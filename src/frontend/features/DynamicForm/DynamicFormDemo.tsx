@@ -1,11 +1,12 @@
 import React from 'react'
+import { clientLogger } from '@/frontend/utils/clientLogger'
 import { DynamicForm } from './DynamicForm'
 
 export const DynamicFormDemo = () => {
 
 
     const handleFinalSubmit = React.useCallback(() => {
-        console.debug('@@@ DynamicFormDemo handleFinalSubmit')
+        clientLogger.debug('@@@ DynamicFormDemo handleFinalSubmit')
     }, [])
 
     return <DynamicForm onSubmit={handleFinalSubmit}  >

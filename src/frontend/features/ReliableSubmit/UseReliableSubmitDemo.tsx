@@ -1,4 +1,5 @@
 import React from 'react';
+import { clientLogger } from '@/frontend/utils/clientLogger';
 import './useReliableSubmit.css';
 import {useReliableSubmit} from './useReliableSubmit';
 import {SubmitFunctionTypes} from './submitFunctions';
@@ -16,7 +17,7 @@ export const UseReliableSubmitDemo = () => {
 
     const onClick= React.useCallback(
         () => {
-            console.log('Submitting data reliably...');
+            clientLogger.debug('Submitting data reliably...');
             if(storedData){
                 const updatedData = { ...storedData, submitCount: (storedData?.submitCount ?? 0) + 1 };
                 reliableSubmit(updatedData);

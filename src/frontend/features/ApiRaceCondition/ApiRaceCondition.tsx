@@ -1,4 +1,5 @@
 import React from 'react';
+import { clientLogger } from '@/frontend/utils/clientLogger';
 //import {} from './types';
 //import './Tabs.css';
 
@@ -42,7 +43,7 @@ export const TabsApiRaceConditionDemo = () => {
             })
             .catch((error) => {
                 if (error.name === 'AbortError') {
-                    console.log('Fetch aborted');
+                    clientLogger.debug('Fetch aborted');
                 } else {
                     console.error('Fetch error:', error);
                 }

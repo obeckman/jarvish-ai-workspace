@@ -2,6 +2,7 @@ import { Message } from "@/frontend/features/jarvishAgent/types";
 import { GetSessionHistoryQuery } from "@/frontend/features/jarvishAgent/graphql/__generated__/graphql";
 import { createHistoryMessageId } from "@/frontend/features/jarvishAgent/utils/messageIds";
 import { parseAgentMessageContent } from "@/frontend/features/jarvishAgent/utils/parser";
+import { clientLogger } from "@/frontend/utils/clientLogger";
 import { BLOCK_TYPES, ROLES, type MessageRole } from "@/shared/jarvish.constants";
 
 type HistoryMessageInput = GetSessionHistoryQuery["getSessionHistory"][number];
@@ -55,6 +56,6 @@ function normalizeHistoryRole(role: string): MessageRole {
     return ROLES.AGENT;
   }
 
-  console.warn(`Unknown history role "${role}", defaulting to agent.`);
+  clientLogger.warn(`Unknown history role "${role}", defaulting to agent.`);
   return ROLES.AGENT;
 }

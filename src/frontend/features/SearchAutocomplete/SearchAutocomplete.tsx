@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
+import { clientLogger } from '@/frontend/utils/clientLogger';
 
 // UTILITY: Generic Debounce Hook
 // Why? Decouples timing logic from fetching logic.
@@ -85,7 +86,7 @@ export function useSearch(query: string) {
             } catch (err: unknown) {
                 // specific handling for AbortError
                 if (err instanceof DOMException && err.name === 'AbortError') {
-                    console.log('Fetch aborted');
+                    clientLogger.debug('Fetch aborted');
                     // Do NOT set error state here. Abortion is a valid flow, not an error.
                     return;
                 }

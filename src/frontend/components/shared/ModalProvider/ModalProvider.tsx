@@ -1,5 +1,6 @@
 import React, { ReactNode } from "react"
 import { createPortal } from "react-dom"
+import { clientLogger } from "@/frontend/utils/clientLogger"
 import  "./ModalProvider.css"
 
 type ModalContextValue = {
@@ -77,7 +78,7 @@ export const ModalOpener = () => {
     const openModalB = () => openModal({
         content: modalContentB,
         id: " modal B",
-        onClose: () => console.debug('onClose modal B')
+        onClose: () => clientLogger.debug('onClose modal B')
     })
     const modalContentA = <div style={{ width: '500px' }}>modal A
         <button onClick={() => closeModal()}>close Modal modal A</button>
@@ -87,7 +88,7 @@ export const ModalOpener = () => {
     const openModalA = () => openModal({
         content: modalContentA,
         id: " modal A",
-        onClose: () => console.debug('onClose modal A')
+        onClose: () => clientLogger.debug('onClose modal A')
     })
 
     return (

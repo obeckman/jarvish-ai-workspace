@@ -1,5 +1,6 @@
 // db.ts - The Data Access Layer (DAL)
 import React from 'react';
+import { clientLogger } from '@/frontend/utils/clientLogger';
 import { initDBOptions, IndexDbNotifyMessage } from './types';
 
 
@@ -72,10 +73,10 @@ export const useDBSubscription = (storeName: string, onUpdate?: () => void) => {
       // Best Practice: Filter by storeName to avoid unnecessary re-renders
       if (payload.storeName === storeName) {
         if (onUpdate) {
-          console.debug(`[Sync] Update detected for ${storeName}, re-fetching...`);
+          clientLogger.debug(`[Sync] Update detected for ${storeName}, re-fetching...`);
           onUpdate();
         } else {
-          console.debug(`[Sync] Update detected for ${storeName}, ignored...`);
+          clientLogger.debug(`[Sync] Update detected for ${storeName}, ignored...`);
         }
       }
     };
@@ -182,6 +183,5 @@ export const useDBStore = ({
 
   return { getDataByIndex, putData, getPaginatedData };
 }
-
 
 

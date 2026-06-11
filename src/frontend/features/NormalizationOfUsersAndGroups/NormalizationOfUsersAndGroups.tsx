@@ -1,4 +1,5 @@
 import React from 'react';
+import { clientLogger } from '@/frontend/utils/clientLogger';
 
 type User = {
     id: string;
@@ -56,7 +57,7 @@ export const NormalizationOfUsersAndGroups = () => {
         });
 
     });
-    console.debug('Normalized Data:', normalizedData);
+    clientLogger.debug('Normalized Data:', normalizedData);
 
     return (<div style={{ padding: '20px' }}>
         <h2>Normalization of Users and Groups</h2>

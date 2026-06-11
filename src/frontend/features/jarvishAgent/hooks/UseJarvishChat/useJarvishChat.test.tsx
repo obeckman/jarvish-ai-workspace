@@ -11,13 +11,13 @@ describe('useJarvishChat', () => {
   const fetchMock = vi.fn();
   const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
   const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-  const consoleLog = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+  const consoleDebug = vi.spyOn(console, 'debug').mockImplementation(() => undefined);
 
   beforeEach(() => {
     fetchMock.mockReset();
     consoleError.mockClear();
     consoleWarn.mockClear();
-    consoleLog.mockClear();
+    consoleDebug.mockClear();
     vi.stubGlobal('fetch', fetchMock);
   });
 

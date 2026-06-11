@@ -11,12 +11,13 @@ If you let React touch the DOM inside the chart's container, the application wil
 
  */
 import React from 'react';
+import { clientLogger } from '@/frontend/utils/clientLogger';
 import { TimeSeriesWidgetProps, TimeSeriesWidgetDataPoint } from './types';
 import './TimeSeriesWidget.css';
 
 
 const LegacyChart = (domElement: HTMLDivElement) => {
-    console.log('Chart created');
+    clientLogger.debug('Chart created');
 
     domElement.innerHTML = "Legacy Chart Mounted";
     return {
@@ -24,7 +25,7 @@ const LegacyChart = (domElement: HTMLDivElement) => {
             domElement.innerHTML = `Legacy Chart updated with:  ${JSON.stringify(data)}`;
         },
         destroy: () => {
-            console.log('Chart destroyed');
+            clientLogger.debug('Chart destroyed');
         }
     }
 }

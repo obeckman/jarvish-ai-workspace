@@ -1,4 +1,5 @@
 import React, { DetailedHTMLProps } from 'react'
+import { clientLogger } from '@/frontend/utils/clientLogger'
 import {
     DynamicFormProps,
     DynamicFormInputProps,
@@ -43,7 +44,7 @@ export const DynamicForm = ({ children, onSubmit }: DynamicFormProps) => {
     }, []);
 
     const validateInput = React.useCallback((name: string, value: string) => {
-        console.debug('@@@ DynamicForm validateInput', name, value);
+        clientLogger.debug('@@@ DynamicForm validateInput', name, value);
         const validationInfo = validationMapRef.current[name];
         if (!validationInfo) return true;
         const errors: { fieldName: string, message: string }[] = [];
@@ -71,7 +72,7 @@ export const DynamicForm = ({ children, onSubmit }: DynamicFormProps) => {
     }, []);
 
     const validateInputs = React.useCallback(() => {
-        console.debug('@@@ DynamicForm validateInputs', formValuesStateRef.current, validationMapRef.current);
+        clientLogger.debug('@@@ DynamicForm validateInputs', formValuesStateRef.current, validationMapRef.current);
         let isAnyErrors = false
         Object.keys(validationMapRef.current).forEach((name) => {
             const res = validateInput(name, formValuesStateRef.current[name]);
@@ -84,7 +85,7 @@ export const DynamicForm = ({ children, onSubmit }: DynamicFormProps) => {
         if (e && e.preventDefault) {
             e.preventDefault();
         }
-        console.debug('@@@ DynamicForm handleSubmit', formValuesStateRef.current);
+        clientLogger.debug('@@@ DynamicForm handleSubmit', formValuesStateRef.current);
         setIsSubmitting(true);
         setSubmitErrors([]);
 
@@ -193,7 +194,7 @@ export const DynamicFormInput = (props: DynamicFormInputProps) => {
         }
     };
 
-    console.debug('@@@ DynamicFormInput render', name, isSubmitting, isValidationError, validationErrorMessage);
+    clientLogger.debug('@@@ DynamicFormInput render', name, isSubmitting, isValidationError, validationErrorMessage);
     return <div className={`dynamic-form-input ${isSubmitting ? 'submitting' : ''}`}>
         <label htmlFor={name}>{label}</label>
 
@@ -207,7 +208,7 @@ export const DynamicFormInput = (props: DynamicFormInputProps) => {
 
 const DynamicFormSubmit = (props: React.ButtonHTMLAttributes<HTMLButtonElement>) => {
     const { isSubmitting, submitErrors, handleSubmit } = useDynamicForm()
-    console.debug('@@@ DynamicFormSubmit render isSubmitting', isSubmitting)
+    clientLogger.debug('@@@ DynamicFormSubmit render isSubmitting', isSubmitting)
     return <div className='dynamic-form-demo-submit'>
         <label >{props.name}</label>
         <div className="dynamic-form-demo-submit-error">

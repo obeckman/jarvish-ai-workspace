@@ -1,4 +1,5 @@
 import React from 'react';
+import { clientLogger } from '@/frontend/utils/clientLogger';
 import './useInfiniteVirtualizedScroll.css';
 import { useState, useRef, useCallback } from 'react';
 
@@ -143,7 +144,7 @@ const useVirtualizedScrollBl = <T extends {id:string | number}>(
     const startIndex = Math.max(Math.floor(scrollTop / itemHeight) - buffer, 0);
     const endIndex = Math.min(Math.ceil((scrollTop + viewportHeight) / itemHeight) + buffer, totalItems);
     const visibleItems = items.slice(startIndex, endIndex)
-    console.debug('visibleItems', {visibleItems,startIndex,endIndex,scrollTop,viewportHeight,itemHeight,buffer});
+    clientLogger.debug('visibleItems', {visibleItems,startIndex,endIndex,scrollTop,viewportHeight,itemHeight,buffer});
     const visibleItemsPosition = startIndex * itemHeight;
     const totalHeight = totalItems * itemHeight;
     return { handleScroll, visibleItems, visibleItemsPosition, totalHeight };

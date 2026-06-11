@@ -1,12 +1,13 @@
 
 import React from 'react'
+import { clientLogger } from '@/frontend/utils/clientLogger'
 import { appStore, getUseName, getCount } from './appStore'
 // COMPONENT 1: Consumes User Only
 export const UserDisplay = () => {
     const { useSelector } = appStore
     const userName = useSelector(getUseName);
 
-    console.log('Render: UserDisplay');
+    clientLogger.debug('Render: UserDisplay');
     return <div>User: {userName} </div>;
 };
 
@@ -17,7 +18,7 @@ export const CounterDisplay = () => {
 
     const onClick = React.useCallback(() => setState((currentState) => ({ count: currentState.count + 1 })), [setState])
 
-    console.log('Render: CounterDisplay');
+    clientLogger.debug('Render: CounterDisplay');
     return (
         <div>
             Count: {count}

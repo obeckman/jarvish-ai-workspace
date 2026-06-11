@@ -33,6 +33,7 @@ import {
   GetSessionHistoryQueryVariables
 } from '@/frontend/features/jarvishAgent/graphql/__generated__/graphql';
 import { getGraphQLHeaders } from '@/frontend/features/jarvishAgent/utils/authHeaders';
+import { clientLogger } from '@/frontend/utils/clientLogger';
 
 
 import { chatReducer } from './state';
@@ -106,7 +107,7 @@ export const useJarvishChat = (
       }
 
     } catch (e) {
-      console.error('Failed to load history:', e);
+      clientLogger.error('Failed to load history:', e);
       dispatch({ type: STATE_ACTIONS.SET_ERROR_MESSAGE, payload: "Failed to load conversation history." });
     } finally {
       dispatch({ type: STATE_ACTIONS.SET_STATUS, payload: AGENT_STATUS.IDLE });
@@ -147,12 +148,12 @@ export const useJarvishChat = (
     }
 
     if (typeof confidence !== 'number' || !Number.isFinite(confidence)) {
-      console.warn('Ignoring invalid confidence metadata:', metadata);
+      clientLogger.warn('Ignoring invalid confidence metadata:', metadata);
       return;
     }
 
     if (confidence < 0 || confidence > 100) {
-      console.warn('Ignoring out-of-range confidence metadata:', metadata);
+      clientLogger.warn('Ignoring out-of-range confidence metadata:', metadata);
       return;
     }
 
@@ -177,7 +178,10 @@ export const useJarvishChat = (
 
         // We validate the incoming event against our Zod schema to ensure it has the expected structure and types.
         const data = parseAgentEventPayload(result.data);
-        console.log(`processStreamLines : [SSE Event Received] Type: ${data.type} | Content: ${data.content}`, data);
+        clientLogger.debug('processStreamLines : [SSE Event Received]', {
+          type: data.type,
+          data,
+        });
 
         if (data.type === EVENT_TYPES.STATUS) {
           // Status events are simple text updates about what the agent is doing (e.g., "Searching for information", "Analyzing data", etc.).
@@ -188,7 +192,7 @@ export const useJarvishChat = (
           if (data.stage !== null) {
             dispatch({ type: STATE_ACTIONS.SET_CURRENT_STAGE, payload: data.stage });
           } else {
-            console.debug('Status event arrived without a stage; keeping current stage.');
+            clientLogger.debug('Status event arrived without a stage; keeping current stage.');
           }
         } else if (data.type === EVENT_TYPES.REASONING) {
           // Reasoning events contain the agent's internal thought process, which can be helpful for debugging or for users who want more transparency.
@@ -208,7 +212,7 @@ export const useJarvishChat = (
           // Message events contain the actual content that the agent wants to communicate to the user.
           recordConfidenceIfPresent(data.metadata);
           const newContentArray = parseAgentMessageContent(data.content);
-          console.log(`processStreamLines : [Parsed Assistant Message Content]:`, newContentArray);
+          clientLogger.debug('processStreamLines : [Parsed Assistant Message Content]:', newContentArray);
           dispatch({
             type: STATE_ACTIONS.ADD_MESSAGE, payload: {
               id: assistantMsgId,
@@ -232,7 +236,7 @@ export const useJarvishChat = (
       } catch (e) {
         const message = e instanceof Error ? e.message : 'Unknown parsing error';
         dispatch({ type: STATE_ACTIONS.SET_ERROR_MESSAGE, payload: `Failed to parse SSE event: ${message}` });
-        console.warn('processStreamLines : Failed to parse SSE JSON:', { jsonStr, error: e });
+        clientLogger.warn('processStreamLines : Failed to parse SSE JSON:', { jsonStr, error: e });
       }
     }
   }, [recordConfidenceIfPresent])

@@ -1,4 +1,5 @@
 import React from 'react';
+import { clientLogger } from '@/frontend/utils/clientLogger';
 import { useDBStore, useDBSubscription, DBProvider } from './indexDB';
 import { UserProfile } from './types';
 
@@ -15,10 +16,10 @@ export const UserListContainer = () => {
   const [foundUser, setFoundUser] = React.useState<UserProfile |null>(null)
 
   const getUserByEmail = React.useCallback(async (email: string) => {
-    console.debug('@@@ getUserByEmail', email)
+    clientLogger.debug('@@@ getUserByEmail', email)
     // Using the Index we created earlier - O(log n) lookup vs O(n) scan
     const foundUser = await getDataByIndex<UserProfile>(EMAIL_INDEX, email)
-    console.debug('@@@ getUserByEmail foundUser', foundUser)
+    clientLogger.debug('@@@ getUserByEmail foundUser', foundUser)
     setFoundUser(foundUser)
   }, [getDataByIndex])
 
@@ -74,7 +75,7 @@ export const IndexDBUsers = () => {
     
     const response = await putData<UserProfile>(user)
     setUserCount(old => old+1)
-    console.debug("updated user", { user, response })
+    clientLogger.debug("updated user", { user, response })
   } catch (e) {
     console.error(e)
   }

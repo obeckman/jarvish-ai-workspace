@@ -100,7 +100,6 @@ export const JarvishChatArea: React.FC<JarvishChatAreaProps> = ({
     };
 
     messages.forEach((m) => {
-      console.log(`[JarvishChatArea] Rendering message:`, m);
       if (m.type === BLOCK_TYPES.REASONING) {
         currentReasoningGroup.push(m);
       } else {

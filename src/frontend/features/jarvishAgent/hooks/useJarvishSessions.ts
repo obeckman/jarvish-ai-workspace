@@ -8,6 +8,7 @@ import {
   GetSessionsQueryVariables,
 } from '@/frontend/features/jarvishAgent/graphql/__generated__/graphql'
 import { getGraphQLHeaders } from '@/frontend/features/jarvishAgent/utils/authHeaders';
+import { clientLogger } from '@/frontend/utils/clientLogger';
 
 
 export const useJarvishSessions = (
@@ -77,7 +78,7 @@ export const useJarvishSessions = (
         setHasMore(fetched.length === limit);
       }
     } catch (e) {
-      console.error('Failed to fetch sessions:', e);
+      clientLogger.error('Failed to fetch sessions:', e);
     } finally {
       isFetchingRef.current = false;
       setIsFetchingSessions(false);
@@ -117,7 +118,7 @@ export const useJarvishSessions = (
         return null;
       }
     } catch (e) {
-      console.error("Fetching summary failed", e);
+      clientLogger.error("Fetching summary failed", e);
     }
     return null;
   }, [checkAndRefreshIdToken, idToken]);
@@ -148,7 +149,7 @@ export const useJarvishSessions = (
           return;
         }
       } catch (e) {
-        console.error(`Failed to trigger or fetch summary (retry ${retries + 1}/${maxRetries}):`, e);
+        clientLogger.error(`Failed to trigger or fetch summary (retry ${retries + 1}/${maxRetries}):`, e);
       }
 
       retries++;
@@ -156,7 +157,7 @@ export const useJarvishSessions = (
       await new Promise(resolve => setTimeout(resolve, delay));
     }
     setIsPolling(false);
-    console.error(`Failed to get session summary for ${sessionId} after ${maxRetries} retries.`);
+    clientLogger.error(`Failed to get session summary for ${sessionId} after ${maxRetries} retries.`);
   }, [checkAndRefreshIdToken, fetchSummary, idToken]);
 
   const createNewSession = useCallback(async (initialQuery?: string) => {
@@ -183,7 +184,7 @@ export const useJarvishSessions = (
         return newSession.id;
       }
     } catch (e) {
-      console.error('Failed to create session:', e);
+      clientLogger.error('Failed to create session:', e);
     }
     return null;
   }, [checkAndRefreshIdToken, idToken]);
@@ -212,7 +213,7 @@ export const useJarvishSessions = (
         })
       });
     } catch (e) {
-      console.error('Failed to delete session:', e);
+      clientLogger.error('Failed to delete session:', e);
       setSessions(previousSessions);
       setCurrentSessionId(previousCurrentSessionId);
       if (previousCurrentSessionId) {

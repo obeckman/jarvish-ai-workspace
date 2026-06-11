@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { clientLogger } from '@/frontend/utils/clientLogger';
 import { STORAGE_KEYS } from "@/shared/jarvish.constants";
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim() ?? '';
@@ -151,7 +152,7 @@ export const useGoogleAuth = () => {
     try {
       return await requestIdToken(true);
     } catch (e) {
-      console.error("[Auth] ID token refresh failed:", e);
+      clientLogger.error("[Auth] ID token refresh failed:", e);
       return null;
     }
   }, [googleIdToken, googleIdTokenExpiresAt, requestIdToken]);
@@ -176,12 +177,12 @@ export const useGoogleAuth = () => {
     clearGoogleAccessToken();
     setGoogleToken(null);
     setExpiresAt(null);
-    console.log('[Auth] Token near expiration, attempting silent refresh...');
+    clientLogger.debug('[Auth] Token near expiration, attempting silent refresh...');
     try {
       const newToken = await requestAccessToken(true);
       return newToken;
     } catch (e) {
-      console.error("[Auth] Silent refresh failed:", e);
+      clientLogger.error("[Auth] Silent refresh failed:", e);
       return null;
     }
   }, [googleToken, expiresAt, requestAccessToken]);

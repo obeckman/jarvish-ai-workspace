@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Copy, Check } from 'lucide-react';
 import styles from '../../jarvish-agent.module.scss';
+import { clientLogger } from '@/frontend/utils/clientLogger';
 
 interface CodeBlockProps {
   content: string;
@@ -86,7 +87,7 @@ export const CodeBlock: React.FC<CodeBlockProps> = React.memo(({ content, langua
           setHighlighted(html);
         }
       } catch (err) {
-        console.error('Failed to highlight code:', err);
+        clientLogger.error('Failed to highlight code:', err);
       }
     }
 
