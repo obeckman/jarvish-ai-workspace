@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Copy, Check } from 'lucide-react';
+import { Check, Copy, X } from 'lucide-react';
 import styles from '../../jarvish-agent.module.scss';
 import { clientLogger } from '@/frontend/utils/clientLogger';
 
@@ -14,6 +14,7 @@ const SHIKI_THEME = 'nord';
 
 type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 type ShikiHighlighter = Awaited<ReturnType<Awaited<typeof import('shiki/core')>['createHighlighterCore']>>;
+type CopyStatus = 'idle' | 'success' | 'error';
 
 let highlighterPromise: Promise<ShikiHighlighter> | null = null;
 
@@ -68,9 +69,34 @@ function normalizeLanguage(language: string): SupportedLanguage {
     : DEFAULT_LANGUAGE;
 }
 
+async function copyToClipboard(content: string) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(content);
+    return;
+  }
+
+  const textArea = document.createElement('textarea');
+  textArea.value = content;
+  textArea.setAttribute('readonly', '');
+  textArea.style.position = 'fixed';
+  textArea.style.top = '-9999px';
+  textArea.style.left = '-9999px';
+
+  document.body.appendChild(textArea);
+  textArea.select();
+
+  try {
+    if (!document.execCommand('copy')) {
+      throw new Error('Copy command was rejected');
+    }
+  } finally {
+    document.body.removeChild(textArea);
+  }
+}
+
 export const CodeBlock: React.FC<CodeBlockProps> = React.memo(({ content, language = 'typescript' }) => {
   const [highlighted, setHighlighted] = useState<string>('');
-  const [copied, setCopied] = useState(false);
+  const [copyStatus, setCopyStatus] = useState<CopyStatus>('idle');
 
   useEffect(() => {
     let isMounted = true;
@@ -95,18 +121,36 @@ export const CodeBlock: React.FC<CodeBlockProps> = React.memo(({ content, langua
     return () => { isMounted = false; };
   }, [content, language]);
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(content);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const handleCopy = async () => {
+    try {
+      await copyToClipboard(content);
+      setCopyStatus('success');
+    } catch (err) {
+      clientLogger.warn('Failed to copy code block:', err);
+      setCopyStatus('error');
+    }
+
+    setTimeout(() => setCopyStatus('idle'), 2000);
   };
+
+  const copyLabel = copyStatus === 'success'
+    ? 'Copied code'
+    : copyStatus === 'error'
+      ? 'Failed to copy code'
+      : 'Copy code';
 
   return (
     <div className={styles.codeBlock}>
       <div className={styles.codeHeader}>
         <span className={styles.languageBadge}>{language}</span>
-        <button onClick={handleCopy} className={styles.copyBtn}>
-          {copied ? <Check size={14} /> : <Copy size={14} />}
+        <button
+          onClick={handleCopy}
+          className={styles.copyBtn}
+          data-copy-status={copyStatus}
+          aria-label={copyLabel}
+          title={copyLabel}
+        >
+          {copyStatus === 'success' ? <Check size={14} /> : copyStatus === 'error' ? <X size={14} /> : <Copy size={14} />}
         </button>
       </div>
       {highlighted ? (

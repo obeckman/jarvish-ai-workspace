@@ -1273,6 +1273,14 @@
     background: rgba(255, 255, 255, 0.1);
     color: white;
   }
+
+  &[data-copy-status='success'] {
+    color: #22c55e;
+  }
+
+  &[data-copy-status='error'] {
+    color: #f87171;
+  }
 }
 
 .actionBlock {
