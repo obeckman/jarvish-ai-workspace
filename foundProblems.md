@@ -50,20 +50,6 @@ Senior architect / senior frontend / full-stack review for making this repositor
 
 ## Architecture And Backend Problems
 
-### BE-01: Session ids are client-generated and predictable
-
-- Files:
-  - `src/frontend/features/jarvishAgent/hooks/useJarvishSessions.ts`
-  - `src/backend/graphql/services/mutation.resolver.service.ts`
-- Evidence:
-  - Frontend creates ids as `session-${Date.now()}`.
-  - Backend accepts the id from the client.
-- Risk:
-  - Easy collisions and easy guessing; combined with no auth, session operations are not protected.
-- Recommendation:
-  - Generate ids server-side with `crypto.randomUUID()`.
-  - Treat client-provided ids as invalid for create operations.
-
 ### BE-02: GraphQL input schemas are too permissive
 
 - File: `src/backend/graphql/schemas/resolver.schema.ts`
@@ -185,29 +171,6 @@ Senior architect / senior frontend / full-stack review for making this repositor
 
 ## Frontend Problems
 
-### FE-01: React StrictMode is disabled
-
-- File: `src/main.jsx`
-- Evidence:
-  - `StrictMode` import remains, but the wrapper is commented out.
-- Risk:
-  - Reviewers will notice a React hygiene issue, especially in a React 19 app with effects and async streaming.
-- Recommendation:
-  - Re-enable `StrictMode`.
-  - Fix any duplicate-effect or cleanup issues surfaced by it.
-
-### FE-02: App entry is JSX in an otherwise TypeScript project
-
-- Files:
-  - `src/main.jsx`
-  - `tsconfig.json`
-- Evidence:
-  - `allowJs: true` is enabled for one JSX entry file.
-- Risk:
-  - Weakens the TypeScript story at the app root.
-- Recommendation:
-  - Rename to `main.tsx`.
-  - Disable `allowJs` unless there is a documented reason.
 
 ### FE-03: Production-facing debug logs are present in UI hot paths
 
