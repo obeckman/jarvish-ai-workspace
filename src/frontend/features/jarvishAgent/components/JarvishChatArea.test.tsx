@@ -73,7 +73,7 @@ describe('JarvishChatArea', () => {
     expect(screen.getByText('Ready for Research')).toBeInTheDocument();
   });
 
-  it('groups reasoning messages and toggles visibility', () => {
+  it('groups activity messages and toggles visibility', () => {
     const props = {
       ...baseProps,
       setIsReasoningVisible: vi.fn(),
@@ -96,7 +96,7 @@ describe('JarvishChatArea', () => {
     };
 
     render(<JarvishChatArea {...props} />);
-    fireEvent.click(screen.getByText('Thought Process (1 steps)'));
+    fireEvent.click(screen.getByText('Activity (1 steps)'));
 
     expect(props.setIsReasoningVisible).toHaveBeenCalledWith(true);
     expect(screen.getByText('Done.')).toBeInTheDocument();

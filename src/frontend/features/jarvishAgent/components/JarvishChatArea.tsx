@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useCallback } from 'react';
 import {
   Loader2,
-  BrainCircuit,
+  Activity,
   Bot,
   AlertCircle,
   FileText,
@@ -68,24 +68,24 @@ export const JarvishChatArea: React.FC<JarvishChatAreaProps> = ({
     scrollToBottom();
   }, [messages, status, scrollToBottom]);
 
-  // Helper to group messages (specifically reasoning steps)
+  // Helper to group background activity messages
   const renderMessages = () => {
     const rendered: React.ReactNode[] = [];
-    let currentReasoningGroup: Message[] = [];
+    let currentActivityGroup: Message[] = [];
 
-    const flushReasoning = () => {
-      if (currentReasoningGroup.length > 0) {
-        const groupId = currentReasoningGroup[0].id;
+    const flushActivity = () => {
+      if (currentActivityGroup.length > 0) {
+        const groupId = currentActivityGroup[0].id;
         rendered.push(
           <div key={`reasoning-group-${groupId}`} className={cn(styles.reasoningGroup, !isReasoningVisible && styles.collapsed)}>
             <div className={styles.reasoningHeader} onClick={() => setIsReasoningVisible(!isReasoningVisible)}>
               {isReasoningVisible ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-              <BrainCircuit size={14} />
-              <span>Thought Process ({currentReasoningGroup.length} steps)</span>
+              <Activity size={14} />
+              <span>Activity ({currentActivityGroup.length} steps)</span>
             </div>
             {isReasoningVisible && (
               <div className={styles.reasoningSteps}>
-                {currentReasoningGroup.map((rm) => (
+                {currentActivityGroup.map((rm) => (
                   <div key={rm.id} className={styles.reasoningStep}>
                     <div className={styles.dot} />
                     <Markdown content={typeof rm.content === 'string' ? rm.content : JSON.stringify(rm.content)} />
@@ -95,15 +95,15 @@ export const JarvishChatArea: React.FC<JarvishChatAreaProps> = ({
             )}
           </div>
         );
-        currentReasoningGroup = [];
+        currentActivityGroup = [];
       }
     };
 
     messages.forEach((m) => {
       if (m.type === BLOCK_TYPES.REASONING) {
-        currentReasoningGroup.push(m);
+        currentActivityGroup.push(m);
       } else {
-        flushReasoning();
+        flushActivity();
         rendered.push(
           <ChatMessage
             key={m.id}
@@ -118,7 +118,7 @@ export const JarvishChatArea: React.FC<JarvishChatAreaProps> = ({
       }
     });
 
-    flushReasoning(); // Ensure last reasoning group is flushed
+    flushActivity(); // Ensure last activity group is flushed
     return rendered;
   };
 

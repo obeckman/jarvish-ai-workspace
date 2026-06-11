@@ -40,7 +40,7 @@ describe('Jarvish agent event stream service', () => {
     mocks.ensureSessionForUser.mockResolvedValue(true);
   });
 
-  it('streams status, user-facing messages, and reasoning updates from graph chunks', async () => {
+  it('streams status and user-facing messages from graph chunks', async () => {
     mocks.touchSession.mockResolvedValue(undefined);
     mocks.stream.mockResolvedValueOnce((async function* () {
       yield ['updates', {
@@ -93,24 +93,21 @@ describe('Jarvish agent event stream service', () => {
           metadata: null,
         },
       },
-      {
-        agentEvents: {
-          type: GraphQLEventType.Reasoning,
-          content: 'archived detail',
-          stage: null,
-          metadata: null,
-        },
-      },
     ]);
   });
 
-  it('skips empty content and pending tool-call messages', async () => {
+  it('skips empty content, pending tool-call messages, and internal node content', async () => {
     mocks.stream.mockResolvedValueOnce((async function* () {
       yield ['updates', {
         supervisor: {
           messages: [
             { content: '' },
             { content: 'tool requested', tool_calls: [{ name: 'list_calendar_events' }] },
+          ],
+        },
+        archive: {
+          messages: [
+            { content: 'internal archive payload' },
           ],
         },
       }];
@@ -123,6 +120,38 @@ describe('Jarvish agent event stream service', () => {
       sessionId: null,
       userId: 'user-1',
     }))).resolves.toEqual([]);
+  });
+
+  it('streams only text parts from multimodal provider content', async () => {
+    mocks.stream.mockResolvedValueOnce((async function* () {
+      yield ['updates', {
+        supervisor: {
+          messages: [{
+            content: [
+              { type: 'text', text: 'visible answer' },
+              { type: 'image_url', image_url: { url: 'https://example.test/private.png' } },
+            ],
+          }],
+        },
+      }];
+    })());
+
+    await expect(collectEvents(streamAgentEvents({
+      query: 'summarize this',
+      history: [],
+      attachments: [],
+      sessionId: null,
+      userId: 'user-1',
+    }))).resolves.toEqual([
+      {
+        agentEvents: {
+          type: GraphQLEventType.Message,
+          content: 'visible answer',
+          stage: null,
+          metadata: null,
+        },
+      },
+    ]);
   });
 
   it('emits an error event when graph streaming fails', async () => {

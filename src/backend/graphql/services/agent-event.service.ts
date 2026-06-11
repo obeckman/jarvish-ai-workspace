@@ -7,7 +7,6 @@ import { mapDomainEventTypeToGraphQL } from "@/backend/graphql/mappers/event.map
 import {
   mapInputToLangChainMessages,
   shouldStreamMessageFromNode,
-  stringifyMessageContent,
 } from "@/backend/graphql/mappers/message.mapper";
 import {
   StreamAgentEventsInputSchema,
@@ -159,15 +158,43 @@ function* mapNodeUpdateToEvents(nodeName: string, update: GraphStreamUpdate): Ge
       continue;
     }
 
+    if (!shouldStreamMessageFromNode(nodeName)) {
+      continue;
+    }
+
+    const content = stringifyStreamMessageContent(message.content);
+    if (!content) {
+      continue;
+    }
+
     yield {
       agentEvents: {
-        type: mapDomainEventTypeToGraphQL(
-          shouldStreamMessageFromNode(nodeName) ? EVENT_TYPES.MESSAGE : EVENT_TYPES.REASONING,
-        ),
-        content: stringifyMessageContent(message.content),
+        type: mapDomainEventTypeToGraphQL(EVENT_TYPES.MESSAGE),
+        content,
         stage: null,
         metadata: null,
       },
     };
   }
+}
+
+function stringifyStreamMessageContent(content: MessageContent): string {
+  if (typeof content === "string") {
+    return content;
+  }
+
+  if (!Array.isArray(content)) {
+    return "";
+  }
+
+  return content
+    .map((part) => {
+      if (part.type === "text" && typeof part.text === "string") {
+        return part.text;
+      }
+
+      return "";
+    })
+    .filter(Boolean)
+    .join("\n");
 }
