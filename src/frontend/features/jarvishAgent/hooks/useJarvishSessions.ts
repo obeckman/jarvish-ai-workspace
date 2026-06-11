@@ -236,7 +236,11 @@ export const useJarvishSessions = (
   }, []);
 
   useEffect(() => {
-    fetchSessions(true);
+    const timeoutId = setTimeout(() => {
+      void fetchSessions(true);
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
   }, [searchTerm, fetchSessions]);
 
   return {

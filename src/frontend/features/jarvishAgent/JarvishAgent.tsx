@@ -25,7 +25,7 @@ export const JarvishAgent: React.FC = () => {
   const [showFullConversation, setShowFullConversation] = useState(true);
   const [showAllLogs, setShowAllLogs] = useState(false);
   const [viewMode, setViewMode] = useState<'chat' | 'memory'>('chat');
-  const [isGhostWriterVisible, setIsGhostWriterVisible] = useState(false);
+  const [dismissedDraftKey, setDismissedDraftKey] = useState<string | null>(null);
 
   // Domain Hooks
   const { 
@@ -105,11 +105,10 @@ export const JarvishAgent: React.FC = () => {
     return null;
   }, [messages]);
 
-  useEffect(() => {
-    if (latestDraft && !isGhostWriterVisible) {
-      setIsGhostWriterVisible(true);
-    }
-  }, [latestDraft, isGhostWriterVisible]);
+  const latestDraftKey = React.useMemo(() => {
+    if (!latestDraft) return null;
+    return `${latestDraft.title ?? ''}:${latestDraft.content}`;
+  }, [latestDraft]);
 
   // --- Handlers ---
 
@@ -125,7 +124,7 @@ export const JarvishAgent: React.FC = () => {
     loadSessionHistory(id);
     setShowFullConversation(false);
     setViewMode('chat');
-    setIsGhostWriterVisible(false);
+    setDismissedDraftKey(null);
   }, [setCurrentSessionId, clearMessages, loadSessionHistory]);
 
   const handleCreateNewSession = useCallback(async () => {
@@ -255,8 +254,8 @@ export const JarvishAgent: React.FC = () => {
         <GhostWriterPanel 
           content={latestDraft?.content || ''}
           title={latestDraft?.title}
-          isVisible={isGhostWriterVisible && !!latestDraft}
-          onClose={() => setIsGhostWriterVisible(false)}
+          isVisible={!!latestDraft && dismissedDraftKey !== latestDraftKey}
+          onClose={() => setDismissedDraftKey(latestDraftKey)}
           onAction={handleGhostAction}
         />
       </div>

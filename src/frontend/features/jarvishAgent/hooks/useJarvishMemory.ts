@@ -76,7 +76,11 @@ export const useJarvishMemory = (
   }, [checkAndRefreshIdToken, idToken]);
 
   useEffect(() => {
-    fetchFacts();
+    const timeoutId = setTimeout(() => {
+      void fetchFacts();
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
   }, [fetchFacts]);
 
   return {

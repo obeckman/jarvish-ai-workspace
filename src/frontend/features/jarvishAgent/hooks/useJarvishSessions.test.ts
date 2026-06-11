@@ -83,10 +83,9 @@ describe('useJarvishSessions', () => {
       .mockResolvedValueOnce({
         json: async () => ({ data: { createSession: session } }),
       });
-    vi.spyOn(Date, 'now').mockReturnValue(1781091716314);
 
     const { result } = renderHook(() => useJarvishSessions('', 'id-token'));
-    await waitFor(() => expect(result.current.isFetchingSessions).toBe(false));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
 
     await act(async () => {
       expect(await result.current.createNewSession('please check my calendar today')).toBe('session-1');
@@ -95,10 +94,10 @@ describe('useJarvishSessions', () => {
     expect(result.current.sessions).toEqual([session]);
     const createBody = JSON.parse(fetchMock.mock.calls[1][1].body);
     expect(createBody.variables).toMatchObject({
-      id: 'session-1781091716314',
       title: 'please check my calendar today',
       initialQuery: 'please check my calendar today',
     });
+    expect(createBody.variables).not.toHaveProperty('id');
   });
 
   it('clears a persisted session id that is not visible to the authenticated user', async () => {

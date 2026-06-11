@@ -5,9 +5,19 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 import tseslint from 'typescript-eslint'
 
+const strictTypeScriptSource = [
+  'src/backend/**/*.{ts,tsx}',
+  'src/frontend/features/jarvishAgent/**/*.{ts,tsx}',
+]
+
+const strictReactSource = [
+  'src/frontend/features/jarvishAgent/**/*.{ts,tsx}',
+]
+
 export default defineConfig([
   globalIgnores([
     'dist/**',
+    'src/backend/weaviate_data/**',
     'src/backend/graphql/__generated__/**',
     'src/frontend/features/jarvishAgent/graphql/__generated__/**',
   ]),
@@ -49,6 +59,23 @@ export default defineConfig([
       'react-hooks/refs': 'off',
       'react-hooks/immutability': 'off',
       'react-hooks/preserve-manual-memoization': 'off',
+    },
+  },
+  {
+    files: strictTypeScriptSource,
+    rules: {
+      '@typescript-eslint/no-unused-vars': ['error', {
+        varsIgnorePattern: '^[A-Z_]',
+        argsIgnorePattern: '^_',
+        caughtErrorsIgnorePattern: '^_',
+      }],
+      '@typescript-eslint/no-explicit-any': 'error',
+    },
+  },
+  {
+    files: strictReactSource,
+    rules: {
+      ...reactHooks.configs.flat.recommended.rules,
     },
   },
 ])
