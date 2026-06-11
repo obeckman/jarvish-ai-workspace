@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { StructuredFact } from '@/frontend/features/jarvishAgent/types';
 import { GQL_QUERIES, GQL_MUTATIONS } from '@/frontend/features/jarvishAgent/constants';
 import {API_ENDPOINTS} from '@/shared/jarvish.constants';
@@ -14,6 +14,7 @@ export const useJarvishMemory = (
 ) => {
   const [facts, setFacts] = useState<StructuredFact[]>([]);
   const [isFetching, setIsFetching] = useState(false);
+  const isFetchingRef = useRef(false);
 
   const fetchFacts = useCallback(async () => {
     const activeIdToken = await getActiveIdToken(idToken, checkAndRefreshIdToken);
@@ -22,6 +23,8 @@ export const useJarvishMemory = (
       return;
     }
 
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
     setIsFetching(true);
     try {
       const res = await fetch(API_ENDPOINTS.GRAPHQL, {
@@ -47,6 +50,7 @@ export const useJarvishMemory = (
     } catch (e) {
       console.error('Failed to fetch structured facts:', e);
     } finally {
+      isFetchingRef.current = false;
       setIsFetching(false);
     }
   }, [checkAndRefreshIdToken, idToken]);

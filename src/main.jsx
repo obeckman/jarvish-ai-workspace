@@ -5,7 +5,7 @@ import './frontend/styles/theme.css'
 import App from './frontend/App'
 
 createRoot(document.getElementById('root')).render(
-  // <StrictMode>
+  <StrictMode>
     <App />
-  // </StrictMode>,
+  </StrictMode>,
 )

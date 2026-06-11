@@ -1,6 +1,7 @@
 /**
  * @vitest-environment jsdom
  */
+import { createElement, StrictMode, type ReactNode } from 'react';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -43,6 +44,32 @@ describe('useJarvishMemory', () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(JSON.parse(fetchMock.mock.calls[0][1].body).query).toBeDefined();
+  });
+
+  it('does not duplicate an in-flight facts request under StrictMode', async () => {
+    let resolveFetch: (value: { ok: boolean; json: () => Promise<unknown> }) => void;
+    fetchMock.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveFetch = resolve;
+      }),
+    );
+
+    const wrapper = ({ children }: { children: ReactNode }) =>
+      createElement(StrictMode, null, children);
+
+    const { result } = renderHook(() => useJarvishMemory('id-token'), { wrapper });
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+
+    await act(async () => {
+      resolveFetch({
+        ok: true,
+        json: async () => ({ data: { getStructuredFacts: [fact] } }),
+      });
+    });
+
+    await waitFor(() => expect(result.current.facts).toEqual([fact]));
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it('logs GraphQL errors and leaves facts empty', async () => {
