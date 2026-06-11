@@ -186,17 +186,6 @@ Senior architect / senior frontend / full-stack review for making this repositor
   - Sanitize generated HTML or render highlighted tokens without raw HTML.
   - Add tests that malicious code content is rendered inert.
 
-### FE-08: Jarvish stylesheet is very large
-
-- File: `src/frontend/features/jarvishAgent/jarvish-agent.module.scss`
-- Evidence:
-  - 1,576 lines in one module stylesheet.
-- Risk:
-  - Hard to maintain and signals UI polish debt.
-- Recommendation:
-  - Split by component or design tokens/layout/components.
-  - Add visual regression or screenshot checks for the main workspace.
-
 ### FE-09: Secondary capability demos are untested
 
 - Files:
@@ -246,19 +235,6 @@ Senior architect / senior frontend / full-stack review for making this repositor
   - Add explicit disconnected/config-missing states in the UI.
 
 ## Tooling, Quality, And Repository Hygiene Problems
-
-### TQ-01: ESLint is intentionally weakened
-
-- File: `eslint.config.js`
-- Evidence:
-  - `@typescript-eslint/no-explicit-any` is off.
-  - Multiple React hooks compiler/recommended rules are disabled.
-  - Unused variables are warnings, not failures.
-- Risk:
-  - Passing lint is less meaningful than the README implies.
-- Recommendation:
-  - Tighten rules for `src/backend` and `src/frontend/features/jarvishAgent`.
-  - Use narrower overrides for legacy/lab folders.
 
 ### TQ-02: `skipLibCheck` and `allowJs` weaken type confidence
 

@@ -1,0 +1,78 @@
+.editableCell {
+  width: 100%;
+  background: transparent;
+  border: 1px solid transparent;
+  color: inherit;
+  font-size: inherit;
+  padding: 2px 4px;
+  border-radius: 4px;
+  outline: none;
+
+  &:focus {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--jarvish-accent);
+  }
+}
+
+.editHint {
+  margin-top: 0.75rem;
+  font-size: 0.7rem;
+  color: var(--jarvish-text-secondary);
+  font-style: italic;
+}
+
+.draftBlockChat {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(56, 189, 248, 0.05);
+  border: 1px solid var(--jarvish-accent-glow);
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  margin: 0.5rem 0;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: rgba(56, 189, 248, 0.1);
+    transform: translateY(-1px);
+  }
+}
+
+.draftIcon {
+  background: var(--jarvish-accent);
+  color: var(--jarvish-bg);
+  padding: 6px;
+  border-radius: 8px;
+  display: flex;
+}
+
+.draftInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+
+  strong {
+    font-size: 0.85rem;
+    color: var(--jarvish-text-primary);
+  }
+
+  span {
+    font-size: 0.75rem;
+    color: var(--jarvish-text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.draftHint {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--jarvish-accent);
+  text-transform: uppercase;
+}

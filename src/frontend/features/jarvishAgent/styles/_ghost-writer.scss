@@ -1,0 +1,121 @@
+.ghostWriter {
+  position: absolute;
+  right: var(--spacing-md);
+  top: 100px;
+  bottom: var(--spacing-md);
+  width: 450px;
+  background: var(--jarvish-sidebar-bg);
+  backdrop-filter: blur(25px);
+  border: 1px solid var(--jarvish-glass-border);
+  border-radius: var(--radius-xl);
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.3);
+  animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.ghostHeader {
+  padding: 1rem 1.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--jarvish-glass-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ghostTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  color: var(--jarvish-accent);
+  font-size: 0.9rem;
+}
+
+.closeBtn {
+  background: transparent;
+  border: none;
+  color: var(--jarvish-text-secondary);
+  font-size: 1.5rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 4px;
+
+  &:hover {
+    color: white;
+  }
+}
+
+.ghostActions {
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid var(--jarvish-glass-border);
+}
+
+.actionBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--jarvish-glass-border);
+  border-radius: 8px;
+  color: var(--jarvish-text-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: rgba(56, 189, 248, 0.1);
+    color: var(--jarvish-accent);
+    border-color: var(--jarvish-accent-glow);
+  }
+}
+
+.ghostPreview {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--jarvish-text-primary);
+
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--jarvish-glass-border);
+    border-radius: 10px;
+  }
+}
+
+.ghostFooter {
+  padding: 0.75rem 1.5rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-top: 1px solid var(--jarvish-glass-border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.75rem;
+  color: var(--jarvish-text-secondary);
+  font-weight: 600;
+}
