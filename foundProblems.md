@@ -186,16 +186,6 @@ Senior architect / senior frontend / full-stack review for making this repositor
   - Sanitize generated HTML or render highlighted tokens without raw HTML.
   - Add tests that malicious code content is rendered inert.
 
-### FE-07: Chat hook is too large and mixes concerns
-
-- File: `src/frontend/features/jarvishAgent/hooks/UseJarvishChat/useJarvishChat.ts`
-- Evidence:
-  - 420 lines covering history loading, streaming transport, parsing, confidence collection, reducer dispatching, cancellation, and attachment encoding.
-- Risk:
-  - Hard to review and easy to regress.
-- Recommendation:
-  - Extract transport client, SSE parser, attachment encoder, and event-to-action mapper.
-
 ### FE-08: Jarvish stylesheet is very large
 
 - File: `src/frontend/features/jarvishAgent/jarvish-agent.module.scss`
