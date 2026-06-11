@@ -106,10 +106,46 @@ describe('useJarvishChat', () => {
     ]);
   });
 
+  it('handles multiline SSE data and ignores comments and done sentinels', async () => {
+    const payload = JSON.stringify({
+      data: {
+        agentEvents: {
+          type: 'STATUS',
+          content: 'Researching',
+          stage: STAGES.RESEARCH,
+          metadata: null,
+        },
+      },
+    }, null, 2);
+
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      body: createTextStream([
+        ': keepalive\n',
+        multilineSseData(payload),
+        'data: [DONE]\n\n',
+      ]),
+    });
+    const { result } = renderHook(() => useJarvishChat('session-1', 'id-token', null));
+
+    await act(async () => {
+      result.current.setInput('multiline stream');
+    });
+    await waitFor(() => expect(result.current.input).toBe('multiline stream'));
+
+    await act(async () => {
+      await result.current.sendMessage('session-1');
+    });
+
+    expect(result.current.errorMessage).toBeNull();
+    expect(result.current.statusLogs).toEqual(['Researching']);
+    expect(result.current.currentStage).toBe(0);
+  });
+
   it('records parse errors for malformed SSE events', async () => {
     fetchMock.mockResolvedValueOnce({
       ok: true,
-      body: createTextStream(['data: {bad-json}\n']),
+      body: createTextStream(['data: {bad-json}\n\n']),
     });
     const { result } = renderHook(() => useJarvishChat('session-1', 'id-token', null));
 
@@ -123,7 +159,7 @@ describe('useJarvishChat', () => {
     });
 
     expect(result.current.errorMessage).toContain('Failed to parse SSE event');
-    expect(consoleWarn).toHaveBeenCalledWith('processStreamLines : Failed to parse SSE JSON:', expect.any(Object));
+    expect(consoleWarn).toHaveBeenCalledWith('processSseMessages : Failed to parse SSE JSON:', expect.any(Object));
   });
 
   it('rejects oversized attachments before reading them', () => {
@@ -140,7 +176,11 @@ describe('useJarvishChat', () => {
 });
 
 function sseLine(agentEvents: unknown): string {
-  return `data: ${JSON.stringify({ data: { agentEvents } })}\n`;
+  return `data: ${JSON.stringify({ data: { agentEvents } })}\n\n`;
+}
+
+function multilineSseData(payload: string): string {
+  return `${payload.split('\n').map(line => `data: ${line}`).join('\n')}\n\n`;
 }
 
 function createTextStream(chunks: string[]): ReadableStream<Uint8Array> {

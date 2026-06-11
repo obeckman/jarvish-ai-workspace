@@ -172,21 +172,7 @@ Senior architect / senior frontend / full-stack review for making this repositor
 ## Frontend Problems
 
 
-### FE-03: Production-facing debug logs are present in UI hot paths
 
-- Files:
-  - `src/frontend/features/jarvishAgent/hooks/UseJarvishChat/useJarvishChat.ts`
-  - `src/frontend/features/jarvishAgent/components/Blocks/BlockRenderer.tsx`
-  - `src/frontend/features/jarvishAgent/components/JarvishChatArea.tsx`
-  - Many frontend lab components
-- Evidence:
-  - SSE payloads, parsed assistant messages, rendered blocks, and messages are logged to the browser console.
-- Risk:
-  - Leaks user prompts, model responses, and possibly private Google-derived data into browser logs.
-  - Makes the project feel unfinished to reviewers.
-- Recommendation:
-  - Add a small client logger gated by `import.meta.env.DEV`.
-  - Remove console logs from render paths.
 
 ### FE-04: `CodeBlock` uses `dangerouslySetInnerHTML`
 
@@ -199,27 +185,6 @@ Senior architect / senior frontend / full-stack review for making this repositor
 - Recommendation:
   - Sanitize generated HTML or render highlighted tokens without raw HTML.
   - Add tests that malicious code content is rendered inert.
-
-### FE-05: Copy button does not handle clipboard failures
-
-- File: `src/frontend/features/jarvishAgent/components/Blocks/CodeBlock.tsx`
-- Evidence:
-  - `navigator.clipboard.writeText(content)` is called without await/catch.
-- Risk:
-  - Fails silently in non-secure contexts or denied permissions.
-- Recommendation:
-  - Await the promise and show a failed state or fallback.
-
-### FE-06: SSE parsing is too hand-rolled
-
-- File: `src/frontend/features/jarvishAgent/hooks/UseJarvishChat/useJarvishChat.ts`
-- Evidence:
-  - Stream chunks are split on `\n` and only lines starting with `data: ` are parsed.
-  - Multi-line SSE events and other SSE fields are not handled.
-- Risk:
-  - Breaks under valid SSE formatting changes.
-- Recommendation:
-  - Use a small SSE parser or write a tested parser that handles event boundaries, multiline data, comments, and `[DONE]`-style sentinels if needed.
 
 ### FE-07: Chat hook is too large and mixes concerns
 

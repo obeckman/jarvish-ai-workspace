@@ -38,6 +38,7 @@ import { clientLogger } from '@/frontend/utils/clientLogger';
 
 import { chatReducer } from './state';
 import { parseAgentEventPayload, type AgentEventMetadata } from '../../utils/eventMapper';
+import { SseParser } from './sseParser';
 // --- Reducer Definitions ---
 
 type GraphQLResponse<TData> = {
@@ -166,11 +167,11 @@ export const useJarvishChat = (
     });
   }, []);
 
-  const processStreamLines = React.useCallback((assistantMsgId: string, lines: string[]) => {
-    for (const line of lines) {
-      if (!line.startsWith('data: ')) continue;
-      const jsonStr = line.replace('data: ', '').trim();
+  const processSseMessages = React.useCallback((assistantMsgId: string, messages: string[]) => {
+    for (const message of messages) {
+      const jsonStr = message.trim();
       if (!jsonStr) continue;
+      if (jsonStr === '[DONE]') continue;
 
       try {
         //format BE might send JSON wrapped in markdown code blocks, we need to strip those before parsing
@@ -178,7 +179,7 @@ export const useJarvishChat = (
 
         // We validate the incoming event against our Zod schema to ensure it has the expected structure and types.
         const data = parseAgentEventPayload(result.data);
-        clientLogger.debug('processStreamLines : [SSE Event Received]', {
+        clientLogger.debug('processSseMessages : [SSE Event Received]', {
           type: data.type,
           data,
         });
@@ -212,7 +213,7 @@ export const useJarvishChat = (
           // Message events contain the actual content that the agent wants to communicate to the user.
           recordConfidenceIfPresent(data.metadata);
           const newContentArray = parseAgentMessageContent(data.content);
-          clientLogger.debug('processStreamLines : [Parsed Assistant Message Content]:', newContentArray);
+          clientLogger.debug('processSseMessages : [Parsed Assistant Message Content]:', newContentArray);
           dispatch({
             type: STATE_ACTIONS.ADD_MESSAGE, payload: {
               id: assistantMsgId,
@@ -236,7 +237,7 @@ export const useJarvishChat = (
       } catch (e) {
         const message = e instanceof Error ? e.message : 'Unknown parsing error';
         dispatch({ type: STATE_ACTIONS.SET_ERROR_MESSAGE, payload: `Failed to parse SSE event: ${message}` });
-        clientLogger.warn('processStreamLines : Failed to parse SSE JSON:', { jsonStr, error: e });
+        clientLogger.warn('processSseMessages : Failed to parse SSE JSON:', { jsonStr, error: e });
       }
     }
   }, [recordConfidenceIfPresent])
@@ -343,26 +344,18 @@ export const useJarvishChat = (
 
       const assistantMsgId = createAssistantMessageId(Date.now());
 
-      let buffer = '';
+      const sseParser = new SseParser();
       while (true) {
         const { done, value } = await reader.read();
         if (done) break; // The server closed the stream, we are finished!
 
-        buffer += decoder.decode(value, { stream: true });
-        // SSE streams split data by newlines
-        const lines = buffer.split('\n');
-        // Save incomplete lines for the next loop iteration
-        // If the server cut off mid-sentence, that last line is incomplete. 
-        // The code extracts it and saves it back into the buffer so it can be completed when the next network chunk arrives. 
-        // The remaining complete lines are now ready to be parsed and displayed on your screen.
-
-        buffer = lines.pop() || '';
-        processStreamLines(assistantMsgId, lines);
-
+        processSseMessages(assistantMsgId, sseParser.push(decoder.decode(value, { stream: true })));
       }
-      if (buffer.trim()) {
-        processStreamLines(assistantMsgId, [buffer]);
-      }
+      const finalChunk = decoder.decode();
+      processSseMessages(
+        assistantMsgId,
+        finalChunk ? [...sseParser.push(finalChunk), ...sseParser.flush()] : sseParser.flush()
+      );
 
       endSendUserMessageSetUX();
     } catch (error: unknown) {
@@ -379,7 +372,7 @@ export const useJarvishChat = (
         readerRef.current = null;
       }
     }
-  }, [endSendUserMessageSetUX, getSendUserMessageHeaders, processStreamLines, startSendUserMessageSetUX]);
+  }, [endSendUserMessageSetUX, getSendUserMessageHeaders, processSseMessages, startSendUserMessageSetUX]);
 
   const addAttachment = useCallback((file: File) => {
     if (file.size > 10 * 1024 * 1024) {
