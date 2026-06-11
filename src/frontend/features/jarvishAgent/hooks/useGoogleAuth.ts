@@ -6,13 +6,13 @@ const GOOGLE_CLIENT_ID_ERROR = 'Google Client ID not configured. Set VITE_GOOGLE
 const TOKEN_EXPIRY_BUFFER_MS = 5 * 60 * 1000;
 
 export const useGoogleAuth = () => {
-  const [googleToken, setGoogleToken] = useState<string | null>(localStorage.getItem(STORAGE_KEYS.GOOGLE_TOKEN));
+  const [googleToken, setGoogleToken] = useState<string | null>(() => getStoredGoogleAccessToken());
   const [googleIdToken, setGoogleIdToken] = useState<string | null>(() => getStoredGoogleIdToken());
   const [googleIdTokenExpiresAt, setGoogleIdTokenExpiresAt] = useState<number | null>(
     Number(localStorage.getItem(STORAGE_KEYS.GOOGLE_ID_TOKEN_EXPIRES_AT)) || null
   );
   const [expiresAt, setExpiresAt] = useState<number | null>(
-    Number(localStorage.getItem('google_token_expires_at')) || null
+    getStoredGoogleAccessTokenExpiresAt()
   );
   const [clientId] = useState<string | null>(GOOGLE_CLIENT_ID || null);
   const [authError, setAuthError] = useState<string | null>(null);
@@ -109,7 +109,9 @@ export const useGoogleAuth = () => {
               resolve(tokenResponse.access_token);
             } else if (tokenResponse.error) {
               if (isSilent && tokenResponse.error === 'immediate_failed') {
+                clearGoogleAccessToken();
                 setGoogleToken(null);
+                setExpiresAt(null);
                 resolve(null); // Silent refresh failed, not an error that needs to stop everything
               } else {
                 const errorMsg = `Google Auth Error: ${tokenResponse.error_description || tokenResponse.error}`;
@@ -160,12 +162,20 @@ export const useGoogleAuth = () => {
    * Checks if token is about to expire (within 5 mins) and attempts silent refresh.
    */
   const checkAndRefreshToken = useCallback(async () => {
-    if (!googleToken || !expiresAt) return null;
+    if (!googleToken || !expiresAt) {
+      clearGoogleAccessToken();
+      setGoogleToken(null);
+      setExpiresAt(null);
+      return null;
+    }
 
     if (Date.now() + TOKEN_EXPIRY_BUFFER_MS < expiresAt) {
       return googleToken; // Still valid
     }
 
+    clearGoogleAccessToken();
+    setGoogleToken(null);
+    setExpiresAt(null);
     console.log('[Auth] Token near expiration, attempting silent refresh...');
     try {
       const newToken = await requestAccessToken(true);
@@ -177,9 +187,8 @@ export const useGoogleAuth = () => {
   }, [googleToken, expiresAt, requestAccessToken]);
 
   const logout = useCallback(() => {
-    localStorage.removeItem(STORAGE_KEYS.GOOGLE_TOKEN);
+    clearGoogleAccessToken();
     clearGoogleIdToken();
-    localStorage.removeItem('google_token_expires_at');
     window.google?.accounts.id?.disableAutoSelect();
     setGoogleToken(null);
     setGoogleIdToken(null);
@@ -229,6 +238,27 @@ export const useGoogleAuth = () => {
     checkAndRefreshIdToken
   };
 };
+
+function getStoredGoogleAccessToken(): string | null {
+  const token = localStorage.getItem(STORAGE_KEYS.GOOGLE_TOKEN);
+  const expiresAt = getStoredGoogleAccessTokenExpiresAt();
+
+  if (!token || !expiresAt || Date.now() + TOKEN_EXPIRY_BUFFER_MS >= expiresAt) {
+    clearGoogleAccessToken();
+    return null;
+  }
+
+  return token;
+}
+
+function getStoredGoogleAccessTokenExpiresAt(): number | null {
+  return Number(localStorage.getItem('google_token_expires_at')) || null;
+}
+
+function clearGoogleAccessToken(): void {
+  localStorage.removeItem(STORAGE_KEYS.GOOGLE_TOKEN);
+  localStorage.removeItem('google_token_expires_at');
+}
 
 function getStoredGoogleIdToken(): string | null {
   const token = localStorage.getItem(STORAGE_KEYS.GOOGLE_ID_TOKEN);

@@ -22,7 +22,7 @@ describe('useGoogleAuth', () => {
   it('loads persisted token state and logs out cleanly', async () => {
     localStorage.setItem(STORAGE_KEYS.GOOGLE_TOKEN, 'token-1');
     localStorage.setItem(STORAGE_KEYS.GOOGLE_ID_TOKEN, createJwt(Date.now() + 10 * 60_000));
-    localStorage.setItem('google_token_expires_at', String(Date.now() + 60_000));
+    localStorage.setItem('google_token_expires_at', String(Date.now() + 10 * 60_000));
     const { useGoogleAuth } = await import('@/frontend/features/jarvishAgent/hooks/useGoogleAuth');
     const { result } = renderHook(() => useGoogleAuth());
 
@@ -38,6 +38,17 @@ describe('useGoogleAuth', () => {
     expect(localStorage.getItem(STORAGE_KEYS.GOOGLE_TOKEN)).toBeNull();
     expect(localStorage.getItem(STORAGE_KEYS.GOOGLE_ID_TOKEN)).toBeNull();
     expect(localStorage.getItem(STORAGE_KEYS.GOOGLE_ID_TOKEN_EXPIRES_AT)).toBeNull();
+    expect(localStorage.getItem('google_token_expires_at')).toBeNull();
+  });
+
+  it('does not restore stale persisted Google access tokens', async () => {
+    localStorage.setItem(STORAGE_KEYS.GOOGLE_TOKEN, 'stale-token');
+    localStorage.setItem('google_token_expires_at', String(Date.now() + 60_000));
+    const { useGoogleAuth } = await import('@/frontend/features/jarvishAgent/hooks/useGoogleAuth');
+    const { result } = renderHook(() => useGoogleAuth());
+
+    expect(result.current.googleToken).toBeNull();
+    expect(localStorage.getItem(STORAGE_KEYS.GOOGLE_TOKEN)).toBeNull();
     expect(localStorage.getItem('google_token_expires_at')).toBeNull();
   });
 
