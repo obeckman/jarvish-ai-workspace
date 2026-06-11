@@ -15,6 +15,7 @@ describe('runWebServer', () => {
   let server: Server | null = null;
   const originalNodeEnv = process.env.NODE_ENV;
   const originalGraphqlPlaygroundEnabled = process.env.GRAPHQL_PLAYGROUND_ENABLED;
+  const originalGraphqlJsonLimit = process.env.GRAPHQL_JSON_LIMIT;
 
   afterEach(async () => {
     await new Promise<void>((resolve, reject) => {
@@ -34,6 +35,7 @@ describe('runWebServer', () => {
     mocks.authenticateRequest.mockReset();
     restoreEnv('NODE_ENV', originalNodeEnv);
     restoreEnv('GRAPHQL_PLAYGROUND_ENABLED', originalGraphqlPlaygroundEnabled);
+    restoreEnv('GRAPHQL_JSON_LIMIT', originalGraphqlJsonLimit);
   });
 
   it('serves health and config endpoints', async () => {
@@ -45,6 +47,41 @@ describe('runWebServer', () => {
       .resolves.toEqual({ status: 'ok' });
     await expect(fetch(`${baseUrl}/api/config`).then((response) => response.json()))
       .resolves.toEqual({ googleClientId: 'google-client' });
+  });
+
+  it('does not apply JSON body parsing to legacy endpoints', async () => {
+    process.env.GRAPHQL_JSON_LIMIT = '1kb';
+
+    const app = runWebServer();
+    const baseUrl = await listen(app);
+    const response = await fetch(`${baseUrl}/api/config`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ payload: 'x'.repeat(2048) }),
+    });
+
+    expect(response.status).toBe(404);
+  });
+
+  it('rejects oversized GraphQL JSON bodies before authentication', async () => {
+    process.env.GRAPHQL_JSON_LIMIT = '1kb';
+
+    const app = runWebServer();
+    const baseUrl = await listen(app);
+    const response = await fetch(`${baseUrl}/graphql`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer id-token',
+      },
+      body: JSON.stringify({
+        query: '{ status }',
+        variables: { payload: 'x'.repeat(2048) },
+      }),
+    });
+
+    expect(response.status).toBe(413);
+    expect(mocks.authenticateRequest).not.toHaveBeenCalled();
   });
 
   it('rejects unauthenticated GraphQL requests', async () => {
