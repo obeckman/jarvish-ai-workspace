@@ -19,6 +19,16 @@ import {
 import { canExposeWriteFileTool } from "@/backend/services/tools/file.service";
 import { BLOCK_TYPES } from "@/shared/jarvish.constants";
 
+function buildUiBlockOutputMandate(): string {
+  return `UI BLOCK OUTPUT MANDATE:
+  - When providing a user-facing answer, you MUST use a JSON array of UI blocks.
+  - NEVER wrap the JSON in markdown code blocks.
+  - Use 'text' for standard prose: { "type": "${BLOCK_TYPES.TEXT}", "content": "..." }
+  - Use 'data' for renderable tables/charts: { "type": "${BLOCK_TYPES.DATA}", "displayType": "chart" | "table", "title": "...", "data": [...] }
+  - For charts, put each point in an object with one x-axis field such as "year", "date", or "name" and one numeric y-axis field such as "value", "close", or "price".
+  - Use 'code' for snippets: { "type": "${BLOCK_TYPES.CODE}", "language": "...", "content": "..." }`;
+}
+
 export function getSupervisorFunctionDeclarations(): FunctionDeclaration[] {
   return [
     {
@@ -73,12 +83,7 @@ export function buildSupervisorSystemInstruction(state: AgentStateType, now: Dat
   - If the user wants to FIND info on the web or in documents, delegate to the research_worker.
   - If the task requires multiple steps, delegate sequentially.
 
-  UI BLOCK OUTPUT MANDATE:
-  - When providing a final answer, you MUST use a JSON array of UI blocks.
-  - NEVER wrap the JSON in markdown code blocks.
-  - Use 'text' for standard prose: { "type": "${BLOCK_TYPES.TEXT}", "content": "..." }
-  - Use 'data' for tables/charts: { "type": "${BLOCK_TYPES.DATA}", "displayType": "chart" | "table", "title": "...", "data": [...] }
-  - Use 'code' for snippets: { "type": "${BLOCK_TYPES.CODE}", "language": "...", "content": "..." }`;
+  ${buildUiBlockOutputMandate()}`;
 }
 
 export function getResearchWorkerFunctionDeclarations(): FunctionDeclaration[] {
@@ -103,7 +108,8 @@ export function buildResearchWorkerSystemInstruction(state: AgentStateType): str
     1. CROSS-SYNTHESIS MANDATE: If the task involves multiple data sources (e.g., a PDF link and a Google Doc), you MUST fetch both and provide a synthesized comparison.
     2. ZERO HALLUCINATION: If a search or query yields no info, say so.
     3. CITATION MANDATE: Always include the source for every fact.
-    4. COMPARISON TABLES: When comparing data, prefer outputting Markdown tables for clarity.
+    4. DATA VISUALIZATION: When the user asks for a graph, chart, table, or comparison, answer with a renderable 'data' UI block. Do not say you cannot display a graph; produce the chart/table block directly from verified data.
+    5. SEARCH BEFORE HISTORICAL/CURRENT DATA: If the user asks for historical, financial, current, or source-backed data and it is not in attachments, use web_search or fetch_web_page before answering.
 
     AVAILABLE TOOLS:
     - web_search: For general internet search.
@@ -112,7 +118,9 @@ export function buildResearchWorkerSystemInstruction(state: AgentStateType): str
     - query_attachments: For searching through already uploaded files.
 
     PROCESSED DOCUMENTS (EXTRACTED TEXT):
-    ${attachmentsContext}`;
+    ${attachmentsContext}
+
+    ${buildUiBlockOutputMandate()}`;
 }
 
 export function getGoogleWorkerFunctionDeclarations(): FunctionDeclaration[] {

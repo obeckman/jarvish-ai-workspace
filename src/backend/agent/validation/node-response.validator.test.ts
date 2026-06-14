@@ -68,6 +68,7 @@ describe('Jarvish node response validator', () => {
 
   it('builds repair and confidence messages for observability', () => {
     expect(buildNodeResponseRepairPrompt('bad', 'missing array')).toContain('missing array');
+    expect(buildNodeResponseRepairPrompt('bad', 'missing array')).toContain('"displayType": "chart"');
     expect(createClarificationBlockContent('missing array')).toContain('missing array');
     expect(formatConfidenceStatus('Validated.', 80, 'ok')).toBe('Validated. Confidence: 80%.');
     expect(formatConfidenceStatus('Validated.', 50, 'thin result')).toBe('Validated. Confidence: 50%. thin result');

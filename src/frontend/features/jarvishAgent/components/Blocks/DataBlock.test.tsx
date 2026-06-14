@@ -13,6 +13,10 @@ vi.mock('recharts', () => ({
     <div data-testid="bar-chart" data-rows={data.length}>{children}</div>
   ),
   Bar: () => <div data-testid="bar" />,
+  LineChart: ({ children, data }: { children?: React.ReactNode; data: unknown[] }) => (
+    <div data-testid="line-chart" data-rows={data.length}>{children}</div>
+  ),
+  Line: ({ dataKey }: { dataKey?: string }) => <div data-testid="line" data-key={dataKey} />,
   XAxis: () => <div data-testid="x-axis" />,
   YAxis: () => <div data-testid="y-axis" />,
   CartesianGrid: () => <div data-testid="grid" />,
@@ -69,6 +73,21 @@ describe('DataBlock', () => {
     expect(screen.getByText('Scores')).toBeInTheDocument();
     expect(screen.getByTestId('bar-chart')).toHaveAttribute('data-rows', '1');
     expect(screen.getByTestId('bar')).toBeInTheDocument();
+  });
+
+  it('renders time-series chart data with inferred axes', () => {
+    render(<DataBlock
+      displayType={DISPLAY_TYPE.CHART}
+      title="S&P 500"
+      data={[
+        { year: 2020, close: 3756.07 },
+        { year: 2021, close: 4766.18 },
+      ]}
+    />);
+
+    expect(screen.getByText('S&P 500')).toBeInTheDocument();
+    expect(screen.getByTestId('line-chart')).toHaveAttribute('data-rows', '2');
+    expect(screen.getByTestId('line')).toHaveAttribute('data-key', 'close');
   });
 
   it('handles empty or invalid chart data gracefully', () => {

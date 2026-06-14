@@ -52,6 +52,27 @@ export async function supervisorNode(state: AgentStateType) {
     };
   }
 
+  const researchDelegationReason = getDeterministicResearchDelegationReason(state);
+  if (researchDelegationReason) {
+    return {
+      messages: [new AIMessage({
+        content: "",
+        tool_calls: [{
+          id: "deterministic-research-delegation",
+          name: "delegate_to_research_worker",
+          args: { reason: researchDelegationReason },
+        }],
+        name: "supervisor"
+      })],
+      metadata: {
+        stage: STAGES.SYNTHESIZE,
+        status: "Supervisor routed research visualization request. Confidence: 100%.",
+        confidence: 100,
+        validationReason: researchDelegationReason,
+      }
+    };
+  }
+
   logger.debug({ sessionId: state.sessionId, messagesCount: state.messages.length }, "[Agent Graph] Node: Supervisor | State received");
   const model = createGeminiModel({
     systemInstruction: buildSupervisorSystemInstruction(state),
@@ -187,4 +208,25 @@ function getDeterministicAnswer(state: AgentStateType): string | null {
   }
 
   return null;
+}
+
+function getDeterministicResearchDelegationReason(state: AgentStateType): string | null {
+  const lastUserMessage = [...state.messages].reverse().find((message) => message instanceof HumanMessage);
+  const query = typeof lastUserMessage?.content === "string" ? lastUserMessage.content.trim().toLowerCase() : "";
+
+  if (!query) {
+    return null;
+  }
+
+  const asksForRenderableData = /\b(graph|chart|plot|table|visuali[sz]e|diagram)\b/.test(query);
+  const needsExternalData = (
+    /\b(current|latest|today|historical|history|all\s+(the\s+)?known\s+years?|years?|prices?|market|stock|index|s&p|sp500|s\s*&\s*p)\b/.test(query)
+    || /[$^][a-z.]+/i.test(query)
+  );
+
+  if (!asksForRenderableData || !needsExternalData) {
+    return null;
+  }
+
+  return "User requested a renderable chart/table that requires verified historical or current external data.";
 }

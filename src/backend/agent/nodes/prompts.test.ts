@@ -65,6 +65,9 @@ describe('Jarvish prompt builders', () => {
     expect(prompt).toContain('[Document: brief.pdf]');
     expect(prompt).toContain('Important source text');
     expect(prompt).toContain('CITATION MANDATE');
+    expect(prompt).toContain('MUST use a JSON array of UI blocks');
+    expect(prompt).toContain("Do not say you cannot display a graph");
+    expect(prompt).toContain('"displayType": "chart"');
   });
 
   it('keeps worker tool declarations separated from orchestration nodes', () => {

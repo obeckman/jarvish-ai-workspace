@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { 
   BarChart, 
   Bar, 
+  LineChart,
+  Line,
   XAxis, 
   YAxis, 
   CartesianGrid, 
@@ -81,25 +83,53 @@ export const DataBlock: React.FC<DataBlockProps> = React.memo(({ displayType, ti
   }
 
   const chartData = toDataRows(data);
+  const chartKeys = inferChartKeys(chartData);
 
-  if (chartData.length === 0) {
+  if (chartData.length === 0 || !chartKeys) {
     return <div className={styles.dataBlock}>No data available for chart.</div>;
   }
+
+  const chartProps = {
+    width: 600,
+    height: 300,
+    data: chartData,
+  };
+  const axisAndTooltip = (
+    <>
+      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.1)" />
+      <XAxis dataKey={chartKeys.xKey} stroke="rgba(255,255,255,0.5)" fontSize={12} />
+      <YAxis stroke="rgba(255,255,255,0.5)" fontSize={12} />
+      <Tooltip 
+        contentStyle={{ background: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff' }}
+        itemStyle={{ color: '#38bdf8' }}
+      />
+    </>
+  );
+
+  const shouldRenderLine = chartData.length > 8 || /^(date|year|time|month|quarter)$/i.test(chartKeys.xKey);
 
   return (
     <div className={styles.dataBlock}>
       {title && <h4 className={styles.dataTitle}>{title}</h4>}
       <div className={styles.chartWrapper} style={{ height: '300px' }}>
-        <BarChart width={600} height={300} data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.1)" />
-          <XAxis dataKey="name" stroke="rgba(255,255,255,0.5)" fontSize={12} />
-          <YAxis stroke="rgba(255,255,255,0.5)" fontSize={12} />
-          <Tooltip 
-            contentStyle={{ background: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff' }}
-            itemStyle={{ color: '#38bdf8' }}
-          />
-          <Bar dataKey="value" fill="#38bdf8" radius={[4, 4, 0, 0]} />
-        </BarChart>
+        {shouldRenderLine ? (
+          <LineChart {...chartProps}>
+            {axisAndTooltip}
+            <Line
+              type="monotone"
+              dataKey={chartKeys.yKey}
+              stroke="#38bdf8"
+              strokeWidth={2}
+              dot={chartData.length <= 24}
+              activeDot={{ r: 4 }}
+            />
+          </LineChart>
+        ) : (
+          <BarChart {...chartProps}>
+            {axisAndTooltip}
+            <Bar dataKey={chartKeys.yKey} fill="#38bdf8" radius={[4, 4, 0, 0]} />
+          </BarChart>
+        )}
       </div>
     </div>
   );
@@ -130,4 +160,23 @@ function isDataCellValue(value: unknown): value is DataRow[string] {
     typeof value === 'number' ||
     typeof value === 'boolean'
   );
+}
+
+function inferChartKeys(rows: DataRow[]): { xKey: string; yKey: string } | null {
+  const firstRow = rows[0];
+  if (!firstRow) {
+    return null;
+  }
+
+  const keys = Object.keys(firstRow);
+  const numericKeys = keys.filter((key) => rows.some((row) => typeof row[key] === 'number'));
+  if (numericKeys.length === 0) {
+    return null;
+  }
+
+  const preferredXKey = keys.find((key) => /^(name|label|date|year|time|month|quarter)$/i.test(key));
+  const xKey = preferredXKey ?? keys.find((key) => !numericKeys.includes(key)) ?? keys[0];
+  const yKey = numericKeys.find((key) => key !== xKey) ?? numericKeys[0];
+
+  return xKey && yKey ? { xKey, yKey } : null;
 }

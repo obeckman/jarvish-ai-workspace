@@ -95,6 +95,7 @@ Allowed examples:
 [{ "type": "text", "content": "..." }]
 [{ "type": "code", "language": "ts", "content": "..." }]
 [{ "type": "data", "displayType": "table", "title": "...", "data": [] }]
+[{ "type": "data", "displayType": "chart", "title": "...", "data": [{ "year": 2024, "value": 100 }] }]
 
 Original response to repair:
 ${originalContent}`;
