@@ -38,4 +38,27 @@ The retrieval layer intentionally asks for more candidates than it returns. That
 
 The default SQLite implementation persists vectors to `sqlite.db`, alongside the existing session/checkpoint data. Embeddings are stored as JSON arrays and searched with cosine similarity in TypeScript. This is intentionally simple and infrastructure-free for reviewers.
 
-Future production deployments can add another `IVectorStore` adapter without changing agent orchestration, GraphQL resolvers, or frontend code.
+Local limitation: `sqlite-vector.store.ts` is not a production vector index. It reads a bounded window of the newest persisted rows, computes cosine similarity in the Node process, and returns the best matches from that window. That keeps local demos from scanning the whole table, but it can miss older relevant memories and should not be used for high-cardinality deployments.
+
+Production deployments should add another `IVectorStore` adapter without changing agent orchestration, GraphQL resolvers, or frontend code. A pgvector-style adapter would push similarity ranking and metadata/time predicates into the database:
+
+```ts
+class PgVectorStore implements IVectorStore {
+  async ensureSchema(): Promise<void> {
+    // CREATE TABLE memories (..., embedding vector(768), metadata jsonb, created_at timestamptz)
+    // CREATE INDEX ON memories USING hnsw (embedding vector_cosine_ops)
+    // CREATE INDEX ON memories USING gin (metadata)
+  }
+
+  async search(queryEmbedding: number[], options: MemorySearchOptions): Promise<Memory[]> {
+    // SELECT id, text, metadata, 1 - (embedding <=> $1) AS score
+    // FROM memories
+    // WHERE metadata @> $2 AND created_at >= $3
+    // ORDER BY embedding <=> $1
+    // LIMIT $4
+    return []
+  }
+}
+```
+
+The same boundary also fits a Qdrant adapter, where the implementation would call the collection `search` API with payload filters for user id, memory type, session id, active/latest flags, or time ranges before vector scoring.

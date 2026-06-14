@@ -77,7 +77,7 @@ npm run dev
 
 Some Jarvish agent flows require the backend and `GEMINI_API_KEY`.
 
-Vector memory persists to `sqlite.db` by default. Set `VECTOR_STORE_PROVIDER=memory` only when you want an ephemeral in-memory store for local testing.
+Vector memory persists to `sqlite.db` by default. The SQLite vector store is a local adapter: it scores a bounded newest-row window in Node, not a production vector index. Set `VECTOR_STORE_PROVIDER=memory` only when you want an ephemeral in-memory store for local testing. For deployment-scale memory, add an `IVectorStore` adapter backed by pgvector, Qdrant, Weaviate, or Pinecone.
 
 To verify the configured Gemini key/model directly:
 

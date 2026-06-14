@@ -17,8 +17,13 @@ type VectorMemoryRow = {
   metadata: string | null
 }
 
+const DEFAULT_VECTOR_SCAN_LIMIT = 1000
+
 export class SQLiteVectorStore implements IVectorStore {
-  constructor(private readonly database: Database.Database) {}
+  constructor(
+    private readonly database: Database.Database,
+    private readonly vectorScanLimit = DEFAULT_VECTOR_SCAN_LIMIT,
+  ) {}
 
   async ensureSchema(): Promise<void> {
     this.database.exec(`
@@ -54,9 +59,15 @@ export class SQLiteVectorStore implements IVectorStore {
   }
 
   async search(queryEmbedding: number[], options: MemorySearchOptions): Promise<Memory[]> {
+    const scanLimit = Math.max(options.limit, this.vectorScanLimit)
     const rows = this.database
-      .prepare('SELECT id, text, embedding, metadata FROM vector_memories')
-      .all() as VectorMemoryRow[]
+      .prepare(`
+        SELECT id, text, embedding, metadata
+        FROM vector_memories
+        ORDER BY created_at DESC
+        LIMIT @scanLimit
+      `)
+      .all({ scanLimit }) as VectorMemoryRow[]
 
     return rows
       .map((row) => {

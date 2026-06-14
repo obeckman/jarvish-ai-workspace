@@ -49,31 +49,7 @@ Senior architect / senior frontend / full-stack review for making this repositor
   - Provide seeded sample data and a no-key offline flow for reviewers.
 
 ## Architecture And Backend Problems
-
-### BE-02: GraphQL input schemas are too permissive
-
-- File: `src/backend/graphql/schemas/resolver.schema.ts`
-- Evidence:
-  - `role`, `content`, `name`, `data`, `mimeType`, `sessionId`, and search strings have minimal or no max-length validation.
-  - Attachments validate base64 as a plain string and mime type as a plain string.
-- Risk:
-  - The API can accept oversized payloads, malformed roles, unexpected mime types, and excessive prompt/context data.
-- Recommendation:
-  - Add enums for roles.
-  - Add max lengths for query/history/session/search/title.
-  - Add attachment count, mime allowlist, base64 validation, and total request-size policy.
-
-### BE-03: Express JSON body limit is broad and unauthenticated
-
-- File: `src/backend/WebServer/index.ts`
-- Evidence:
-  - `express.json({ limit: '20mb' })` is global.
-- Risk:
-  - Any public client can send large unauthenticated requests to GraphQL/config/health paths.
-- Recommendation:
-  - Apply stricter limits by route.
-  - Add rate limiting and timeout policy for public deployment.
-
+ß
 ### BE-04: SQLite schema management is split between migrations and runtime mutation
 
 - Files:
@@ -91,6 +67,8 @@ Senior architect / senior frontend / full-stack review for making this repositor
 
 ### BE-05: SQLite vector search scans all rows in memory
 
+Status: addressed.
+
 - File: `src/backend/services/memory/sqlite-vector.store.ts`
 - Evidence:
   - `SELECT id, text, embedding, metadata FROM vector_memories` reads every vector, then computes cosine similarity in TypeScript.
@@ -100,6 +78,8 @@ Senior architect / senior frontend / full-stack review for making this repositor
   - Document this explicitly as a local adapter limitation.
   - Add a production adapter interface example, such as pgvector or Qdrant.
   - Consider limiting rows by metadata/time before vector scoring.
+- Resolution:
+  - SQLite now scores only a bounded newest-row window, the local-adapter limitation is documented, and the memory architecture doc includes a pgvector/Qdrant production adapter example.
 
 ### BE-06: Memory retrieval logs raw memory contents
 
@@ -394,18 +374,6 @@ Senior architect / senior frontend / full-stack review for making this repositor
   - Rename to "validation score" or document calibration limits in UI/docs.
   - Add eval cases if confidence remains a prominent product concept.
 
-### AI-04: Reasoning/internal events are user-visible
-
-- Files:
-  - `src/backend/graphql/services/agent-event.service.ts`
-  - `src/frontend/features/jarvishAgent/components/JarvishChatArea.tsx`
-- Evidence:
-  - Non-message node outputs can stream as `REASONING` and render under "Thought Process".
-- Risk:
-  - Depending on provider behavior, this can expose implementation details or confuse users.
-- Recommendation:
-  - Rename to "Activity" or "Work log".
-  - Ensure no hidden chain-of-thought or sensitive tool payloads are streamed.
 
 ## Positive Signals To Preserve
 

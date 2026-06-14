@@ -11,9 +11,9 @@ describe('SQLiteVectorStore', () => {
     database = null;
   });
 
-  function createStore() {
+  function createStore(vectorScanLimit?: number) {
     database = new Database(':memory:');
-    return new SQLiteVectorStore(database);
+    return new SQLiteVectorStore(database, vectorScanLimit);
   }
 
   it('creates schema, persists memories, and ranks by similarity', async () => {
@@ -53,6 +53,28 @@ describe('SQLiteVectorStore', () => {
     await store.delete(id);
 
     expect(await store.search([1], { limit: 10 })).toEqual([]);
+  });
+
+  it('bounds local similarity scoring to the newest persisted rows', async () => {
+    const store = createStore(1);
+
+    await store.ensureSchema();
+    database?.prepare(`
+      INSERT INTO vector_memories (id, text, embedding, metadata, created_at)
+      VALUES (?, ?, ?, ?, ?)
+    `).run('older-match', 'older matching memory', '[1,0]', '{}', 100);
+    database?.prepare(`
+      INSERT INTO vector_memories (id, text, embedding, metadata, created_at)
+      VALUES (?, ?, ?, ?, ?)
+    `).run('newer-candidate', 'newer scanned memory', '[0,1]', '{}', 200);
+
+    expect(await store.search([1, 0], { limit: 1 })).toMatchObject([
+      {
+        id: 'newer-candidate',
+        text: 'newer scanned memory',
+        score: 0,
+      },
+    ]);
   });
 
   it('tolerates malformed persisted vectors and metadata', async () => {

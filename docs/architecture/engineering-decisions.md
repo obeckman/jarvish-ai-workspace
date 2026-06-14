@@ -43,7 +43,7 @@ Why this shape:
 - Vector-store implementation details are replaceable.
 - Retrieval can apply relevance, user scoping, active/latest filtering, and memory priority before context reaches the model.
 
-Tradeoff: SQLite cosine search is simple and reviewer-friendly, but it is not a high-scale vector index. Larger deployments should add a dedicated `IVectorStore` adapter such as pgvector, Qdrant, Weaviate, or Pinecone.
+Tradeoff: SQLite cosine search is simple and reviewer-friendly, but it is a local adapter, not a high-scale vector index. It bounds similarity scoring to a newest-row scan window to avoid full-table reads in Node, so older relevant rows can be missed. Larger deployments should add a dedicated `IVectorStore` adapter such as pgvector, Qdrant, Weaviate, or Pinecone and push metadata/time filtering plus similarity ranking into the store.
 
 ## Tool Execution Contract
 
