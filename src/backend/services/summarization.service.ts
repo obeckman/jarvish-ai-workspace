@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { REASONING_MODEL } from "@/backend/agent/models";
 import { ROLES } from "@/shared/jarvish.constants";
+import { messageContentToPlainText } from "@/shared/messageContent";
 import { logger } from '@/backend/utils/logger';
 import { getGeminiErrorDetails } from "@/backend/services/gemini-error";
 
@@ -41,7 +42,7 @@ export async function summarizeSession(history: { role: string, content: string 
     // Clean up potential markdown code blocks
     const cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
     const parsed = JSON.parse(cleaned);
-    return parsed;
+    return normalizeSummary(parsed);
   } catch (e) {
     logger.warn({ error: getGeminiErrorDetails(e) }, "[Summarization Warning] Falling back to deterministic summary.");
     return createFallbackSummary(history);
@@ -51,13 +52,21 @@ export async function summarizeSession(history: { role: string, content: string 
 function createFallbackSummary(history: { role: string, content: string }[]) {
   return {
     summaryTitle: "Conversation Summary",
-    userMessage: history.find(m => {
+    userMessage: messageContentToPlainText(history.find(m => {
       const r = (m.role || "");
       return r === ROLES.USER || r === ROLES.HUMAN;
-    })?.content?.substring(0, 100) || "N/A",
-    aiAnswer: [...history].reverse().find(m => {
+    })?.content).substring(0, 100) || "N/A",
+    aiAnswer: messageContentToPlainText([...history].reverse().find(m => {
       const r = (m.role || "");
       return r === ROLES.AGENT || r === ROLES.ASSISTANT || r === ROLES.MODEL || r === "ai";
-    })?.content?.substring(0, 100) || "N/A"
+    })?.content).substring(0, 100) || "N/A"
+  };
+}
+
+function normalizeSummary(summary: { summaryTitle?: unknown; userMessage?: unknown; aiAnswer?: unknown }) {
+  return {
+    summaryTitle: messageContentToPlainText(summary.summaryTitle) || "Conversation Summary",
+    userMessage: messageContentToPlainText(summary.userMessage) || "N/A",
+    aiAnswer: messageContentToPlainText(summary.aiAnswer) || "N/A",
   };
 }

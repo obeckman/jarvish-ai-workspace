@@ -8,6 +8,7 @@ import { extractAndStoreFacts, type ExtractedFact } from "@/backend/services/fac
 import { db } from "@/backend/db/index";
 import { sessionSummaries } from "@/backend/db/schema";
 import { STAGES, ROLES } from "@/shared/jarvish.constants";
+import { messageContentToPlainText } from "@/shared/messageContent";
 import { getMessageRole } from "./utils";
 import { logger } from "@/backend/utils/logger";
 import { createHash, randomUUID } from "node:crypto";
@@ -34,7 +35,7 @@ export async function archiveNode(state: AgentStateType) {
     try {
       const history = state.messages.map(m => {
         const role = getMessageRole(m);
-        const content = typeof m.content === 'string' ? m.content : JSON.stringify(m.content);
+        const content = messageContentToPlainText(m.content);
         return {
           role: isUserRole(role) ? ROLES.USER : ROLES.ASSISTANT,
           content: content
@@ -86,8 +87,8 @@ export async function archiveNode(state: AgentStateType) {
   if (lastUserMessage && lastModelMessage) {
     logger.info({ sessionId: state.sessionId }, "Saving interaction to memory");
 
-    const userContent = typeof lastUserMessage.content === 'string' ? lastUserMessage.content : JSON.stringify(lastUserMessage.content);
-    const modelContent = typeof lastModelMessage.content === 'string' ? lastModelMessage.content : JSON.stringify(lastModelMessage.content);
+    const userContent = messageContentToPlainText(lastUserMessage.content);
+    const modelContent = messageContentToPlainText(lastModelMessage.content);
 
     const conversationSummary = `Conversation Summary [${new Date().toLocaleTimeString()}]:
     User: ${userContent}
@@ -184,7 +185,7 @@ export async function archiveNode(state: AgentStateType) {
     }
     overallAgentSummary += `Full Conversation History:\n${state.messages.map(m => {
       const r = getMessageRole(m);
-      const c = typeof m.content === 'string' ? m.content : JSON.stringify(m.content);
+      const c = messageContentToPlainText(m.content);
       return `${r}: ${c}`;
     }).join('\n')}\n`;
 

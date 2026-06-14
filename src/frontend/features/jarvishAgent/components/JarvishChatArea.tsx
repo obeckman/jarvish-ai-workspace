@@ -14,9 +14,11 @@ import cn from 'classnames';
 import styles from '@/frontend/features/jarvishAgent/jarvish-agent.module.scss';
 import type { ConfidenceSummary, Message, Session } from '@/frontend/features/jarvishAgent/types';
 import { ROLES ,AGENT_STATUS, STAGES, AgentStatus, BLOCK_TYPES, TOOL_CONFIDENCE_THRESHOLD} from '@/shared/jarvish.constants';
+import { messageContentToPlainText } from '@/shared/messageContent';
 import { ChatMessage } from './Blocks/ChatMessage';
 import { Markdown } from '@/frontend/components/shared/Markdown/Markdown';
 import { UI_STRINGS } from '@/frontend/features/jarvishAgent/constants';
+import { EMPTY_SUMMARY_ANSWER, getSessionSummaryDisplay } from '@/frontend/features/jarvishAgent/utils/summaryDisplay';
 
 interface JarvishChatAreaProps {
   messages: Message[];
@@ -53,6 +55,9 @@ export const JarvishChatArea: React.FC<JarvishChatAreaProps> = ({
 }) => {
   const currentSession = sessions.find(s => s.id === currentSessionId);
   const summary = currentSession?.summary;
+  const summaryDisplay = currentSession ? getSessionSummaryDisplay(currentSession) : null;
+  const summaryUserMessage = summaryDisplay?.userMessage || messageContentToPlainText(summary?.userMessage);
+  const summaryAiAnswer = summaryDisplay?.aiAnswer || EMPTY_SUMMARY_ANSWER;
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = useCallback(() => {
@@ -132,10 +137,10 @@ export const JarvishChatArea: React.FC<JarvishChatAreaProps> = ({
               <h3>Research Summary</h3>
               <div className={styles.summarySection}>
                 <strong>Original Request</strong>
-                <p>{summary.userMessage}</p>
+                <p>{summaryUserMessage}</p>
                 <button
                   className={styles.copyBtnInline}
-                  onClick={() => onCopyToInput(summary.userMessage)}
+                  onClick={() => onCopyToInput(summaryUserMessage)}
                 >
                   Reuse this query
                 </button>
@@ -148,7 +153,7 @@ export const JarvishChatArea: React.FC<JarvishChatAreaProps> = ({
                   </div>
                   <strong className={styles.summaryHeading}>Synthesized Findings</strong>
                 </div>
-                <Markdown content={summary.aiAnswer} />
+                <Markdown content={summaryAiAnswer} />
               </div>
 
               <button

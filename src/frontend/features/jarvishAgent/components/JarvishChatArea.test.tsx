@@ -67,6 +67,32 @@ describe('JarvishChatArea', () => {
     expect(props.setShowFullConversation).toHaveBeenCalledWith(true);
   });
 
+  it('renders stringified summary blocks as text', () => {
+    const props = {
+      ...baseProps,
+      showFullConversation: false,
+      onCopyToInput: vi.fn(),
+      sessions: [{
+        ...session,
+        summary: {
+          ...session.summary,
+          summaryTitle: 'Conversation Summary',
+          userMessage: JSON.stringify([{ type: BLOCK_TYPES.TEXT, content: 'Today is Sunday, June 14, 2026.' }]),
+          aiAnswer: JSON.stringify([{ type: BLOCK_TYPES.TEXT, content: 'Calendar is clear.' }]),
+        },
+      }],
+    };
+
+    render(<JarvishChatArea {...props} />);
+
+    expect(screen.getByText('Today is Sunday, June 14, 2026.')).toBeInTheDocument();
+    expect(screen.getByText('Calendar is clear.')).toBeInTheDocument();
+    expect(screen.queryByText(/\[\{"type":"text"/)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /reuse this query/i }));
+    expect(props.onCopyToInput).toHaveBeenCalledWith('Today is Sunday, June 14, 2026.');
+  });
+
   it('renders no-session placeholder', () => {
     render(<JarvishChatArea {...baseProps} currentSessionId={null} />);
 

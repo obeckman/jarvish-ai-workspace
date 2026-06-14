@@ -4,6 +4,7 @@ import cn from 'classnames';
 import styles from '@/frontend/features/jarvishAgent/jarvish-agent.module.scss';
 import { Session } from '@/frontend/features/jarvishAgent/types';
 import { Markdown } from '@/frontend/components/shared/Markdown/Markdown';
+import { getSessionSummaryDisplay } from '@/frontend/features/jarvishAgent/utils/summaryDisplay';
 
 interface JarvishSidebarProps {
   sessions: Session[];
@@ -98,74 +99,78 @@ export const JarvishSidebar: React.FC<JarvishSidebarProps> = ({
       </div>
       
       <div className={styles.sessionList}>
-        {sessions.map(s => (
-          <div 
-            key={s.id} 
-            onClick={() => onSelectSession(s.id)}
-            className={cn(styles.sessionItem, { 
-              [styles.active]: currentSessionId === s.id,
-              [styles.collapsedItem]: isCollapsed,
-              [styles.compactItem]: isCompact && !isCollapsed
-            })}
-            title={isCollapsed ? ((s.summary && s.summary.summaryTitle) || s.title) : undefined}
-          >
-            <div className={styles.sessionItemHeader}>
-              {!isCollapsed ? (
-                <>
-                  <span className={styles.sessionTitle}>{(s.summary && s.summary.summaryTitle) || s.title}</span>
-                  <button 
-                    className={styles.removeBtn} 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDeleteSession(s.id, e);
-                    }}
-                  >
-                    <Trash2 size={12} />
-                  </button>
-                </>
-              ) : (
-                <div className={styles.collapsedIcon}>
-                  <MessageSquareCode size={20} strokeWidth={2.5} color="currentColor" />
-                </div>
-              )}
-            </div>
-            
-            {!isCollapsed && !isCompact && (
-              <>
-                {s.summary ? (
-                  <div className={styles.summaryContent}>
-                    <Markdown content={s.summary.aiAnswer} />
-                  </div>
+        {sessions.map(s => {
+          const summaryDisplay = getSessionSummaryDisplay(s);
+
+          return (
+            <div
+              key={s.id}
+              onClick={() => onSelectSession(s.id)}
+              className={cn(styles.sessionItem, {
+                [styles.active]: currentSessionId === s.id,
+                [styles.collapsedItem]: isCollapsed,
+                [styles.compactItem]: isCompact && !isCollapsed
+              })}
+              title={isCollapsed ? summaryDisplay.title : undefined}
+            >
+              <div className={styles.sessionItemHeader}>
+                {!isCollapsed ? (
+                  <>
+                    <span className={styles.sessionTitle}>{summaryDisplay.title}</span>
+                    <button
+                      className={styles.removeBtn}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteSession(s.id, e);
+                      }}
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </>
                 ) : (
-                  <div className={styles.summaryActions}>
-                    {currentSessionId === s.id && isPollingSummary ? (
-                      <div className={styles.summaryLoading}>
-                        <Loader2 size={10} className={styles.spin} /> 
-                        <span>Generating Summary...</span>
-                      </div>
-                    ) : (
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onTriggerSummary(s.id, e);
-                        }} 
-                        className={styles.summarizeBtn}
-                      >
-                        <MessageSquareCode size={10} /> Summarize
-                      </button>
-                    )}
+                  <div className={styles.collapsedIcon}>
+                    <MessageSquareCode size={20} strokeWidth={2.5} color="currentColor" />
                   </div>
                 )}
-                
-                <span className={styles.sessionDate}>{new Date(s.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
-              </>
-            )}
-            
-            {!isCollapsed && isCompact && (
-               <span className={styles.sessionDateCompact}>{new Date(s.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
-            )}
-          </div>
-        ))}
+              </div>
+
+              {!isCollapsed && !isCompact && (
+                <>
+                  {s.summary ? (
+                    <div className={styles.summaryContent}>
+                      <Markdown content={summaryDisplay.preview} />
+                    </div>
+                  ) : (
+                    <div className={styles.summaryActions}>
+                      {currentSessionId === s.id && isPollingSummary ? (
+                        <div className={styles.summaryLoading}>
+                          <Loader2 size={10} className={styles.spin} />
+                          <span>Generating Summary...</span>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onTriggerSummary(s.id, e);
+                          }}
+                          className={styles.summarizeBtn}
+                        >
+                          <MessageSquareCode size={10} /> Summarize
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  <span className={styles.sessionDate}>{new Date(s.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+                </>
+              )}
+
+              {!isCollapsed && isCompact && (
+                 <span className={styles.sessionDateCompact}>{new Date(s.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+              )}
+            </div>
+          );
+        })}
         
         {hasMore && !isCollapsed && (
           <button 

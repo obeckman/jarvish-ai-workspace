@@ -10,6 +10,7 @@ import {
 import { getMessageRole, getMessageType } from "@/backend/agent/nodes/utils";
 import { Message } from "@/backend/graphql/__generated__/resolvers-types";
 import { EVENT_TYPES, NODE_NAMES, ROLES } from "@/shared/jarvish.constants.ts";
+import { messageContentToPlainText } from "@/shared/messageContent";
 
 type InputHistoryMessage = {
   role?: string | null;
@@ -100,15 +101,15 @@ export function shouldStreamMessageFromNode(nodeName: string): boolean {
 }
 
 export function stringifyMessageContent(content: MessageContent | null | undefined): string {
+  if (typeof content === "string") {
+    return messageContentToPlainText(content);
+  }
+
   if (Array.isArray(content)) {
     return content.map(stringifyMessagePart).join("\n");
   }
 
-  if (typeof content === "string") {
-    return content;
-  }
-
-  return content ? JSON.stringify(content) : "";
+  return messageContentToPlainText(content);
 }
 
 function stringifyMessagePart(part: ContentBlock): string {
@@ -116,7 +117,7 @@ function stringifyMessagePart(part: ContentBlock): string {
     return part.text;
   }
 
-  return JSON.stringify(part);
+  return messageContentToPlainText(part);
 }
 
 function isReasoningMessage(

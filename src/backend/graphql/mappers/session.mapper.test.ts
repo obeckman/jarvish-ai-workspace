@@ -37,6 +37,38 @@ describe('Jarvish session row mappers', () => {
     });
   });
 
+  it('normalizes persisted stringified block content in summaries', () => {
+    expect(mapSessionSummaryRow({
+      sessionId: 'session-1',
+      summaryTitle: 'Conversation Summary',
+      userMessage: 'whats the date',
+      aiAnswer: JSON.stringify([{ type: 'text', content: 'Today is Sunday, June 14, 2026.' }]),
+      createdAt: '2026-06-14',
+    } as never)).toEqual({
+      sessionId: 'session-1',
+      summaryTitle: 'Conversation Summary',
+      userMessage: 'whats the date',
+      aiAnswer: 'Today is Sunday, June 14, 2026.',
+      createdAt: '2026-06-14',
+    });
+  });
+
+  it('normalizes legacy summaries truncated inside stringified block content', () => {
+    expect(mapSessionSummaryRow({
+      sessionId: 'session-1',
+      summaryTitle: 'Conversation Summary',
+      userMessage: 'whats the date',
+      aiAnswer: '[{"type":"text","content":"You have the following meetings scheduled this week:\\n\\n* אורן חנן:',
+      createdAt: '2026-06-14',
+    } as never)).toEqual({
+      sessionId: 'session-1',
+      summaryTitle: 'Conversation Summary',
+      userMessage: 'whats the date',
+      aiAnswer: 'You have the following meetings scheduled this week:\n\n* אורן חנן:',
+      createdAt: '2026-06-14',
+    });
+  });
+
   it('applies defaults for optional structured fact fields', () => {
     expect(mapStructuredFactRow({
       id: 'fact-1',
