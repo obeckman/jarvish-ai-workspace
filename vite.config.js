@@ -11,6 +11,12 @@ export default defineConfig({
   test: {
     environment: 'node',
     setupFiles: ['./src/test/setup.ts'],
+    coverage: {
+      exclude: [
+        'src/backend/graphql/__generated__/**',
+        'src/frontend/features/jarvishAgent/graphql/__generated__/**',
+      ],
+    },
   },
   resolve: {
     alias: {
