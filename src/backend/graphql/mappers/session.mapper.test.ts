@@ -46,7 +46,7 @@ describe('Jarvish session row mappers', () => {
       createdAt: '2026-06-14',
     } as never)).toEqual({
       sessionId: 'session-1',
-      summaryTitle: 'Conversation Summary',
+      summaryTitle: 'whats the date',
       userMessage: 'whats the date',
       aiAnswer: 'Today is Sunday, June 14, 2026.',
       createdAt: '2026-06-14',
@@ -62,9 +62,25 @@ describe('Jarvish session row mappers', () => {
       createdAt: '2026-06-14',
     } as never)).toEqual({
       sessionId: 'session-1',
-      summaryTitle: 'Conversation Summary',
+      summaryTitle: 'whats the date',
       userMessage: 'whats the date',
       aiAnswer: 'You have the following meetings scheduled this week:\n\n* אורן חנן:',
+      createdAt: '2026-06-14',
+    });
+  });
+
+  it('replaces missing legacy summary answers with readable fallback text', () => {
+    expect(mapSessionSummaryRow({
+      sessionId: 'session-1',
+      summaryTitle: 'Conversation Summary',
+      userMessage: 'whats the date',
+      aiAnswer: 'N/A',
+      createdAt: '2026-06-14',
+    } as never)).toEqual({
+      sessionId: 'session-1',
+      summaryTitle: 'whats the date',
+      userMessage: 'whats the date',
+      aiAnswer: 'No answer captured.',
       createdAt: '2026-06-14',
     });
   });

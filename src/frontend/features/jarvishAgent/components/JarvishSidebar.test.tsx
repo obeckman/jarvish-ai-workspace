@@ -73,6 +73,29 @@ describe('JarvishSidebar', () => {
     expect(props.onLoadMore).toHaveBeenCalledTimes(1);
   });
 
+  it('uses readable display text for generic or missing legacy summaries', () => {
+    render(<JarvishSidebar
+      {...baseProps}
+      sessions={[{
+        id: 'session-legacy',
+        title: 'New Research',
+        createdAt: '2026-06-14T06:07:31.000Z',
+        updatedAt: '2026-06-14T06:08:49.000Z',
+        summary: {
+          sessionId: 'session-legacy',
+          summaryTitle: 'Conversation Summary',
+          userMessage: 'whats the date',
+          aiAnswer: 'N/A',
+          createdAt: '2026-06-14T06:07:34.000Z',
+        },
+      }]}
+    />);
+
+    expect(screen.getAllByText('whats the date')).toHaveLength(2);
+    expect(screen.queryByText('Conversation Summary')).not.toBeInTheDocument();
+    expect(screen.queryByText('N/A')).not.toBeInTheDocument();
+  });
+
   it('clears search and triggers summary/delete without selecting the session', () => {
     const props = {
       ...baseProps,
