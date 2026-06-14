@@ -10,6 +10,7 @@ import {
 import { getMessageRole, getMessageType } from "@/backend/agent/nodes/utils";
 import { Message } from "@/backend/graphql/__generated__/resolvers-types";
 import { EVENT_TYPES, NODE_NAMES, ROLES } from "@/shared/jarvish.constants.ts";
+import { AgentMessageBlocksSchema } from "@/shared/jarvish.blocks";
 import { messageContentToPlainText } from "@/shared/messageContent";
 
 type InputHistoryMessage = {
@@ -102,6 +103,11 @@ export function shouldStreamMessageFromNode(nodeName: string): boolean {
 
 export function stringifyMessageContent(content: MessageContent | null | undefined): string {
   if (typeof content === "string") {
+    const structuredContent = preserveStructuredBlockContent(content);
+    if (structuredContent) {
+      return structuredContent;
+    }
+
     return messageContentToPlainText(content);
   }
 
@@ -110,6 +116,20 @@ export function stringifyMessageContent(content: MessageContent | null | undefin
   }
 
   return messageContentToPlainText(content);
+}
+
+function preserveStructuredBlockContent(content: string): string {
+  const trimmed = content.trim();
+  if (!trimmed.startsWith("[")) {
+    return "";
+  }
+
+  try {
+    const parsed = JSON.parse(trimmed);
+    return AgentMessageBlocksSchema.safeParse(parsed).success ? trimmed : "";
+  } catch {
+    return "";
+  }
 }
 
 function stringifyMessagePart(part: ContentBlock): string {

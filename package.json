@@ -20,6 +20,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "coverage": "vitest run --coverage",
     "smoke:jarvish": "tsx --tsconfig tsconfig.json scripts/smoke/jarvish-smoke.ts",
     "verify": "npm run codegen && npm run lint && npm run typecheck && npm run test && npm run smoke:jarvish && npm run build",
     "preview": "vite preview"
@@ -72,6 +73,7 @@
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",
+    "@vitest/coverage-v8": "^4.1.8",
     "concurrently": "^10.0.3",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",

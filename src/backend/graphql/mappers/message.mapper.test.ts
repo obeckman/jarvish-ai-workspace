@@ -40,14 +40,37 @@ describe('Jarvish GraphQL message mapper', () => {
     })).toEqual({
       type: EVENT_TYPES.MESSAGE,
       role: ROLES.AGENT,
-      content: 'You have one meeting.',
+      content: JSON.stringify([{ type: BLOCK_TYPES.TEXT, content: 'You have one meeting.' }]),
     });
   });
 
-  it('returns plain text for stringified Jarvish block history content', () => {
+  it('preserves stringified Jarvish block history content for structured UI rendering', () => {
     expect(stringifyMessageContent(
       JSON.stringify([{ type: BLOCK_TYPES.TEXT, content: 'Today is Sunday, June 14, 2026.' }]),
-    )).toBe('Today is Sunday, June 14, 2026.');
+    )).toBe(JSON.stringify([{ type: BLOCK_TYPES.TEXT, content: 'Today is Sunday, June 14, 2026.' }]));
+  });
+
+  it('preserves code block history content for structured UI rendering', () => {
+    const content = JSON.stringify([
+      { type: BLOCK_TYPES.TEXT, content: 'Example:' },
+      { type: BLOCK_TYPES.CODE, language: 'jsx', content: 'export default function App() { return <div />; }' },
+    ]);
+
+    expect(stringifyMessageContent(content)).toBe(content);
+  });
+
+  it('does not preserve invalid block-shaped JSON as structured history', () => {
+    expect(stringifyMessageContent(
+      JSON.stringify([{ type: BLOCK_TYPES.CODE, language: 'jsx', content: 42 }]),
+    )).toBe(JSON.stringify({ type: BLOCK_TYPES.CODE, language: 'jsx', content: 42 }));
+  });
+
+  it('falls back for malformed structured-looking JSON history content', () => {
+    expect(stringifyMessageContent('[{"type":"text","content":"partial"')).toBe('partial"');
+  });
+
+  it('stringifies empty message content through the plain text fallback', () => {
+    expect(stringifyMessageContent(undefined)).toBe('');
   });
 
   it('maps tool and worker messages to reasoning history with a safe fallback', () => {

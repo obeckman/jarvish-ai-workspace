@@ -61,6 +61,47 @@ describe('Jarvish frontend history normalizer', () => {
     ]);
   });
 
+  it('normalizes legacy agent history with unfenced React code into code blocks', () => {
+    const [message] = normalizeHistoryMessages([
+      {
+        __typename: 'Message',
+        type: 'reasoning',
+        role: ROLES.AGENT,
+        content: `Here's a simple example:
+import React from 'react';
+
+const HoverChangeComponent = () => {
+  return <div>Hover over me</div>;
+};
+
+export default HoverChangeComponent;
+Explanation:
+This changes the UI on hover.`,
+      } as HistoryMessage,
+    ]);
+
+    expect(message.role).toBe(ROLES.AGENT);
+    expect(message.content).toEqual([
+      { type: BLOCK_TYPES.TEXT, content: "Here's a simple example:" },
+      {
+        type: BLOCK_TYPES.CODE,
+        language: 'jsx',
+        content: `import React from 'react';
+
+const HoverChangeComponent = () => {
+  return <div>Hover over me</div>;
+};
+
+export default HoverChangeComponent;`,
+      },
+      {
+        type: BLOCK_TYPES.TEXT,
+        content: `Explanation:
+This changes the UI on hover.`,
+      },
+    ]);
+  });
+
   it('warns and defaults unknown persisted roles to agent', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
 

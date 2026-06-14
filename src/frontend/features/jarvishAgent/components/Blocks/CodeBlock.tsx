@@ -8,7 +8,7 @@ interface CodeBlockProps {
   language?: string;
 }
 
-const SUPPORTED_LANGUAGES = ['typescript', 'javascript', 'python', 'json', 'bash', 'markdown', 'html', 'css'] as const;
+const SUPPORTED_LANGUAGES = ['typescript', 'javascript', 'tsx', 'jsx', 'python', 'json', 'bash', 'markdown', 'html', 'css'] as const;
 const DEFAULT_LANGUAGE = 'typescript';
 const SHIKI_THEME = 'nord';
 
@@ -25,6 +25,8 @@ function getHighlighter() {
     import('@shikijs/themes/nord'),
     import('@shikijs/langs/typescript'),
     import('@shikijs/langs/javascript'),
+    import('@shikijs/langs/tsx'),
+    import('@shikijs/langs/jsx'),
     import('@shikijs/langs/python'),
     import('@shikijs/langs/json'),
     import('@shikijs/langs/bash'),
@@ -37,6 +39,8 @@ function getHighlighter() {
     nord,
     typescript,
     javascript,
+    tsx,
+    jsx,
     python,
     json,
     bash,
@@ -50,6 +54,8 @@ function getHighlighter() {
       langs: [
         typescript.default,
         javascript.default,
+        tsx.default,
+        jsx.default,
         python.default,
         json.default,
         bash.default,

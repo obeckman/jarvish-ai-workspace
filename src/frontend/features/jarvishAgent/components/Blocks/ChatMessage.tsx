@@ -6,6 +6,7 @@ import { Message, AgentMessageBlock } from '../../types';
 import { ROLES, BLOCK_TYPES } from '@/shared/jarvish.constants';;
 import { BlockRenderer } from './BlockRenderer';
 import { Markdown } from '@/frontend/components/shared/Markdown/Markdown';
+import { parseAgentMessageContent } from '../../utils/parser';
 
 
 interface ChatMessageProps {
@@ -19,9 +20,9 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({ message, on
                   message.role === ROLES.ASSISTANT;
   const isUser = message.role === ROLES.USER || message.role === ROLES.HUMAN;
 
-  const blocks: AgentMessageBlock[] = Array.isArray(message.content) 
-    ? message.content 
-    : [{ type: BLOCK_TYPES.TEXT, content: message.content as string }];
+  const blocks: AgentMessageBlock[] = Array.isArray(message.content)
+    ? message.content
+    : parseAgentMessageContent(message.content ?? '');
 
   return (
     <div 

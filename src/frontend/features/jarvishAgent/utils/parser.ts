@@ -33,10 +33,125 @@ export function parseAgentMessageContent(content: string): AgentMessageBlock[] {
     const parsed = JSON.parse(cleaned);
     return processParsedResult(parsed);
   } catch {
+    const legacyBlocks = parseLegacyPlainTextWithCode(cleaned);
+    if (legacyBlocks.some((block) => block.type === BLOCK_TYPES.CODE)) {
+      return legacyBlocks;
+    }
+
     // If all parsing fails, return as a text block
     return cleaned ? [{ type: BLOCK_TYPES.TEXT, content: cleaned }] : [];
   }
 
+}
+
+function parseLegacyPlainTextWithCode(content: string): AgentMessageBlock[] {
+  const lines = content.split(/\r?\n/);
+  const blocks: AgentMessageBlock[] = [];
+  let cursor = 0;
+
+  while (cursor < lines.length) {
+    const codeStart = findNextCodeStart(lines, cursor);
+
+    if (codeStart === -1) {
+      pushTextBlock(blocks, lines.slice(cursor).join('\n'));
+      break;
+    }
+
+    pushTextBlock(blocks, lines.slice(cursor, codeStart).join('\n'));
+
+    const codeEnd = findCodeEnd(lines, codeStart);
+    const code = lines.slice(codeStart, codeEnd).join('\n').trim();
+    if (code) {
+      blocks.push({
+        type: BLOCK_TYPES.CODE,
+        language: inferCodeLanguage(code),
+        content: code,
+      });
+    }
+
+    cursor = codeEnd;
+  }
+
+  return blocks;
+}
+
+function findNextCodeStart(lines: string[], startIndex: number): number {
+  for (let index = startIndex; index < lines.length; index += 1) {
+    if (isCodeStartLine(lines[index])) {
+      return index;
+    }
+  }
+
+  return -1;
+}
+
+function findCodeEnd(lines: string[], startIndex: number): number {
+  for (let index = startIndex + 1; index < lines.length; index += 1) {
+    const line = lines[index];
+
+    if (isLegacyCodeBoundaryLine(line) && hasMeaningfulCode(lines.slice(startIndex, index))) {
+      return index;
+    }
+  }
+
+  return lines.length;
+}
+
+function isCodeStartLine(line: string): boolean {
+  const trimmed = line.trim();
+  return (
+    /^\/\/\s*[\w.-]+\.(tsx?|jsx?)$/i.test(trimmed) ||
+    /^(import|export)\s/.test(trimmed) ||
+    /^(const|let|var)\s+\w+/.test(trimmed) ||
+    /^(function|class)\s+\w+/.test(trimmed) ||
+    /^(interface|type)\s+\w+/.test(trimmed) ||
+    /^(from\s+\S+\s+import|def\s+\w+|async\s+function\s+\w+)/.test(trimmed)
+  );
+}
+
+function isLegacyCodeBoundaryLine(line: string): boolean {
+  const trimmed = line.trim();
+  if (!trimmed) {
+    return false;
+  }
+
+  return (
+    /^(Explanation|To use|Usage|Notes?|This code|In this example)\b:?/i.test(trimmed) ||
+    (/^[A-Z][^{}()[\];=<>]*:$/.test(trimmed) && !isCodeStartLine(trimmed))
+  );
+}
+
+function hasMeaningfulCode(lines: string[]): boolean {
+  const code = lines.join('\n');
+  return (
+    /[{};]/.test(code) ||
+    /return\s*\(/.test(code) ||
+    /<\w+[\s>]/.test(code) ||
+    /\b(import|export|function|const|let|var|class)\b/.test(code)
+  );
+}
+
+function inferCodeLanguage(code: string): string {
+  if (/\bReact\b/.test(code) || /<\w+[\s>]/.test(code) || /\.[jt]sx?\b/i.test(code)) {
+    return 'jsx';
+  }
+
+  if (/\b(type|interface)\s+\w+/.test(code)) {
+    return 'typescript';
+  }
+
+  if (/^(from\s+\S+\s+import|def\s+\w+)/m.test(code)) {
+    return 'python';
+  }
+
+  return 'javascript';
+}
+
+function pushTextBlock(blocks: AgentMessageBlock[], content: string) {
+  const trimmed = content.trim();
+  if (trimmed) {
+    blocks.push({ type: BLOCK_TYPES.TEXT, content: trimmed });
+  }
 }
 
 function processParsedResult(parsed: unknown): AgentMessageBlock[] {

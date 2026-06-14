@@ -17,6 +17,7 @@ const strictReactSource = [
 export default defineConfig([
   globalIgnores([
     'dist/**',
+    'coverage/**',
     'src/backend/weaviate_data/**',
     'src/backend/graphql/__generated__/**',
     'src/frontend/features/jarvishAgent/graphql/__generated__/**',
