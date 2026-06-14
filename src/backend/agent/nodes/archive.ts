@@ -4,7 +4,11 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { ARCHIVE_MODEL } from "@/backend/agent/models";
 import { PDFParse } from 'pdf-parse';
 import { summarizeSession } from "@/backend/services/summarization.service";
-import { extractAndStoreFacts, type ExtractedFact } from "@/backend/services/factExtraction.service";
+import {
+  extractAndStoreExplicitFacts,
+  extractAndStoreFacts,
+  type ExtractedFact,
+} from "@/backend/services/factExtraction.service";
 import { db } from "@/backend/db/index";
 import { sessionSummaries } from "@/backend/db/schema";
 import { STAGES, ROLES } from "@/shared/jarvish.constants";
@@ -60,12 +64,16 @@ export async function archiveNode(state: AgentStateType) {
         });
         logger.info({ sessionId: state.sessionId, summaryTitle: summary.summaryTitle }, "Session summary stored");
       }
+      extractedFacts = await extractAndStoreExplicitFacts(state.sessionId, userId, history);
+      logger.debug({ sessionId: state.sessionId, extractedFactsCount: extractedFacts.length }, "Extracted explicit facts");
+
       // 5. Extract Static Facts
       if (process.env.ARCHIVE_AI_ENRICHMENT_ENABLED === "true") {
-        extractedFacts = await extractAndStoreFacts(state.sessionId, userId, history);
-        logger.debug({ sessionId: state.sessionId, extractedFactsCount: extractedFacts.length }, "Extracted facts");
+        const aiExtractedFacts = await extractAndStoreFacts(state.sessionId, userId, history);
+        extractedFacts = [...extractedFacts, ...aiExtractedFacts];
+        logger.debug({ sessionId: state.sessionId, extractedFactsCount: aiExtractedFacts.length }, "Extracted AI facts");
       } else {
-        logger.debug({ sessionId: state.sessionId }, "Fact extraction skipped because archive AI enrichment is disabled.");
+        logger.debug({ sessionId: state.sessionId }, "AI fact extraction skipped because archive AI enrichment is disabled.");
       }
 
     } catch (err) {
@@ -176,7 +184,7 @@ export async function archiveNode(state: AgentStateType) {
     overallAgentSummary += `User Message: ${summary.userMessage}\n`;
     overallAgentSummary += `AI Answer: ${summary.aiAnswer}\n`;
 
-    const storedFacts = extractedFacts.filter((fact) => fact.status === "stored");
+    const storedFacts = extractedFacts.filter((fact) => fact.status === "stored" || fact.status === "updated");
     if (storedFacts.length > 0) {
       overallAgentSummary += `Extracted Facts: ${storedFacts.map((fact) => fact.fact).join('; ')}\n`;
     }
