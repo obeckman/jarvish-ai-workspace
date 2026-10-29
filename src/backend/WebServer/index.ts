@@ -8,6 +8,7 @@ import express, {
 import cors from 'cors';
 import {handleGraphQLRequests} from '@/backend/graphql';
 import { getCorsOptions } from '@/backend/WebServer/cors';
+import { createHidingLagRouter } from '@/backend/WebServer/hidingLag/hidingLagRouter';
 
 /**
  * Express Application Assembler
@@ -36,6 +37,8 @@ export function runWebServer() {
     });
   });
 
+  // 3. Learning demo: primary/replica routing with read-your-own-writes
+  app.use('/api/hiding-lag', createHidingLagRouter());
 
   // 4. Bind Yoga to the /graphql endpoint
   app.use(

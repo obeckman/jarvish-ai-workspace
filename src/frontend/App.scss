@@ -13,6 +13,8 @@
 
   display: grid;
   grid-template-columns: var(--sidebar-closed-width) minmax(0, 1fr);
+  // Lock the row to the viewport so children can't grow past it.
+  grid-template-rows: minmax(0, 1fr);
   height: 100vh;
   width: 100vw;
   overflow: hidden;
@@ -27,6 +29,7 @@
   flex-direction: column;
   width: var(--sidebar-closed-width);
   min-width: 0;
+  min-height: 0;
   border-right: 1px solid var(--border-color);
   background: var(--bg-secondary);
   overflow: visible;
@@ -201,6 +204,8 @@
 
 .capability-nav {
   flex: 1;
+  // Without this a flex child won't shrink below its content, so it never scrolls.
+  min-height: 0;
   overflow-y: auto;
   padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md);
   opacity: 0;

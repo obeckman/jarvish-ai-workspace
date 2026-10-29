@@ -140,6 +140,17 @@ export const capabilities: Capability[] = [
         'DynamicGridCanvasDemo',
       ),
   },
+  {
+    id: 'hiding-lag',
+    label: 'Hiding Replication Lag',
+    summary: 'React Query optimistic updates plus read-your-own-writes against a lagging replica.',
+    group: 'frontend',
+    load: () =>
+      fromNamedExport(
+        () => import('@/frontend/features/HidingLag/HidingLagDemo'),
+        'HidingLagDemo',
+      ),
+  },
 ]
 
 export const defaultCapabilityId = 'jarvish-agent'

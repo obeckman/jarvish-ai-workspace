@@ -1,0 +1,138 @@
+.demo {
+  display: grid;
+  gap: var(--spacing-lg);
+  max-width: 720px;
+  margin: var(--spacing-xl) auto;
+  padding: 0 var(--spacing-md);
+}
+
+.explainer {
+  color: var(--text-primary);
+  line-height: 1.5;
+
+  h2 {
+    margin: 0 0 var(--spacing-sm);
+  }
+
+  code {
+    padding: 0 var(--spacing-xs);
+    border-radius: var(--radius-sm);
+    background: var(--bg-secondary);
+  }
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.container {
+  padding: var(--spacing-lg);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  color: var(--text-primary);
+}
+
+.editorLayout {
+  display: grid;
+  gap: var(--spacing-md);
+}
+
+.header {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--spacing-xs) var(--spacing-md);
+  margin: 0;
+
+  dt {
+    color: var(--text-secondary);
+  }
+
+  dd {
+    margin: 0;
+    font-weight: 600;
+  }
+}
+
+.badge {
+  padding: 2px var(--spacing-sm);
+  border-radius: var(--radius-sm);
+  color: #fff;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+}
+
+.primary {
+  background: var(--primary-color);
+}
+
+.replica {
+  background: var(--secondary-color);
+  border: 1px solid var(--border-color);
+}
+
+.optimisticUpdate {
+  background: var(--tertiary-color);
+}
+
+.form {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.inputField {
+  flex: 1;
+  min-width: 0;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font: inherit;
+}
+
+.saveBtn,
+.secondaryBtn {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-md);
+  font: inherit;
+  cursor: pointer;
+}
+
+.saveBtn {
+  border: none;
+  background: var(--primary-color);
+  color: #fff;
+
+  &:hover:not(:disabled) {
+    background: var(--primary-hover);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.secondaryBtn {
+  justify-self: start;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.loading,
+.muted {
+  color: var(--text-muted);
+}
+
+.error {
+  color: var(--error-color);
+}
