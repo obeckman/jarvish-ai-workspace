@@ -39,7 +39,10 @@ export const NormalizationOfUsersAndGroups = () => {
         const cleanUser = Object.fromEntries(
             Object.entries(rawUser).map(
                 ([key, value]) =>
-                    [mappings[key as keyof typeof mappings] || key, value]
+                    [
+                        mappings[key as keyof typeof mappings] || key, 
+                        value
+                    ]
             )
         ) as User;
 
@@ -52,7 +55,7 @@ export const NormalizationOfUsersAndGroups = () => {
             }
             normalizedData.groupsUserIds[groupId] = [
                 ...normalizedData.groupsUserIds[groupId],
-                ...cleanUser.groupIds
+                cleanUser.id
             ];
         });
 

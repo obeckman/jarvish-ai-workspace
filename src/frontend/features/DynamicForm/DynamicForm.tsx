@@ -221,5 +221,6 @@ const DynamicFormSubmit = (props: React.ButtonHTMLAttributes<HTMLButtonElement>)
         </button>
     </div>
 }
+
 DynamicForm.Input = DynamicFormInput
 DynamicForm.submit = DynamicFormSubmit

@@ -9,7 +9,11 @@ The Interview Question
 import React from 'react';
 import { clientLogger } from '@/frontend/utils/clientLogger';
 
-export const fetchDataFromApis = async (apiEndpoint: string, onError: (error: string) => void): Promise<any> => {
+interface FetchData<T> {
+    abortToken: AbortController;
+    Request: Promise<T>;
+}
+export const fetchDataFromApis = <T,>(apiEndpoint: string, onError: (error: string) => void): FetchData<T> => {
         const abortToken = new AbortController();
         const Request = fetch(apiEndpoint,{ signal: abortToken.signal }).then(response => {
             if (!response.ok) {
@@ -29,6 +33,7 @@ export const fetchDataFromApis = async (apiEndpoint: string, onError: (error: st
         return {abortToken, Request};
     
 }
+
 export const APIAggregator = () => {
     
     const [resultsFromApis, setResultsFromApis] = React.useState<any[]>([]);
@@ -46,7 +51,10 @@ export const APIAggregator = () => {
         setError(null);
 
         Promise.allSettled(
-            apiEndpoints.map(endpoint => fetchDataFromApis(endpoint.url, setError).then(res => res.Request))
+            apiEndpoints.map(endpoint => {
+                const {abortToken, Request} = fetchDataFromApis(endpoint.url, setError); 
+                return Request; 
+            })
         ).then(results => {
             if (!isMounted) return;
             setResultsFromApis((prev) =>{
@@ -56,7 +64,7 @@ export const APIAggregator = () => {
                     }
                     return { [apiEndpoints[index].name]: null };
                 });
-                return {...prev, newResults};
+                return [...prev, ...newResults];
             }); 
             setIsLoading(false);  
 

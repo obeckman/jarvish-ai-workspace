@@ -118,8 +118,8 @@ export const useDBStore = ({
   }
 
   useDBSubscription(storeName, onUpdate)
-
-  const getDataByIndex = React.useCallback(<T,>(indexName: string, indexValue: IDBKeyRange | IDBValidKey) => {
+  
+  const getDataByIndex = React.useCallback(<T,>(indexName: string, indexValue: IDBKeyRange | IDBValidKey): Promise<T> => {
     return new Promise<T>((resolve, reject) => {
       const transaction = db.transaction(storeName, 'readonly');
       const store = transaction.objectStore(storeName);

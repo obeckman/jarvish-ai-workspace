@@ -18,7 +18,7 @@ const conversionNames = {
     meters: 'Meters',
     feet: 'Feet',
     yards: 'Yards',
-}as const
+} as const
 
 const conversionMapForDemo = {
     [conversionNames.meters]: {
@@ -46,7 +46,7 @@ const TwoWayBindingContext = React.createContext<{
     getValue: (unit: ConversionName) => number,
 } | null>(null);
 
-export const TwoWayBinding  = ({conversionMap, initialBaseValue=0, children}: TwoWayBindingProps) =>{
+export const TwoWayBindingProvider  = ({conversionMap, initialBaseValue=0, children}: TwoWayBindingProps) =>{
     
     const [baseValue, setBaseValue] = React.useState<number>(initialBaseValue);
     
@@ -90,21 +90,9 @@ const contextValue = React.useMemo(() =>({
     </TwoWayBindingContext.Provider>
 }
 
-const useTwoWayBindingContext = (unit: ConversionName) => {
-    const context = React.useContext(TwoWayBindingContext);
-    if(!context) throw new Error('useTwoWayBindingContext must be used within a TwoWayBindingProvider');
-    
-    const setValue = (value: number) => {
-        
-        context.setValue(Math.round(value*1000)/1000, unit);
-    }
-    const value = context.getValue(unit);
 
 
-    return {value, setValue};
-}
-
-const TwoWayBindingInput = ({unit}: {unit: ConversionName}) => {
+const TwoWayBindingInput: React.FC<{unit: ConversionName}> = ({unit}) => {
     const {value, setValue} = useTwoWayBindingContext(unit);
     
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -131,16 +119,30 @@ const TwoWayBindingInput = ({unit}: {unit: ConversionName}) => {
     </div>
     
 }
-TwoWayBinding.Input = TwoWayBindingInput;
+TwoWayBindingProvider.Input = TwoWayBindingInput;
+
+const useTwoWayBindingContext = (unit: ConversionName) => {
+    const context = React.useContext(TwoWayBindingContext);
+    if(!context) throw new Error('useTwoWayBindingContext must be used within a TwoWayBindingProvider');
+    
+    const setValue = (value: number) => {
+        
+        context.setValue(Math.round(value*1000)/1000, unit);
+    }
+    const value = context.getValue(unit);
+
+
+    return {value, setValue};
+}
 
 export const DistanceConverter = () => {
 
     return <div className="two-way-binding-demo">
         <h3>Distance Converter (Meters & Feet)</h3>
-        <TwoWayBinding conversionMap={conversionMapForDemo}>
-            <TwoWayBinding.Input unit={conversionNames.meters} />
-            <TwoWayBinding.Input unit={conversionNames.feet} />
-            <TwoWayBinding.Input unit={conversionNames.yards} />
-        </TwoWayBinding>
+        <TwoWayBindingProvider conversionMap={conversionMapForDemo}>
+            <TwoWayBindingProvider.Input unit={conversionNames.meters} />
+            <TwoWayBindingProvider.Input unit={conversionNames.feet} />
+            <TwoWayBindingProvider.Input unit={conversionNames.yards} />
+        </TwoWayBindingProvider>
     </div>;
 }

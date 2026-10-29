@@ -13,6 +13,7 @@ import {
   buildCoderWorkerSystemInstruction,
   getCoderWorkerFunctionDeclarations,
 } from "@/backend/agent/nodes/prompts";
+import { normalizeWorkerContent } from "@/backend/agent/workers/worker-response";
 
 /**
  * Node: Coder Worker
@@ -36,8 +37,8 @@ export async function coderWorkerNode(state: AgentStateType) {
     const response = result.response;
     logger.debug({ sessionId: state.sessionId, rawResponse: response.text() }, "Coder Worker | Raw response text");
 
-    let content = response.text();
     const toolCalls = response.functionCalls();
+    let content = normalizeWorkerContent(response.text(), Boolean(toolCalls?.length));
     let confidence = toolCalls?.length ? 100 : 0;
     let validationReason = toolCalls?.length
       ? "Coder Worker returned tool calls."

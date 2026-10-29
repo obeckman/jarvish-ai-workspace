@@ -7,27 +7,35 @@ import { clientLogger } from '@/frontend/utils/clientLogger';
 
 
 export const TabsApiRaceConditionDemo = () => {
-    const requestRef = React.useRef<AbortController | null>(null);
-    const ContentCache = React.useRef<{[key: string]: React.ReactNode}>({});
+    const abortControllerRef = React.useRef<AbortController | null>(null);
+    const ContentCache = React.useRef<Map<string, React.ReactNode>>(new Map());
     const fetchRef = React.useRef<string | null>(null);
+    
     const [currentContent, setCurrentContent] = React.useState<React.ReactNode | null>(null);
+    
     const tabClick = React.useCallback((apiKey: string)=> {
+        // If the same tab is clicked again, do nothing
         if(fetchRef.current === apiKey) {
             return;
         }
-        if(ContentCache.current[apiKey]) {
-            setCurrentContent(ContentCache.current[apiKey]);
+
+        // If the content for this tab is already cached, use it
+        if(ContentCache.current.has(apiKey)) {
+            setCurrentContent(ContentCache.current.get(apiKey) || null);
             return;
         }
-        if(requestRef.current) {
-            requestRef.current.abort();
+
+        // If there's an ongoing fetch, abort it
+        if(abortControllerRef.current) {
+            abortControllerRef.current.abort();
         }
-        const controller = new AbortController();
-        requestRef.current = controller;
+
+        // Start a new fetch for the clicked tab
+        abortControllerRef.current = new AbortController();;
         fetchRef.current = apiKey;
         const rendomizeTimeOut = Math.random() * 2000 + 500;
         setTimeout(() => {
-        fetch(`https://jsonplaceholder.typicode.com/posts/${apiKey.slice(-1)}`, {signal: controller.signal})
+        fetch(`https://jsonplaceholder.typicode.com/posts/${apiKey.slice(-1)}`, {signal: abortControllerRef.current?.signal})
             .then((response) => response.json())
             .then((data) => {
                 const content = (<div className="tab-content">
@@ -35,7 +43,7 @@ export const TabsApiRaceConditionDemo = () => {
                     <h2>{data.title}</h2>
                     <p>{data.body}</p>
                 </div>);
-                ContentCache.current[apiKey] = content;
+                ContentCache.current.set(apiKey, content);
                 if(fetchRef.current !== apiKey) {
                     return;
                 }

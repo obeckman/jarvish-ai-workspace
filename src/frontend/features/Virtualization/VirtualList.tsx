@@ -20,6 +20,7 @@ export const VirtualList: React.FC<VirtualListProps> = ({
   // 1. REFS: Direct DOM access is crucial for high-perf scroll reading
   // We use refs to avoid re-renders just to read properties.
   // 2. STATE: We only store the 'scrollTop' to trigger re-renders 
+  
   // when the scroll position changes significantly enough to require new rows.
   const [currentScrollTop, setCurrentScrollTop] = useState(0);
 

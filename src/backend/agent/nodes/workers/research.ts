@@ -13,6 +13,7 @@ import {
   buildResearchWorkerSystemInstruction,
   getResearchWorkerFunctionDeclarations,
 } from "@/backend/agent/nodes/prompts";
+import { normalizeWorkerContent } from "@/backend/agent/workers/worker-response";
 
 /**
  * Node: Research Worker
@@ -36,7 +37,7 @@ export async function researchWorkerNode(state: AgentStateType) {
     const response = result.response;
     logger.debug({ sessionId: state.sessionId, rawResponse: response.text() }, "Research Worker | Raw response text");
     const toolCalls = response.functionCalls();
-    let content = response.text();
+    let content = normalizeWorkerContent(response.text(), Boolean(toolCalls?.length));
     let confidence = toolCalls?.length ? 100 : 0;
     let validationReason = toolCalls?.length
       ? "Research Worker returned tool calls."

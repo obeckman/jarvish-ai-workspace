@@ -13,6 +13,7 @@ import {
   buildGoogleWorkerSystemInstruction,
   getGoogleWorkerFunctionDeclarations,
 } from "@/backend/agent/nodes/prompts";
+import { normalizeWorkerContent } from "@/backend/agent/workers/worker-response";
 
 /**
  * Node: Google Worker
@@ -36,8 +37,8 @@ export async function googleWorkerNode(state: AgentStateType) {
     const response = result.response;
     logger.debug({ sessionId: state.sessionId, rawResponse: response.text() }, "Google Worker | Raw response text");
 
-    let content = response.text();
     const toolCalls = response.functionCalls();
+    let content = normalizeWorkerContent(response.text(), Boolean(toolCalls?.length));
     let confidence = toolCalls?.length ? 100 : 0;
     let validationReason = toolCalls?.length
       ? "Google Worker returned tool calls."

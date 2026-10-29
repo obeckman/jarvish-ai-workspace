@@ -13,7 +13,7 @@ interface ImageProps {
 const useLeastRecentlyUsedCache = (limit: number = 10) => {
     // we use the map get, set, has are O(1), and it keep order of insert 
     // we can change implemention to
-    //const imageCache = new Map<string, HTMLImageElement>();
+    // const imageCache = new Map<string, HTMLImageElement>();
     // We declare this OUTSIDE the hook. 
     // This ensures the cache survives even if the component unmounts.and to serve  multiple components with same cache ...
     // my why is per component we get private cache

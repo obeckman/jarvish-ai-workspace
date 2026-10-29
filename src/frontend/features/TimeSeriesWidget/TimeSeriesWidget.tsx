@@ -68,6 +68,7 @@ const TimeSeriesWidget = React.memo(({ data, width = '100%', height = '100%', cl
 
 export const TimeSeriesWidgetDemo = () => {
     const [data, setData] = React.useState<TimeSeriesWidgetDataPoint[]>([]);
+    
     React.useEffect(() => {
         const interval = setInterval(() => {
             const newData = Array.from({ length: Math.random() * 50 }, (_, i) => ({ timestamp: Date.now() + i * 1000, value: Math.random() * 100 }))

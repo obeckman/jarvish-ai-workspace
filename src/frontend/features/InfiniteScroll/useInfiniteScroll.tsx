@@ -153,15 +153,12 @@ const InfiniteScrollPlaceholderItem = ({ id: _id, name: _name }: InfiniteScrollI
     return <div>loading...</div>
 }
 export const UseInfiniteScrollDemo = () => {
-    // Demo logic here
     const { itemsToRender, observerNextCallback, paddingTop, observerPrevCallback } = useInfiniteScroll();
 
     return <div className='use_infinite_scroll_demo'>
         Infinite Scroll Demo
         <div className='use_infinite_scroll_demo-holder'>
             <div className='use_infinite_scroll_demo-item-container'>
-
-
 
                 <div style={{ height: `${paddingTop}px` }} />
                   
